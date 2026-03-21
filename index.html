@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crown HQ — Amelia Arabe</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --tz-deep:#2E2560;--tz:#4B3F8A;--tz-mid:#6B5FBA;--tz-pale:#C4BCE8;--tz-mist:#EDE9F8;
+  --champ:#F0D898;--champ-deep:#C8A84C;--champ-gold:#D4B86A;--champ-pale:#FAF3DC;--champ-bg:#FDF8EC;--champ-warm:#F5EDD0;
+  --blush:#F2C4C0;--blush-deep:#D4847A;--blush-pale:#FDF0EE;
+  --lavender:#C8B8E8;--lav-deep:#9880C8;
+  --sage:#A8C4A0;--sage-dark:#5A8A52;
+  --white:#FEFCF7;--ink:#1E1A2E;--stone:#6A6058;--warm-grey:#A09488;--dust:#DDD0B8;
+  --fd:'Cormorant',Georgia,serif;--fb:'Plus Jakarta Sans',sans-serif;--fm:'DM Mono',monospace;
+  --sidebar:240px;
+  --status-new:#9880C8;--status-contacted:#C8A84C;--status-meeting:#4B3F8A;--status-closed:#5A8A52;--status-declined:#D4847A;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--fb);background:var(--champ-bg);color:var(--ink);display:flex;flex-direction:column}
+
+/* ── TOPBAR ── */
+.topbar{height:52px;background:var(--tz-deep);display:flex;align-items:center;justify-content:space-between;padding:0 1.5rem;flex-shrink:0;z-index:200;border-bottom:1px solid rgba(240,216,152,.1)}
+.topbar-logo{font-family:var(--fd);font-size:1.3rem;font-style:italic;color:var(--champ);letter-spacing:-.3px}
+.topbar-logo span{color:var(--blush)}
+.topbar-right{display:flex;align-items:center;gap:1rem}
+.topbar-date{font-family:var(--fm);font-size:.6rem;letter-spacing:2px;color:rgba(240,216,152,.35);text-transform:uppercase}
+.topbar-crown{font-size:1.1rem}
+.hamburger{display:none;background:none;border:none;cursor:pointer;flex-direction:column;gap:4px;padding:4px}
+.hamburger span{width:20px;height:2px;background:var(--champ);border-radius:2px;display:block;transition:all .3s}
+
+/* ── LAYOUT ── */
+.app{display:flex;flex:1;overflow:hidden}
+
+/* ── SIDEBAR ── */
+.sidebar{width:var(--sidebar);background:var(--tz-deep);display:flex;flex-direction:column;flex-shrink:0;border-right:1px solid rgba(240,216,152,.08);overflow-y:auto;z-index:100}
+.sidebar-section{padding:.75rem 1rem .25rem;font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:rgba(240,216,152,.25);text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:.75rem;padding:.7rem 1rem;cursor:pointer;transition:all .2s;border-radius:0;position:relative}
+.nav-item:hover{background:rgba(240,216,152,.06)}
+.nav-item.active{background:rgba(240,216,152,.1)}
+.nav-item.active::before{content:'';position:absolute;left:0;top:0;height:100%;width:3px;background:var(--champ);border-radius:0 2px 2px 0}
+.nav-icon{font-size:1rem;width:22px;text-align:center;flex-shrink:0}
+.nav-label{font-family:var(--fb);font-size:.78rem;font-weight:500;color:rgba(240,216,152,.6)}
+.nav-item.active .nav-label{color:var(--champ)}
+.nav-badge{margin-left:auto;font-family:var(--fm);font-size:.55rem;background:var(--blush);color:var(--ink);padding:.15rem .45rem;border-radius:100px;font-weight:700}
+.sidebar-bottom{margin-top:auto;padding:1rem;border-top:1px solid rgba(240,216,152,.08)}
+.team-label{font-family:var(--fm);font-size:.55rem;letter-spacing:2px;color:rgba(240,216,152,.25);text-transform:uppercase;margin-bottom:.5rem}
+.team-member{display:flex;align-items:center;gap:.5rem;padding:.35rem 0}
+.team-dot{width:7px;height:7px;border-radius:50%;background:var(--sage);flex-shrink:0}
+.team-name{font-size:.72rem;color:rgba(240,216,152,.5)}
+
+/* ── MAIN ── */
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+
+/* ── PANELS ── */
+.panel{display:none;flex:1;flex-direction:column}
+.panel.active{display:flex}
+
+/* ── PANEL HEADER ── */
+.panel-header{padding:1.75rem 2rem 1.25rem;border-bottom:1px solid var(--dust);flex-shrink:0;background:var(--white);display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.ph-left .ph-tag{font-family:var(--fm);font-size:.58rem;letter-spacing:4px;color:var(--warm-grey);text-transform:uppercase;margin-bottom:.25rem}
+.ph-left .ph-title{font-family:var(--fd);font-size:1.8rem;font-weight:300;color:var(--ink);line-height:1}
+.ph-left .ph-title em{font-style:italic;color:var(--tz)}
+.ph-right{display:flex;gap:.5rem;flex-wrap:wrap}
+.btn{font-family:var(--fb);font-size:.72rem;font-weight:600;padding:.45rem 1.1rem;border-radius:100px;border:none;cursor:pointer;transition:all .2s cubic-bezier(.34,1.56,.64,1);white-space:nowrap}
+.btn-primary{background:var(--tz-deep);color:var(--champ-pale)}
+.btn-primary:hover{background:var(--tz);transform:scale(1.03)}
+.btn-champ{background:var(--champ);color:var(--ink)}
+.btn-champ:hover{background:var(--champ-pale);transform:scale(1.03)}
+.btn-ghost{background:transparent;color:var(--stone);border:1px solid var(--dust)}
+.btn-ghost:hover{border-color:var(--tz-pale);color:var(--tz)}
+.btn-danger{background:transparent;color:var(--blush-deep);border:1px solid var(--blush)}
+.btn-danger:hover{background:var(--blush-pale)}
+
+/* ── PANEL BODY ── */
+.panel-body{flex:1;overflow-y:auto;padding:1.5rem 2rem}
+
+/* ── CARDS ── */
+.card{background:var(--white);border-radius:12px;padding:1.5rem;box-shadow:0 2px 12px rgba(200,168,76,.07);margin-bottom:1rem}
+.card:last-child{margin-bottom:0}
+
+/* ══════════════════════════════════
+   DASHBOARD
+══════════════════════════════════ */
+.dash-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem}
+.dash-stat{background:var(--white);border-radius:12px;padding:1.25rem;box-shadow:0 2px 12px rgba(200,168,76,.07);border-top:3px solid var(--dust)}
+.dash-stat.tz{border-top-color:var(--tz-mid)}
+.dash-stat.champ{border-top-color:var(--champ-gold)}
+.dash-stat.blush{border-top-color:var(--blush-deep)}
+.dash-stat.sage{border-top-color:var(--sage-dark)}
+.dash-stat.lav{border-top-color:var(--lav-deep)}
+.ds-num{font-family:var(--fd);font-size:2.2rem;font-style:italic;color:var(--tz-deep);line-height:1;margin-bottom:.15rem}
+.ds-lbl{font-family:var(--fm);font-size:.58rem;letter-spacing:2px;color:var(--warm-grey);text-transform:uppercase}
+
+.progress-bar{height:6px;background:var(--dust);border-radius:3px;overflow:hidden;margin:.5rem 0 .25rem}
+.progress-fill{height:100%;border-radius:3px;transition:width .8s cubic-bezier(.34,1.56,.64,1)}
+.pf-champ{background:linear-gradient(90deg,var(--champ-gold),var(--champ))}
+.pf-tz{background:linear-gradient(90deg,var(--tz),var(--tz-mid))}
+.pf-sage{background:linear-gradient(90deg,var(--sage-dark),var(--sage))}
+.progress-label{font-family:var(--fm);font-size:.6rem;color:var(--warm-grey)}
+
+.timeline-row{display:flex;gap:1rem;padding:.75rem 0;border-bottom:1px solid var(--champ-pale);align-items:flex-start}
+.timeline-row:last-child{border-bottom:none}
+.tl-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.tl-dot.urgent{background:var(--blush-deep)}
+.tl-dot.active{background:var(--champ-gold)}
+.tl-dot.future{background:var(--dust)}
+.tl-dot.done{background:var(--sage)}
+.tl-date{font-family:var(--fm);font-size:.62rem;color:var(--champ-deep);min-width:70px}
+.tl-text{font-size:.83rem;color:var(--stone);line-height:1.5}
+.tl-text strong{color:var(--ink);display:block;font-size:.85rem}
+.urgency-tag{font-family:var(--fm);font-size:.52rem;padding:.15rem .5rem;border-radius:100px;margin-left:.4rem}
+.ut-urgent{background:var(--blush-pale);color:var(--blush-deep)}
+.ut-active{background:var(--champ-pale);color:var(--champ-deep)}
+
+/* ══════════════════════════════════
+   SPONSOR TRACKER
+══════════════════════════════════ */
+.sponsor-filters{display:flex;gap:.5rem;margin-bottom:1.25rem;flex-wrap:wrap}
+.filter-chip{font-family:var(--fb);font-size:.7rem;font-weight:500;padding:.3rem .85rem;border-radius:100px;border:1.5px solid var(--dust);background:transparent;color:var(--stone);cursor:pointer;transition:all .2s}
+.filter-chip:hover{border-color:var(--tz-pale);color:var(--tz)}
+.filter-chip.active{background:var(--tz-deep);color:var(--champ-pale);border-color:var(--tz-deep)}
+
+.sponsor-table{width:100%;border-collapse:collapse}
+.sponsor-table th{font-family:var(--fm);font-size:.56rem;letter-spacing:3px;color:var(--warm-grey);text-transform:uppercase;padding:.6rem 1rem;text-align:left;border-bottom:2px solid var(--champ-warm);background:var(--champ-bg);position:sticky;top:0}
+.sponsor-table td{padding:.85rem 1rem;border-bottom:1px solid var(--champ-pale);vertical-align:middle;font-size:.83rem;color:var(--stone)}
+.sponsor-table tr:last-child td{border-bottom:none}
+.sponsor-table tr:hover td{background:var(--champ-pale)}
+.sponsor-name{font-weight:600;color:var(--ink);display:block;margin-bottom:.1rem}
+.sponsor-loc{font-family:var(--fm);font-size:.6rem;color:var(--warm-grey)}
+.status-badge{font-family:var(--fm);font-size:.58rem;letter-spacing:1px;padding:.2rem .65rem;border-radius:100px;text-transform:uppercase;cursor:pointer;border:none;font-weight:600;white-space:nowrap}
+.s-new{background:rgba(152,128,200,.15);color:var(--lav-deep)}
+.s-contacted{background:rgba(200,168,76,.15);color:var(--champ-deep)}
+.s-meeting{background:rgba(75,63,138,.15);color:var(--tz)}
+.s-closed{background:rgba(90,138,82,.15);color:var(--sage-dark)}
+.s-declined{background:rgba(212,132,122,.15);color:var(--blush-deep)}
+.ask-amt{font-family:var(--fd);font-size:.95rem;font-style:italic;color:var(--tz-deep)}
+.sponsor-notes-input{font-family:var(--fb);font-size:.78rem;color:var(--stone);background:transparent;border:none;outline:none;width:100%;cursor:pointer}
+.sponsor-notes-input:focus{background:var(--champ-pale);padding:.25rem .5rem;border-radius:6px}
+
+.spon-summary{display:grid;grid-template-columns:repeat(5,1fr);gap:.75rem;margin-bottom:1.25rem}
+.ss-box{background:var(--white);border-radius:10px;padding:1rem;text-align:center;box-shadow:0 2px 8px rgba(200,168,76,.06)}
+.ss-n{font-family:var(--fd);font-size:1.5rem;font-style:italic;color:var(--tz-deep)}
+.ss-l{font-family:var(--fm);font-size:.52rem;letter-spacing:2px;color:var(--warm-grey);text-transform:uppercase;margin-top:.1rem}
+
+/* ══════════════════════════════════
+   CONTENT CALENDAR
+══════════════════════════════════ */
+.cal-toggle{display:flex;gap:.5rem;margin-bottom:1.25rem}
+.cal-view-btn{font-family:var(--fb);font-size:.72rem;font-weight:600;padding:.4rem 1rem;border-radius:100px;border:1.5px solid var(--dust);background:transparent;color:var(--stone);cursor:pointer;transition:all .2s}
+.cal-view-btn.active{background:var(--tz-deep);color:var(--champ-pale);border-color:var(--tz-deep)}
+
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:.5rem;margin-bottom:.5rem}
+.cal-day-header{font-family:var(--fm);font-size:.58rem;letter-spacing:2px;color:var(--warm-grey);text-align:center;padding:.4rem 0;text-transform:uppercase}
+.cal-cell{min-height:80px;background:var(--white);border-radius:8px;padding:.5rem;border:1.5px solid var(--champ-pale);cursor:pointer;transition:all .2s;position:relative}
+.cal-cell:hover{border-color:var(--tz-pale)}
+.cal-cell.has-post{border-color:var(--champ-gold)}
+.cal-date{font-family:var(--fm);font-size:.62rem;color:var(--warm-grey);margin-bottom:.3rem}
+.cal-post-chip{font-size:.65rem;padding:.15rem .4rem;border-radius:4px;margin-bottom:.2rem;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.chip-feed{background:rgba(75,63,138,.12);color:var(--tz)}
+.chip-reel{background:rgba(212,132,122,.12);color:var(--blush-deep)}
+.chip-story{background:rgba(200,168,76,.15);color:var(--champ-deep)}
+.chip-tiktok{background:rgba(30,26,46,.08);color:var(--ink)}
+
+.post-list{display:flex;flex-direction:column;gap:.75rem}
+.post-item{background:var(--white);border-radius:10px;padding:1.1rem 1.35rem;display:grid;grid-template-columns:auto 1fr auto;gap:1rem;align-items:start;box-shadow:0 2px 8px rgba(200,168,76,.06);border-left:3px solid var(--dust)}
+.post-item.feed{border-left-color:var(--tz-mid)}
+.post-item.reel{border-left-color:var(--blush-deep)}
+.post-item.story{border-left-color:var(--champ-gold)}
+.post-item.tiktok{border-left-color:var(--ink)}
+.post-date-col{font-family:var(--fm);font-size:.65rem;color:var(--champ-deep);min-width:55px;line-height:1.5}
+.post-title-col .pt{font-size:.88rem;font-weight:600;color:var(--ink);margin-bottom:.2rem}
+.post-title-col .pc{font-size:.78rem;color:var(--stone);line-height:1.5;font-style:italic}
+.post-status{font-family:var(--fm);font-size:.55rem;padding:.2rem .55rem;border-radius:100px;text-transform:uppercase;cursor:pointer;border:none;font-weight:600}
+.ps-planned{background:var(--champ-pale);color:var(--champ-deep)}
+.ps-ready{background:var(--tz-mist);color:var(--tz)}
+.ps-posted{background:rgba(90,138,82,.15);color:var(--sage-dark)}
+
+/* ══════════════════════════════════
+   INTERVIEW QUIZ
+══════════════════════════════════ */
+.quiz-container{max-width:700px;margin:0 auto}
+.quiz-card{background:var(--white);border-radius:16px;padding:2.5rem;box-shadow:0 4px 24px rgba(200,168,76,.1);text-align:center;margin-bottom:1rem}
+.quiz-category{font-family:var(--fm);font-size:.62rem;letter-spacing:4px;color:var(--lav-deep);text-transform:uppercase;margin-bottom:1rem}
+.quiz-question{font-family:var(--fd);font-size:clamp(1.3rem,3vw,1.8rem);color:var(--tz-deep);line-height:1.4;margin-bottom:2rem;font-weight:300}
+.quiz-timer{font-family:var(--fm);font-size:2.5rem;color:var(--champ-deep);margin-bottom:1.5rem;letter-spacing:2px}
+.quiz-timer.urgent{color:var(--blush-deep);animation:pulse .5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.quiz-progress{display:flex;gap:.3rem;justify-content:center;margin-bottom:1.5rem}
+.qp-dot{width:8px;height:8px;border-radius:50%;background:var(--dust);transition:background .3s}
+.qp-dot.done{background:var(--sage)}
+.qp-dot.current{background:var(--champ-gold)}
+.quiz-answer{background:var(--champ-pale);border-radius:12px;padding:1.5rem;text-align:left;margin-bottom:1rem}
+.qa-label-q{font-family:var(--fm);font-size:.58rem;letter-spacing:3px;color:var(--champ-deep);text-transform:uppercase;margin-bottom:.5rem}
+.qa-answer-text{font-family:var(--fd);font-style:italic;font-size:1.05rem;color:var(--ink);line-height:1.7}
+.quiz-score{font-family:var(--fd);font-size:3rem;font-style:italic;color:var(--tz-deep);margin-bottom:.5rem}
+.quiz-score-label{font-size:.9rem;color:var(--stone);line-height:1.6}
+
+.quiz-settings{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem}
+.qset-card{background:var(--white);border-radius:12px;padding:1.25rem;text-align:center;cursor:pointer;border:2px solid var(--dust);transition:all .2s cubic-bezier(.34,1.56,.64,1)}
+.qset-card:hover{border-color:var(--tz-pale);transform:translateY(-2px)}
+.qset-card.active{border-color:var(--tz);background:var(--tz-mist)}
+.qset-icon{font-size:1.5rem;margin-bottom:.4rem}
+.qset-label{font-size:.8rem;font-weight:600;color:var(--ink);margin-bottom:.2rem}
+.qset-desc{font-size:.72rem;color:var(--warm-grey)}
+
+/* ══════════════════════════════════
+   BRAND ASSETS
+══════════════════════════════════ */
+.assets-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem}
+.asset-card{background:var(--white);border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(200,168,76,.07);transition:transform .2s cubic-bezier(.34,1.56,.64,1)}
+.asset-card:hover{transform:translateY(-3px)}
+.asset-card-head{padding:1.25rem 1.5rem;display:flex;justify-content:space-between;align-items:center}
+.ach-ig{background:linear-gradient(135deg,var(--tz-deep),var(--tz-mid))}
+.ach-li{background:linear-gradient(135deg,#0A66C2,#1a7fd4)}
+.ach-sub{background:linear-gradient(135deg,var(--champ-warm),var(--blush-pale))}
+.ach-press{background:linear-gradient(135deg,var(--ink),var(--tz-deep))}
+.ach-brand{background:linear-gradient(135deg,var(--tz),var(--lav-deep))}
+.ach-voice{background:linear-gradient(135deg,var(--blush-pale),var(--champ-warm))}
+.ac-title{font-family:var(--fd);font-size:1.1rem;font-style:italic}
+.ach-ig .ac-title,.ach-li .ac-title,.ach-press .ac-title,.ach-brand .ac-title{color:var(--white)}
+.ach-sub .ac-title,.ach-voice .ac-title{color:var(--tz-deep)}
+.ac-copy{font-family:var(--fm);font-size:.55rem;padding:.25rem .65rem;border-radius:100px;border:1px solid rgba(255,255,255,.25);background:transparent;color:rgba(255,255,255,.7);cursor:pointer;transition:all .2s}
+.ach-sub .ac-copy,.ach-voice .ac-copy{border-color:var(--dust);color:var(--warm-grey)}
+.ac-copy:hover{background:rgba(255,255,255,.15)}
+.ac-copy.copied{background:var(--sage);border-color:var(--sage);color:white}
+.asset-card-body{padding:1.25rem 1.5rem}
+.asset-text{font-family:var(--fd);font-size:.95rem;line-height:1.75;color:var(--ink);white-space:pre-line}
+
+.color-swatch-row{display:flex;gap:.5rem;margin-bottom:.5rem}
+.cs{height:36px;border-radius:6px;flex:1;display:flex;align-items:flex-end;padding:.2rem .35rem}
+.cs span{font-family:var(--fm);font-size:.5rem;opacity:.7}
+.cs.od span{color:rgba(254,252,247,.8)}
+.cs.ol span{color:rgba(30,26,46,.7)}
+.font-specimen{font-family:var(--fd);font-size:1.8rem;font-weight:300;color:var(--tz-deep);margin-bottom:.25rem}
+.font-specimen em{font-style:italic;color:var(--blush-deep)}
+.font-meta{font-family:var(--fm);font-size:.62rem;color:var(--warm-grey);line-height:1.8}
+
+/* ══════════════════════════════════
+   MODALS
+══════════════════════════════════ */
+.modal-overlay{position:fixed;inset:0;background:rgba(30,26,46,.6);z-index:500;display:none;align-items:center;justify-content:center;padding:1.5rem;backdrop-filter:blur(4px)}
+.modal-overlay.open{display:flex}
+.modal{background:var(--white);border-radius:16px;padding:2rem;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(75,63,138,.2)}
+.modal h3{font-family:var(--fd);font-size:1.4rem;color:var(--tz-deep);margin-bottom:1.25rem;font-weight:400}
+.form-group{margin-bottom:1rem}
+.form-group label{font-family:var(--fm);font-size:.58rem;letter-spacing:3px;color:var(--warm-grey);text-transform:uppercase;display:block;margin-bottom:.35rem}
+.form-input,.form-select,.form-textarea{width:100%;padding:.65rem .9rem;border:1.5px solid var(--dust);border-radius:8px;font-family:var(--fb);font-size:.85rem;color:var(--ink);background:var(--white);outline:none;transition:border-color .2s}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--tz-pale)}
+.form-textarea{min-height:80px;resize:vertical}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+.modal-actions{display:flex;gap:.5rem;justify-content:flex-end;margin-top:1.25rem}
+
+/* ══════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════ */
+@media(max-width:768px){
+  :root{--sidebar:0px}
+  .sidebar{position:fixed;left:-260px;width:260px;height:100%;top:52px;transition:left .3s;z-index:150}
+  .sidebar.open{left:0}
+  .hamburger{display:flex}
+  .dash-grid{grid-template-columns:1fr 1fr}
+  .spon-summary{grid-template-columns:repeat(3,1fr)}
+  .quiz-settings{grid-template-columns:1fr}
+  .assets-grid{grid-template-columns:1fr}
+  .panel-body{padding:1rem}
+  .panel-header{padding:1rem}
+  .cal-grid{grid-template-columns:repeat(4,1fr)}
+  .form-row{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div style="display:flex;align-items:center;gap:.75rem">
+    <button class="hamburger" onclick="toggleSidebar()" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="topbar-logo">Crown HQ <span>✦</span> Amelia Arabe</div>
+  </div>
+  <div class="topbar-right">
+    <div class="topbar-date" id="topbar-date"></div>
+    <div class="topbar-crown">👑</div>
+  </div>
+</div>
+
+<div class="app">
+
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-section">Navigation</div>
+  <div class="nav-item active" onclick="showPanel('dashboard',this)">
+    <span class="nav-icon">🏠</span>
+    <span class="nav-label">Dashboard</span>
+  </div>
+  <div class="nav-item" onclick="showPanel('sponsors',this)">
+    <span class="nav-icon">💰</span>
+    <span class="nav-label">Sponsors</span>
+    <span class="nav-badge" id="badge-sponsors">30</span>
+  </div>
+  <div class="nav-item" onclick="showPanel('calendar',this)">
+    <span class="nav-icon">📅</span>
+    <span class="nav-label">Content</span>
+  </div>
+  <div class="nav-item" onclick="showPanel('quiz',this)">
+    <span class="nav-icon">🎤</span>
+    <span class="nav-label">Interview Prep</span>
+  </div>
+  <div class="nav-item" onclick="showPanel('brand',this)">
+    <span class="nav-icon">🎨</span>
+    <span class="nav-label">Brand Assets</span>
+  </div>
+
+  <div class="sidebar-bottom">
+    <div class="team-label">Team</div>
+    <div class="team-member"><div class="team-dot"></div><span class="team-name">Amelia Arabe</span></div>
+    <div class="team-member"><div class="team-dot"></div><span class="team-name">Laneea Love</span></div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main" id="main">
+
+<!-- ══ DASHBOARD ══ -->
+<div class="panel active" id="panel-dashboard">
+  <div class="panel-header">
+    <div class="ph-left">
+      <div class="ph-tag">Overview</div>
+      <div class="ph-title">Good morning, <em>Amelia</em></div>
+    </div>
+    <div class="ph-right">
+      <div style="font-family:var(--fm);font-size:.7rem;color:var(--champ-deep);background:var(--champ-pale);padding:.4rem 1rem;border-radius:100px" id="days-counter"></div>
+    </div>
+  </div>
+  <div class="panel-body">
+
+    <div class="dash-grid">
+      <div class="dash-stat tz">
+        <div class="ds-num" id="ds-total-raised">$0</div>
+        <div class="ds-lbl">Raised</div>
+        <div class="progress-bar"><div class="progress-fill pf-champ" id="pf-raised" style="width:0%"></div></div>
+        <div class="progress-label">Goal: $2,500 entry</div>
+      </div>
+      <div class="dash-stat champ">
+        <div class="ds-num" id="ds-sponsors-closed">0</div>
+        <div class="ds-lbl">Sponsors Closed</div>
+        <div class="progress-bar"><div class="progress-fill pf-tz" id="pf-sponsors" style="width:0%"></div></div>
+        <div class="progress-label" id="pl-sponsors">of 30 targets</div>
+      </div>
+      <div class="dash-stat blush">
+        <div class="ds-num">112</div>
+        <div class="ds-lbl">Days to Crown</div>
+        <div class="progress-bar"><div class="progress-fill pf-sage" style="width:25%"></div></div>
+        <div class="progress-label">July 10, 2026</div>
+      </div>
+      <div class="dash-stat sage">
+        <div class="ds-num" id="ds-posts">0</div>
+        <div class="ds-lbl">Posts Scheduled</div>
+      </div>
+      <div class="dash-stat lav">
+        <div class="ds-num" id="ds-quiz">0</div>
+        <div class="ds-lbl">Questions Practiced</div>
+      </div>
+      <div class="dash-stat tz">
+        <div class="ds-num">96.4K</div>
+        <div class="ds-lbl">Total Social Reach</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="font-family:var(--fm);font-size:.58rem;letter-spacing:3px;color:var(--warm-grey);text-transform:uppercase;margin-bottom:1rem">Key Timeline</div>
+      <div class="timeline-row">
+        <div class="tl-dot urgent"></div>
+        <div class="tl-date">Mar 31</div>
+        <div class="tl-text"><strong>$500 Deposit Due <span class="urgency-tag ut-urgent">Urgent</span></strong>Secures entry into Miss California USA 2026</div>
+      </div>
+      <div class="timeline-row">
+        <div class="tl-dot active"></div>
+        <div class="tl-date">Now</div>
+        <div class="tl-text"><strong>Reactivate @milkbreadmia <span class="urgency-tag ut-active">This Week</span></strong>Film intro TikTok — script is ready</div>
+      </div>
+      <div class="timeline-row">
+        <div class="tl-dot active"></div>
+        <div class="tl-date">Apr 1–15</div>
+        <div class="tl-text"><strong>Priority 1 Sponsor Outreach</strong>Paired Power, SD Community Power, Lucid Motors SD, Rivian</div>
+      </div>
+      <div class="timeline-row">
+        <div class="tl-dot future"></div>
+        <div class="tl-date">Apr 30</div>
+        <div class="tl-text"><strong>$500 Installment 1 Due</strong></div>
+      </div>
+      <div class="timeline-row">
+        <div class="tl-dot future"></div>
+        <div class="tl-date">May 31</div>
+        <div class="tl-text"><strong>$500 Installment 2 Due</strong></div>
+      </div>
+      <div class="timeline-row">
+        <div class="tl-dot future"></div>
+        <div class="tl-date">Jun 30</div>
+        <div class="tl-text"><strong>$1,000 Final Balance Due</strong></div>
+      </div>
+      <div class="timeline-row">
+        <div class="tl-dot future"></div>
+        <div class="tl-date">Jul 10–12</div>
+        <div class="tl-text"><strong>Miss California USA 2026 👑</strong>San Diego — Interview · Swimsuit · Evening Gown</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ SPONSORS ══ -->
+<div class="panel" id="panel-sponsors">
+  <div class="panel-header">
+    <div class="ph-left">
+      <div class="ph-tag">Pipeline</div>
+      <div class="ph-title"><em>Sponsor</em> Tracker</div>
+    </div>
+    <div class="ph-right">
+      <button class="btn btn-primary" onclick="openModal('sponsor-modal')">+ Add Sponsor</button>
+    </div>
+  </div>
+  <div class="panel-body">
+
+    <div class="spon-summary">
+      <div class="ss-box"><div class="ss-n" id="ss-total">0</div><div class="ss-l">Total</div></div>
+      <div class="ss-box"><div class="ss-n" id="ss-contacted">0</div><div class="ss-l">Contacted</div></div>
+      <div class="ss-box"><div class="ss-n" id="ss-meeting">0</div><div class="ss-l">Meeting</div></div>
+      <div class="ss-box"><div class="ss-n" id="ss-closed">0</div><div class="ss-l">Closed</div></div>
+      <div class="ss-box"><div class="ss-n" id="ss-raised">$0</div><div class="ss-l">Raised</div></div>
+    </div>
+
+    <div class="sponsor-filters">
+      <button class="filter-chip active" onclick="filterSponsors('all',this)">All</button>
+      <button class="filter-chip" onclick="filterSponsors('new',this)">New</button>
+      <button class="filter-chip" onclick="filterSponsors('contacted',this)">Contacted</button>
+      <button class="filter-chip" onclick="filterSponsors('meeting',this)">Meeting Set</button>
+      <button class="filter-chip" onclick="filterSponsors('closed',this)">Closed ✓</button>
+      <button class="filter-chip" onclick="filterSponsors('declined',this)">Declined</button>
+    </div>
+
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="sponsor-table" id="sponsor-table">
+        <thead>
+          <tr>
+            <th>Company</th>
+            <th>Category</th>
+            <th>Ask</th>
+            <th>Status</th>
+            <th>Notes</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="sponsor-tbody"></tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ CONTENT CALENDAR ══ -->
+<div class="panel" id="panel-calendar">
+  <div class="panel-header">
+    <div class="ph-left">
+      <div class="ph-tag">Social Media</div>
+      <div class="ph-title"><em>Content</em> Calendar</div>
+    </div>
+    <div class="ph-right">
+      <button class="btn btn-primary" onclick="openModal('post-modal')">+ Add Post</button>
+    </div>
+  </div>
+  <div class="panel-body">
+    <div class="cal-toggle">
+      <button class="cal-view-btn active" onclick="showCalView('list',this)">List View</button>
+      <button class="cal-view-btn" onclick="showCalView('grid',this)">Grid View</button>
+    </div>
+    <div id="cal-list-view"><div class="post-list" id="post-list"></div></div>
+    <div id="cal-grid-view" style="display:none">
+      <div class="cal-grid">
+        <div class="cal-day-header">Mon</div><div class="cal-day-header">Tue</div><div class="cal-day-header">Wed</div>
+        <div class="cal-day-header">Thu</div><div class="cal-day-header">Fri</div><div class="cal-day-header">Sat</div><div class="cal-day-header">Sun</div>
+      </div>
+      <div class="cal-grid" id="cal-grid-cells"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ INTERVIEW QUIZ ══ -->
+<div class="panel" id="panel-quiz">
+  <div class="panel-header">
+    <div class="ph-left">
+      <div class="ph-tag">Competition Prep</div>
+      <div class="ph-title"><em>Interview</em> Practice</div>
+    </div>
+  </div>
+  <div class="panel-body">
+    <div class="quiz-container">
+
+      <!-- SETUP -->
+      <div id="quiz-setup">
+        <div style="margin-bottom:1.5rem">
+          <div style="font-family:var(--fm);font-size:.58rem;letter-spacing:3px;color:var(--warm-grey);text-transform:uppercase;margin-bottom:.75rem">Choose Category</div>
+          <div class="quiz-settings">
+            <div class="qset-card active" onclick="selectCategory('all',this)">
+              <div class="qset-icon">✨</div>
+              <div class="qset-label">All Questions</div>
+              <div class="qset-desc">Mixed — full prep</div>
+            </div>
+            <div class="qset-card" onclick="selectCategory('platform',this)">
+              <div class="qset-icon">🌱</div>
+              <div class="qset-label">Platform & Policy</div>
+              <div class="qset-desc">Clean energy, fashion, CA policy</div>
+            </div>
+            <div class="qset-card" onclick="selectCategory('personal',this)">
+              <div class="qset-icon">🎻</div>
+              <div class="qset-label">Personal</div>
+              <div class="qset-desc">Who you are, your story</div>
+            </div>
+            <div class="qset-card" onclick="selectCategory('tough',this)">
+              <div class="qset-icon">🔥</div>
+              <div class="qset-label">Tough Questions</div>
+              <div class="qset-desc">Curveballs & pressure tests</div>
+            </div>
+            <div class="qset-card" onclick="selectCategory('current',this)">
+              <div class="qset-icon">📰</div>
+              <div class="qset-label">Current Events</div>
+              <div class="qset-desc">CA policy, climate news</div>
+            </div>
+            <div class="qset-card" onclick="selectCategory('pageant',this)">
+              <div class="qset-icon">👑</div>
+              <div class="qset-label">Pageant Specific</div>
+              <div class="qset-desc">Miss CA USA format questions</div>
+            </div>
+          </div>
+        </div>
+        <div style="text-align:center">
+          <button class="btn btn-primary" style="padding:.75rem 2.5rem;font-size:.85rem" onclick="startQuiz()">Start Practice Session</button>
+          <div style="font-family:var(--fm);font-size:.62rem;color:var(--warm-grey);margin-top:.75rem">60 seconds per answer · Press space to reveal model answer</div>
+        </div>
+        <div style="margin-top:1.5rem;background:var(--champ-pale);border-radius:12px;padding:1.25rem">
+          <div style="font-family:var(--fm);font-size:.58rem;letter-spacing:3px;color:var(--champ-deep);text-transform:uppercase;margin-bottom:.6rem">Sessions Completed</div>
+          <div style="font-family:var(--fd);font-size:1.5rem;font-style:italic;color:var(--tz-deep)" id="sessions-count">0 sessions</div>
+        </div>
+      </div>
+
+      <!-- ACTIVE QUIZ -->
+      <div id="quiz-active" style="display:none">
+        <div class="quiz-card">
+          <div class="quiz-category" id="q-category"></div>
+          <div class="quiz-question" id="q-text"></div>
+          <div class="quiz-timer" id="q-timer">1:00</div>
+          <div class="quiz-progress" id="q-progress"></div>
+          <div id="quiz-answer-reveal" style="display:none">
+            <div class="quiz-answer">
+              <div class="qa-label-q">Model Answer for Amelia</div>
+              <div class="qa-answer-text" id="q-answer"></div>
+            </div>
+          </div>
+          <div style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap">
+            <button class="btn btn-ghost" onclick="revealAnswer()">See Model Answer</button>
+            <button class="btn btn-champ" onclick="nextQuestion()">Next Question →</button>
+            <button class="btn btn-ghost" onclick="endQuiz()">End Session</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RESULTS -->
+      <div id="quiz-results" style="display:none">
+        <div class="quiz-card">
+          <div style="font-family:var(--fm);font-size:.62rem;letter-spacing:4px;color:var(--lav-deep);text-transform:uppercase;margin-bottom:1rem">Session Complete</div>
+          <div class="quiz-score" id="results-count"></div>
+          <div class="quiz-score-label" id="results-msg"></div>
+          <div style="margin-top:1.5rem;display:flex;gap:.75rem;justify-content:center">
+            <button class="btn btn-primary" onclick="startQuiz()">Go Again</button>
+            <button class="btn btn-ghost" onclick="showQuizSetup()">Change Category</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══ BRAND ASSETS ══ -->
+<div class="panel" id="panel-brand">
+  <div class="panel-header">
+    <div class="ph-left">
+      <div class="ph-tag">Identity</div>
+      <div class="ph-title"><em>Brand</em> Assets</div>
+    </div>
+  </div>
+  <div class="panel-body">
+    <div class="assets-grid" id="assets-grid"></div>
+  </div>
+</div>
+
+</div><!-- end main -->
+</div><!-- end app -->
+
+<!-- SPONSOR MODAL -->
+<div class="modal-overlay" id="sponsor-modal">
+  <div class="modal">
+    <h3>Add Sponsor</h3>
+    <div class="form-row">
+      <div class="form-group"><label>Company Name</label><input class="form-input" id="s-name" placeholder="e.g. Paired Power"></div>
+      <div class="form-group"><label>Category</label>
+        <select class="form-select" id="s-cat">
+          <option value="ev">⚡ Clean Energy / EV</option>
+          <option value="fashion">🌿 Sustainable Fashion</option>
+          <option value="auto">🚗 Automotive</option>
+          <option value="tech">💻 Tech / Startup</option>
+          <option value="local">📍 Local SD</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Ask Amount</label><input class="form-input" id="s-ask" placeholder="e.g. $1,500"></div>
+      <div class="form-group"><label>Status</label>
+        <select class="form-select" id="s-status">
+          <option value="new">New</option>
+          <option value="contacted">Contacted</option>
+          <option value="meeting">Meeting Set</option>
+          <option value="closed">Closed ✓</option>
+          <option value="declined">Declined</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label>Closed Amount (if won)</label><input class="form-input" id="s-closed-amt" placeholder="e.g. 1000" type="number"></div>
+    <div class="form-group"><label>Notes</label><textarea class="form-textarea" id="s-notes" placeholder="Contact name, next steps, anything relevant..."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('sponsor-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="addSponsor()">Save Sponsor</button>
+    </div>
+  </div>
+</div>
+
+<!-- POST MODAL -->
+<div class="modal-overlay" id="post-modal">
+  <div class="modal">
+    <h3>Add Content Post</h3>
+    <div class="form-row">
+      <div class="form-group"><label>Platform & Type</label>
+        <select class="form-select" id="p-type">
+          <option value="feed">Instagram Feed</option>
+          <option value="reel">Instagram Reel</option>
+          <option value="story">Instagram Stories</option>
+          <option value="tiktok">TikTok</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Date</label><input class="form-input" id="p-date" type="date"></div>
+    </div>
+    <div class="form-group"><label>Title / Concept</label><input class="form-input" id="p-title" placeholder="e.g. Why I entered Miss CA USA as an engineer"></div>
+    <div class="form-group"><label>Caption Draft</label><textarea class="form-textarea" id="p-caption" placeholder="Draft your caption here..."></textarea></div>
+    <div class="form-group"><label>Status</label>
+      <select class="form-select" id="p-status">
+        <option value="planned">Planned</option>
+        <option value="ready">Ready to Post</option>
+        <option value="posted">Posted ✓</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('post-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="addPost()">Save Post</button>
+    </div>
+  </div>
+</div>
+
+<!-- STATUS MODAL -->
+<div class="modal-overlay" id="status-modal">
+  <div class="modal">
+    <h3 id="status-modal-title">Update Sponsor</h3>
+    <div class="form-group"><label>Status</label>
+      <select class="form-select" id="sm-status">
+        <option value="new">New</option>
+        <option value="contacted">Contacted</option>
+        <option value="meeting">Meeting Set</option>
+        <option value="closed">Closed ✓</option>
+        <option value="declined">Declined</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Closed Amount ($)</label><input class="form-input" id="sm-amount" type="number" placeholder="0"></div>
+    <div class="form-group"><label>Notes</label><textarea class="form-textarea" id="sm-notes"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('status-modal')">Cancel</button>
+      <button class="btn btn-danger" onclick="deleteSponsor()">Delete</button>
+      <button class="btn btn-primary" onclick="saveSponsorUpdate()">Update</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── STATE ───────────────────────────────
+let sponsors = JSON.parse(localStorage.getItem('aa-sponsors') || '[]');
+let posts = JSON.parse(localStorage.getItem('aa-posts') || '[]');
+let quizStats = JSON.parse(localStorage.getItem('aa-quiz') || '{"sessions":0,"total":0}');
+let currentSponsorFilter = 'all';
+let editingSponsorId = null;
+let quizCategory = 'all';
+let quizQuestions = [];
+let currentQ = 0;
+let quizTimer = null;
+let timerSeconds = 60;
+
+// ─── SEED DEFAULT SPONSORS ───────────────
+function seedSponsors() {
+  if (sponsors.length === 0) {
+    const defaults = [
+      {id:1,name:'Paired Power',cat:'ev',ask:'$1,000–3,000',status:'new',notes:'Just graduated Cleantech SD accelerator. Walk in pitch.',amount:0},
+      {id:2,name:'SD Community Power',cat:'ev',ask:'$500–1,500',status:'new',notes:'Public agency. Attend a community event first.',amount:0},
+      {id:3,name:'HES Solar',cat:'ev',ask:'$500–2,000',status:'new',notes:'Family-owned. Call directly or walk in.',amount:0},
+      {id:4,name:'Cleantech San Diego',cat:'ev',ask:'Warm intros',status:'new',notes:'Gateway to 50+ member companies.',amount:0},
+      {id:5,name:'Lucid Motors SD',cat:'auto',ask:'$3,000–5,000',status:'new',notes:'Just opened SD Studio Oct 2025. Walk in with deck.',amount:0},
+      {id:6,name:'Rivian San Diego',cat:'auto',ask:'$2,000–5,000',status:'new',notes:'SD Space showroom. Just launched Quad.',amount:0},
+      {id:7,name:'eMpulse',cat:'fashion',ask:'Product + $200–500',status:'new',notes:'SD local. Instagram DM first.',amount:0},
+      {id:8,name:'H2OM',cat:'fashion',ask:'Swimsuit + $500',status:'new',notes:'Ocean plastic swimwear. Perfect for swimsuit round.',amount:0},
+      {id:9,name:'MuXu Creations',cat:'fashion',ask:'Custom piece',status:'new',notes:'SD founder Ainara. Email directly.',amount:0},
+      {id:10,name:'Patara',cat:'fashion',ask:'Product + $300–800',status:'new',notes:'SD sustainable shoes. Cork, hemp, rubber.',amount:0},
+    ];
+    sponsors = defaults;
+    saveSp();
+  }
+}
+
+function saveSp() {
+  localStorage.setItem('aa-sponsors', JSON.stringify(sponsors));
+  updateDashboard();
+  updateSponsorBadge();
+}
+
+// ─── NAV ─────────────────────────────────
+function showPanel(id, el) {
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  if(el) el.classList.add('active');
+  if(id==='sponsors') renderSponsors();
+  if(id==='calendar') renderPosts();
+  if(id==='brand') renderBrand();
+  if(id==='quiz') updateSessionCount();
+  closeSidebarMobile();
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+function closeSidebarMobile() {
+  if(window.innerWidth<=768) document.getElementById('sidebar').classList.remove('open');
+}
+
+// ─── MODALS ──────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ─── SPONSORS ────────────────────────────
+function filterSponsors(f, btn) {
+  currentSponsorFilter = f;
+  document.querySelectorAll('.filter-chip').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderSponsors();
+}
+
+function renderSponsors() {
+  const filtered = currentSponsorFilter==='all' ? sponsors : sponsors.filter(s=>s.status===currentSponsorFilter);
+  const tbody = document.getElementById('sponsor-tbody');
+  tbody.innerHTML = filtered.map(s=>`
+    <tr>
+      <td><span class="sponsor-name">${s.name}</span><span class="sponsor-loc">${catLabel(s.cat)}</span></td>
+      <td>${catLabel(s.cat)}</td>
+      <td><span class="ask-amt">${s.ask}</span></td>
+      <td><button class="status-badge s-${s.status}" onclick="openStatusModal(${s.id})">${statusLabel(s.status)}</button></td>
+      <td><input class="sponsor-notes-input" value="${s.notes||''}" onblur="updateNotes(${s.id},this.value)" placeholder="Add notes..."></td>
+      <td><button class="btn btn-ghost" style="font-size:.65rem;padding:.25rem .65rem" onclick="openStatusModal(${s.id})">Edit</button></td>
+    </tr>
+  `).join('');
+
+  // summary
+  const all = sponsors;
+  document.getElementById('ss-total').textContent = all.length;
+  document.getElementById('ss-contacted').textContent = all.filter(s=>s.status==='contacted').length;
+  document.getElementById('ss-meeting').textContent = all.filter(s=>s.status==='meeting').length;
+  document.getElementById('ss-closed').textContent = all.filter(s=>s.status==='closed').length;
+  const raised = all.filter(s=>s.status==='closed').reduce((a,s)=>a+(s.amount||0),0);
+  document.getElementById('ss-raised').textContent = '$'+raised.toLocaleString();
+}
+
+function catLabel(c){return{ev:'⚡ Clean Energy',fashion:'🌿 Fashion',auto:'🚗 Auto',tech:'💻 Tech',local:'📍 Local SD'}[c]||c}
+function statusLabel(s){return{new:'New',contacted:'Contacted',meeting:'Meeting Set',closed:'Closed ✓',declined:'Declined'}[s]||s}
+
+function addSponsor() {
+  const s = {
+    id: Date.now(),
+    name: document.getElementById('s-name').value.trim(),
+    cat: document.getElementById('s-cat').value,
+    ask: document.getElementById('s-ask').value.trim(),
+    status: document.getElementById('s-status').value,
+    amount: parseFloat(document.getElementById('s-closed-amt').value)||0,
+    notes: document.getElementById('s-notes').value.trim()
+  };
+  if(!s.name) return;
+  sponsors.push(s);
+  saveSp();
+  renderSponsors();
+  closeModal('sponsor-modal');
+  ['s-name','s-ask','s-notes','s-closed-amt'].forEach(id=>document.getElementById(id).value='');
+}
+
+function openStatusModal(id) {
+  editingSponsorId = id;
+  const s = sponsors.find(x=>x.id===id);
+  document.getElementById('status-modal-title').textContent = 'Update: '+s.name;
+  document.getElementById('sm-status').value = s.status;
+  document.getElementById('sm-amount').value = s.amount||'';
+  document.getElementById('sm-notes').value = s.notes||'';
+  openModal('status-modal');
+}
+
+function saveSponsorUpdate() {
+  const s = sponsors.find(x=>x.id===editingSponsorId);
+  s.status = document.getElementById('sm-status').value;
+  s.amount = parseFloat(document.getElementById('sm-amount').value)||0;
+  s.notes = document.getElementById('sm-notes').value;
+  saveSp();
+  renderSponsors();
+  closeModal('status-modal');
+}
+
+function deleteSponsor() {
+  if(confirm('Remove this sponsor?')) {
+    sponsors = sponsors.filter(x=>x.id!==editingSponsorId);
+    saveSp();
+    renderSponsors();
+    closeModal('status-modal');
+  }
+}
+
+function updateNotes(id, val) {
+  const s = sponsors.find(x=>x.id===id);
+  if(s) { s.notes = val; saveSp(); }
+}
+
+function updateSponsorBadge() {
+  const newCount = sponsors.filter(s=>s.status==='new').length;
+  const badge = document.getElementById('badge-sponsors');
+  badge.textContent = sponsors.length;
+}
+
+// ─── DASHBOARD ───────────────────────────
+function updateDashboard() {
+  const closed = sponsors.filter(s=>s.status==='closed');
+  const raised = closed.reduce((a,s)=>a+(s.amount||0),0);
+  document.getElementById('ds-total-raised').textContent = '$'+raised.toLocaleString();
+  document.getElementById('ds-sponsors-closed').textContent = closed.length;
+  const pct = Math.min(100,(raised/2500)*100);
+  document.getElementById('pf-raised').style.width = pct+'%';
+  const spct = Math.min(100,(closed.length/30)*100);
+  document.getElementById('pf-sponsors').style.width = spct+'%';
+  document.getElementById('ds-posts').textContent = posts.filter(p=>p.status==='posted').length;
+  document.getElementById('ds-quiz').textContent = quizStats.total||0;
+}
+
+// ─── CONTENT CALENDAR ────────────────────
+function addPost() {
+  const p = {
+    id: Date.now(),
+    type: document.getElementById('p-type').value,
+    date: document.getElementById('p-date').value,
+    title: document.getElementById('p-title').value.trim(),
+    caption: document.getElementById('p-caption').value.trim(),
+    status: document.getElementById('p-status').value
+  };
+  if(!p.title) return;
+  posts.push(p);
+  posts.sort((a,b)=>a.date>b.date?1:-1);
+  localStorage.setItem('aa-posts',JSON.stringify(posts));
+  renderPosts();
+  closeModal('post-modal');
+  ['p-title','p-caption'].forEach(id=>document.getElementById(id).value='');
+  updateDashboard();
+}
+
+function renderPosts() {
+  const list = document.getElementById('post-list');
+  if(posts.length===0){list.innerHTML='<div class="card" style="text-align:center;color:var(--warm-grey);font-style:italic;font-family:var(--fd)">No posts yet — add your first content piece</div>';return;}
+  list.innerHTML = posts.map(p=>`
+    <div class="post-item ${p.type}" onclick="cyclePostStatus(${p.id},this)">
+      <div class="post-date-col">${formatDate(p.date)}<br><span style="font-size:.55rem;color:var(--warm-grey)">${typeLabel(p.type)}</span></div>
+      <div class="post-title-col"><div class="pt">${p.title}</div><div class="pc">${p.caption||'No caption yet'}</div></div>
+      <button class="post-status ps-${p.status}" onclick="cyclePostStatus(${p.id},this);event.stopPropagation()">${postStatusLabel(p.status)}</button>
+    </div>
+  `).join('');
+}
+
+function cyclePostStatus(id, el) {
+  const p = posts.find(x=>x.id===id);
+  const cycle = ['planned','ready','posted'];
+  p.status = cycle[(cycle.indexOf(p.status)+1)%cycle.length];
+  localStorage.setItem('aa-posts',JSON.stringify(posts));
+  renderPosts();
+  updateDashboard();
+}
+
+function typeLabel(t){return{feed:'Feed Post',reel:'Reel',story:'Stories',tiktok:'TikTok'}[t]||t}
+function postStatusLabel(s){return{planned:'Planned',ready:'Ready ✓',posted:'Posted 🎉'}[s]||s}
+function formatDate(d){if(!d)return'—';const dt=new Date(d+'T12:00:00');return dt.toLocaleDateString('en-US',{month:'short',day:'numeric'})}
+
+function showCalView(v, btn) {
+  document.querySelectorAll('.cal-view-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('cal-list-view').style.display = v==='list'?'block':'none';
+  document.getElementById('cal-grid-view').style.display = v==='grid'?'block':'none';
+}
+
+// ─── QUIZ ────────────────────────────────
+const QUESTIONS = {
+  platform: [
+    {q:"What is your platform and why does it matter to California?",a:"My platform is California's clean energy and textile accountability policy. Fashion is the second most polluting industry on Earth — responsible for 10% of global carbon emissions. California has both the regulatory power and the market influence to change that. Through bills like SB 707 and Scope 3 emissions reporting, we can make clean fashion the default, not the exception.",cat:"Platform"},
+    {q:"What is SB 707 and what does it actually do?",a:"SB 707 is California's Responsible Textile Producer Program — it's an Extended Producer Responsibility law that shifts the cost of textile waste management from taxpayers to the brands that produce the garments. Instead of communities bearing the burden of fast fashion's waste, the brands who profit from it become financially responsible for end-of-life disposal. It's a market incentive to design for longevity, not disposal.",cat:"Platform"},
+    {q:"How does clean energy connect to the fashion industry?",a:"Polyester — which makes up 65% of all clothing — is derived from crude oil. Textile mills are energy-intensive facilities. A transition to renewable energy in manufacturing isn't just good for the climate — it's an economic opportunity. Solar-powered mills, green bonds for clean manufacturing, bio-based fiber R&D — these are the building blocks of a California that leads the world in sustainable production.",cat:"Platform"},
+    {q:"What is microplastic pollution and why should Californians care?",a:"Every time a synthetic garment is washed, it releases up to 700,000 microplastic fibers into water systems. These fibers enter the ocean, the food chain, and ultimately our bodies. Californians eat, drink, and breathe microplastics. France has mandated filters on washing machines — I propose California do the same, starting with low-income community laundromats, because those are the communities bearing the highest toxic burden.",cat:"Platform"},
+    {q:"What specific policy change would you advocate for first?",a:"Full funding and enforcement of SB 707, combined with a Fashion Miles disclosure label — similar to food miles — that shows the carbon footprint of production and shipping on every garment sold in California. Transparency is the first step. When consumers can see the true cost of a garment, the market shifts.",cat:"Platform"},
+  ],
+  personal: [
+    {q:"Tell us about yourself.",a:"I'm Amelia Arabe — a Filipina-American student engineer based in San Diego. I design net-zero technology, I play cello, and I'm the founder of the Library of Morenita — a sustainable digital archive I think of as Alexandria rebuilt for the next century. I competed nationally before, winning Top Model at Miss Philippines USA. I'm here because I want a platform, not just a crown.",cat:"Personal"},
+    {q:"Why did you enter Miss California USA?",a:"I entered because I'm an engineer with a technical platform and a specific policy agenda, and this stage reaches decision-makers, press, and audiences who can amplify that work. The crown is the microphone. I want to use it to put California's clean energy and textile accountability policy in front of people who can act on it.",cat:"Personal"},
+    {q:"What is the Library of Morenita?",a:"The Library of Morenita is a project I'm building — a sustainable digital archive designed to preserve the ideas that shape civilization: philosophy, fashion, urbanism, art. I think of it as cultural infrastructure. The Library of Alexandria was the most important knowledge repository of the ancient world — and it burned. I'm designing something that doesn't.",cat:"Personal"},
+    {q:"What's your biggest strength?",a:"Precision. I'm an engineer — I'm trained to understand systems, identify failure points, and design solutions. I bring that same rigor to advocacy. When I say fashion is the second most polluting industry, I can tell you what the other one is, what the data source is, and what the policy solution looks like. I don't speak in generalities when specifics are available.",cat:"Personal"},
+    {q:"What's something surprising about you?",a:"I cook for my friends at 11pm and narrate the whole meal as though I'm explaining a design problem. And I've been told that's somehow both annoying and charming at the same time.",cat:"Personal"},
+  ],
+  tough: [
+    {q:"What's your biggest weakness?",a:"I sometimes move faster than the people around me — I see the solution before I've fully explained the problem. I'm actively working on slowing down, asking more questions, and building consensus rather than just building. Engineering teaches you to optimize. Leadership teaches you that the best solution is one people actually adopt.",cat:"Tough"},
+    {q:"Why should you win over the other candidates?",a:"Because I'm not competing for the experience of competing. I have a specific platform, a technical background, and an audience I'm already building. The Miss California USA title would give my advocacy reach it doesn't have today. That's a concrete answer. I respect every candidate here — but that's why I'm standing on this stage.",cat:"Tough"},
+    {q:"How do you handle criticism?",a:"I take it seriously the first time and I investigate it honestly. If it's accurate, I change. If it isn't, I can explain why with evidence. I've learned that the best engineers are not the ones who are never wrong — they're the ones who find out fastest when they are.",cat:"Tough"},
+    {q:"Isn't pageantry superficial — why not advocate through other channels?",a:"I'd push back on the premise. Every platform is a tool. This one reaches audiences, press, and decision-makers that a GitHub repository or a policy white paper doesn't reach. I'm an engineer — I use the right tool for the job. If the job is amplifying clean energy policy to a broad California audience, this stage is the right tool.",cat:"Tough"},
+    {q:"What would you do if you didn't win?",a:"Keep building. The Library of Morenita doesn't pause. The advocacy doesn't stop. Competition is one platform — not the only one. But I plan to win.",cat:"Tough"},
+  ],
+  current: [
+    {q:"What is California's SB 100 and has it been successful?",a:"SB 100 set the target for California to reach 100% clean electricity by 2045. Progress has been real — California has exceeded several interim targets and leads the nation in solar generation. The challenge now is grid storage, reliability during peak demand, and ensuring the transition is equitable for communities that have historically borne the environmental cost of fossil fuel infrastructure.",cat:"Current Events"},
+    {q:"What is the state of EV adoption in California?",a:"California leads the nation — roughly 25% of all EVs in the US are registered here. The state has mandated that all new car sales be zero-emission by 2035. The infrastructure challenge is charging access in lower-income communities and multi-unit housing. The policy solution is public charging infrastructure investment paired with utility rate reform.",cat:"Current Events"},
+    {q:"What do you think is the most pressing environmental issue facing California right now?",a:"Water and heat together — the compounding crisis of drought, wildfire, and extreme heat events that are disproportionately affecting the Central Valley and low-income communities. Climate policy in California has to be inseparable from environmental justice. Clean energy transition can't just mean cleaner air for wealthy ZIP codes.",cat:"Current Events"},
+  ],
+  pageant: [
+    {q:"What does being Miss California USA mean to you?",a:"It means having a platform with reach, credibility, and a stage — and using all three to advance policy that California has the power to implement. It means representing a state I believe is capable of showing the rest of the country what environmental leadership looks like. And it means that a Filipina-American engineer can stand on this stage and be taken seriously.",cat:"Pageant"},
+    {q:"How would you use the title if you won?",a:"I would use every appearance, interview, and platform moment to advance California's clean energy and textile accountability agenda. I would partner with Cleantech San Diego, fashion sustainability organizations, and policy advocates to amplify legislation that's already moving. And I would document all of it publicly — because visibility is part of the work.",cat:"Pageant"},
+    {q:"What would you want your legacy as Miss California USA to be?",a:"That I made the conversation about sustainable fashion and clean energy more specific, more technical, and more actionable than it was before I held the title. That I brought engineers and policy makers and designers into the same room. That the crown was a microphone, and I used it.",cat:"Pageant"},
+  ]
+};
+
+function selectCategory(cat, el) {
+  quizCategory = cat;
+  document.querySelectorAll('.qset-card').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function startQuiz() {
+  const pool = quizCategory==='all' ? Object.values(QUESTIONS).flat() : (QUESTIONS[quizCategory]||[]);
+  quizQuestions = [...pool].sort(()=>Math.random()-.5).slice(0,5);
+  currentQ = 0;
+  document.getElementById('quiz-setup').style.display='none';
+  document.getElementById('quiz-results').style.display='none';
+  document.getElementById('quiz-active').style.display='block';
+  showQuestion();
+}
+
+function showQuestion() {
+  if(currentQ >= quizQuestions.length){endQuiz();return;}
+  const q = quizQuestions[currentQ];
+  document.getElementById('q-category').textContent = q.cat;
+  document.getElementById('q-text').textContent = q.q;
+  document.getElementById('quiz-answer-reveal').style.display='none';
+  updateProgress();
+  startTimer();
+}
+
+function updateProgress() {
+  const prog = document.getElementById('q-progress');
+  prog.innerHTML = quizQuestions.map((_,i)=>`<div class="qp-dot ${i<currentQ?'done':i===currentQ?'current':''}"></div>`).join('');
+}
+
+function startTimer() {
+  clearInterval(quizTimer);
+  timerSeconds = 60;
+  updateTimerDisplay();
+  quizTimer = setInterval(()=>{
+    timerSeconds--;
+    updateTimerDisplay();
+    if(timerSeconds<=0){clearInterval(quizTimer);revealAnswer();}
+  },1000);
+}
+
+function updateTimerDisplay() {
+  const el = document.getElementById('q-timer');
+  const m = Math.floor(timerSeconds/60);
+  const s = timerSeconds%60;
+  el.textContent = m+':'+(s<10?'0':'')+s;
+  el.className = 'quiz-timer' + (timerSeconds<=10?' urgent':'');
+}
+
+function revealAnswer() {
+  clearInterval(quizTimer);
+  const q = quizQuestions[currentQ];
+  document.getElementById('q-answer').textContent = q.a;
+  document.getElementById('quiz-answer-reveal').style.display='block';
+}
+
+function nextQuestion() {
+  clearInterval(quizTimer);
+  currentQ++;
+  if(currentQ>=quizQuestions.length){endQuiz();}else{showQuestion();}
+}
+
+function endQuiz() {
+  clearInterval(quizTimer);
+  quizStats.sessions++;
+  quizStats.total += quizQuestions.length;
+  localStorage.setItem('aa-quiz',JSON.stringify(quizStats));
+  document.getElementById('quiz-active').style.display='none';
+  document.getElementById('quiz-results').style.display='block';
+  document.getElementById('results-count').textContent = quizQuestions.length+' questions';
+  document.getElementById('results-msg').textContent = 'Session '+quizStats.sessions+' complete. You have practiced '+quizStats.total+' questions total. Keep going — the interview is where crowns are won.';
+  updateDashboard();
+}
+
+function showQuizSetup() {
+  document.getElementById('quiz-setup').style.display='block';
+  document.getElementById('quiz-results').style.display='none';
+  document.getElementById('quiz-active').style.display='none';
+  updateSessionCount();
+}
+
+function updateSessionCount() {
+  const el = document.getElementById('sessions-count');
+  if(el) el.textContent = quizStats.sessions+' session'+(quizStats.sessions!==1?'s':'')+' · '+quizStats.total+' questions practiced';
+}
+
+// ─── BRAND ASSETS ────────────────────────
+function renderBrand() {
+  const assets = [
+    {head:'ach-ig',title:'Instagram Bio',platform:'@ameliavarabe',text:`engineer building the future 🌱\ncellist. miss california usa '26\nfounder @libraryofmorenita\ni learned to find the light. bask in it ✨\nsan diego`},
+    {head:'ach-press',title:'Press Bio',platform:'Third person · 150 words',text:`Amelia Arabe is a Filipina-American student engineer, classically trained cellist, and 2026 candidate for Miss California USA based in San Diego.\n\nShe is the founder of the Library of Morenita — a sustainable digital archive built for the next century.\n\nHer platform centers on California's clean energy policy and textile industry accountability.\n\nA Top Model award winner at Miss Philippines USA, Amelia brings engineering precision and performance presence to every stage.\n\nShe competes not for a crown, but for a microphone.\n\nRepresented by Laneea Love.`},
+    {head:'ach-sub',title:'Substack Tagline',platform:'Library of Morenita',text:`Dispatches from the intersection of engineering, culture, and the planet.\n\nSpeculative research. Textile science. Competition journals. The occasional recipe made for friends at 11pm.\n\nBy Amelia Arabe — engineer, cellist, Miss California USA 2026 candidate. She/they. San Diego.\n\nFor people who build things, wear things, and wonder about the systems behind both.`},
+    {head:'ach-li',title:'LinkedIn Headline',platform:'LinkedIn · 220 chars',text:`Student Engineer · Net-Zero Hardware Design · Founder, Library of Morenita · Miss California USA 2026 Candidate · San Diego`},
+    {head:'ach-brand',title:'Brand Colors',platform:'Visual Identity System',isColors:true},
+    {head:'ach-voice',title:'Voice Principles',platform:'How Amelia speaks',text:`✦ Name the number. Name the bill.\nVague passion is forgettable. SB 707. Scope 3. 10% of global emissions.\n\n✦ State, don't apologize.\nNo "kind of," no "I feel like." She has done the work.\n\n✦ Curious, never preachy.\nThe goal is to pull people in — not to lecture.\n\n✦ The signature close:\n"Not for a crown, but for a microphone."`}
+  ];
+  const grid = document.getElementById('assets-grid');
+  grid.innerHTML = assets.map(a=>`
+    <div class="asset-card">
+      <div class="asset-card-head ${a.head}">
+        <div>
+          <div class="ac-title">${a.title}</div>
+          <div style="font-family:var(--fm);font-size:.55rem;opacity:.5;margin-top:.2rem;color:${a.head.includes('sub')||a.head.includes('voice')?'var(--warm-grey)':'white'}">${a.platform}</div>
+        </div>
+        ${!a.isColors?`<button class="ac-copy" onclick="copyAsset(this,'${a.title}')">Copy</button>`:''}
+      </div>
+      <div class="asset-card-body">
+        ${a.isColors ? `
+          <div class="color-swatch-row">
+            <div class="cs od" style="background:var(--tz-deep)"><span>Tanzanite Deep</span></div>
+            <div class="cs od" style="background:var(--tz)"><span>Tanzanite</span></div>
+            <div class="cs od" style="background:var(--tz-mid)"><span>Tanzanite Mid</span></div>
+          </div>
+          <div class="color-swatch-row">
+            <div class="cs ol" style="background:var(--champ-bg)"><span>Champ BG</span></div>
+            <div class="cs ol" style="background:var(--champ)"><span>Champagne</span></div>
+            <div class="cs ol" style="background:var(--champ-gold)"><span>Champ Gold</span></div>
+          </div>
+          <div class="color-swatch-row">
+            <div class="cs ol" style="background:var(--blush)"><span>Blush</span></div>
+            <div class="cs ol" style="background:var(--lavender)"><span>Lavender</span></div>
+            <div class="cs ol" style="background:var(--sage)"><span>Sage</span></div>
+          </div>
+          <div style="margin-top:.75rem">
+            <div class="font-specimen">Amelia <em>Arabe</em></div>
+            <div class="font-meta">Cormorant (display) · Plus Jakarta Sans (body) · DM Mono (code)</div>
+          </div>
+        ` : `<div class="asset-text" id="at-${a.title.replace(/\s/g,'-')}">${a.text}</div>`}
+      </div>
+    </div>
+  `).join('');
+}
+
+function copyAsset(btn, title) {
+  const el = document.getElementById('at-'+title.replace(/\s/g,'-'));
+  if(!el) return;
+  navigator.clipboard.writeText(el.innerText);
+  btn.textContent = 'Copied ✓';
+  btn.classList.add('copied');
+  setTimeout(()=>{btn.textContent='Copy';btn.classList.remove('copied');},2000);
+}
+
+// ─── TOPBAR DATE & COUNTDOWN ─────────────
+function initTopbar() {
+  const now = new Date();
+  document.getElementById('topbar-date').textContent = now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}).toUpperCase();
+  const comp = new Date('2026-07-10');
+  const days = Math.ceil((comp-now)/(1000*60*60*24));
+  const el = document.getElementById('days-counter');
+  if(el) el.textContent = days > 0 ? days+' days to crown' : 'Competition time!';
+}
+
+// ─── INIT ─────────────────────────────────
+seedSponsors();
+initTopbar();
+updateDashboard();
+updateSponsorBadge();
+updateSessionCount();
+</script>
+</body>
+</html>
