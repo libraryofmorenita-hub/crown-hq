@@ -409,14 +409,29 @@ body.em [data-e]:focus{outline:2px solid var(--ch);background:rgba(240,216,152,.
   .sidebar.open{left:0}
   .hb{display:flex}
   .g2,.g3,.g4,.ns-grid{grid-template-columns:1fr}.lib-grid{grid-template-columns:1fr 1fr}
-  .pb{padding:1rem}
-  .ph{padding:1rem}
-  .ed-canvas{padding:1.75rem 1.25rem}
+  .pb{padding:.85rem}
+  .ph{padding:.85rem;flex-direction:column;gap:.5rem}
+  .ph-acts{flex-wrap:wrap;gap:.35rem}
+  .ph-title{font-size:1.3rem}
+  .ed-canvas{padding:1.25rem .85rem}
   .mb-grid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
   .fg-row{grid-template-columns:1fr}
   .week-grid{grid-template-columns:50px repeat(7,1fr)}
   .login-roles{grid-template-columns:1fr 1fr}
   .g4{grid-template-columns:1fr 1fr}
+  .topbar{padding:0 .85rem}
+  .tb-logo{font-size:.95rem}
+  .tb-date{display:none}
+  .card{padding:.85rem}
+  .modal{padding:1.1rem;margin:.5rem}
+  .sp-tbl th,.sp-tbl td{padding:.45rem .5rem;font-size:.7rem}
+  .ns-grid{grid-template-columns:1fr 1fr}
+  .oath{padding:1.25rem}
+  .oath-text{font-size:1.1rem}
+  .ba-body .g2{grid-template-columns:1fr}
+  .msg-bub{max-width:90%}
+  .look-card .g2{grid-template-columns:1fr}
+  .adv-grid-2col{grid-template-columns:1fr !important}
 }
 </style>
 </head>
@@ -685,7 +700,7 @@ function seedLibrary(){
 }
 
 // ═══ PASSWORDS ════════════════════════════════════════════════
-var PASSWORDS={amelia:'serph',laneea:'withlove'};
+var PASSWORDS={amelia:'andi',laneea:'withlove'};
 var PENDING_ROLE=null;
 
 function tryLogin(role,btn){
@@ -879,16 +894,20 @@ function bDash(){
     {dot:'var(--du)',date:'Jul 10',text:'Miss California USA 2026',idx:5},
   ];
   var goals=S.goals;
-  var gDef=[
-    {ico:'📱',name:'TikTok followers',key:'tiktok',target:'100K',cur:goals.tiktok||'95K'},
-    {ico:'📸',name:'Instagram followers',key:'ig',target:'20K',cur:goals.ig||'1.4K'},
-    {ico:'📝',name:'Written publications',key:'pubs',target:'12',cur:goals.pubs||'2'},
-    {ico:'🌱',name:'Mother Earth volunteer',key:'vol',target:'3x',cur:goals.vol||'0x'},
-    {ico:'👠',name:'Runways walked',key:'runways',target:'3',cur:goals.runways||'0'},
-    {ico:'🏛',name:'Gallery show / oil paintings',key:'gallery',target:'1',cur:goals.gallery||'Planning'},
-    {ico:'🎙',name:'Podcast launch',key:'podcast',target:'Launch',cur:goals.podcast||'Concept'},
-    {ico:'📚',name:'Library of Morenita live',key:'library',target:'Live',cur:goals.library||'Building'},
+  var gDefaults=[
+    {ico:'📱',name:'TikTok followers',key:'tiktok',target:'100K',cur:'95K'},
+    {ico:'📸',name:'Instagram followers',key:'ig',target:'20K',cur:'1.4K'},
+    {ico:'📝',name:'Written publications',key:'pubs',target:'12',cur:'2'},
+    {ico:'🌱',name:'Mother Earth volunteer',key:'vol',target:'3x',cur:'0x'},
+    {ico:'👠',name:'Runways walked',key:'runways',target:'3',cur:'0'},
+    {ico:'🏛',name:'Gallery show / oil paintings',key:'gallery',target:'1',cur:'Planning'},
+    {ico:'🎙',name:'Podcast launch',key:'podcast',target:'Launch',cur:'Concept'},
+    {ico:'📚',name:'Library of Morenita live',key:'library',target:'Live',cur:'Building'},
   ];
+  var gSaved=lsGet('chq-gd',null);
+  var gDef=gSaved?gSaved:gDefaults.map(function(g2){
+    return {ico:g2.ico,name:g2.name,key:g2.key,target:g2.target,cur:goals[g2.key]||g2.cur};
+  });
   var dmb=(S.dashMood&&S.dashMood.amelia)||[];
 
   inject(
@@ -923,12 +942,15 @@ function bDash(){
     '<div class="g2" style="margin-bottom:.85rem">' +
 
     '<div class="card">' +
-    '<div class="cl">Career Goals <span style="font-family:var(--fm);font-size:.48rem;color:var(--tz4)">— click in edit mode to update</span></div>' +
-    gDef.map(function(g2){
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">' +
+    '<div class="cl" style="margin-bottom:0">Career Goals</div>' +
+    '<button class="btn bg" style="font-size:.55rem;padding:.2rem .6rem" onclick="openGoalEditor()">Edit Goals</button>' +
+    '</div>' +
+    gDef.map(function(g2,gi){
       return '<div class="goal-item">' +
         '<span class="goal-ico">'+g2.ico+'</span>' +
         '<div style="flex:1"><div class="goal-name">'+g2.name+'</div></div>' +
-        '<span class="goal-val" data-e="goal:'+g2.key+':cur">'+g2.cur+'</span>' +
+        '<span style="font-family:var(--fd);font-size:.9rem;font-style:italic;color:var(--tz2)">'+g2.cur+'</span>' +
         '<span style="font-family:var(--fm);font-size:.5rem;color:var(--wg);margin:0 .25rem">/</span>' +
         '<span style="font-family:var(--fm);font-size:.6rem;color:var(--tz3)">'+g2.target+'</span>' +
         '</div>';
@@ -988,6 +1010,50 @@ function bPlaceholderDash(role,ns,first){
   );
 }
 
+
+function openGoalEditor(){
+  var list=g('goal-editor-list');
+  if(!list)return;
+  list.innerHTML=gDef.map(function(g2,i){
+    return '<div style="display:grid;grid-template-columns:2rem 1fr 1fr 1fr auto;gap:.4rem;align-items:center;margin-bottom:.4rem" id="grow-'+i+'">' +
+      '<input class="fi" value="'+g2.ico+'" id="gico-'+i+'" style="padding:.3rem;text-align:center;font-size:1rem">' +
+      '<input class="fi" value="'+g2.name.replace(/"/g,'&quot;')+'" id="gname-'+i+'" placeholder="Goal name">' +
+      '<input class="fi" value="'+g2.cur.replace(/"/g,'&quot;')+'" id="gcur-'+i+'" placeholder="Current">' +
+      '<input class="fi" value="'+g2.target.replace(/"/g,'&quot;')+'" id="gtgt-'+i+'" placeholder="Target">' +
+      '<button onclick="removeGoalRow('+i+')" style="background:none;border:none;color:var(--bl2);cursor:pointer;font-size:1rem;padding:0 .25rem">×</button>' +
+      '</div>';
+  }).join('');
+  openM('m-goals');
+}
+function addGoalRow(){
+  var list=g('goal-editor-list');if(!list)return;
+  var i=list.children.length;
+  var div=document.createElement('div');
+  div.id='grow-'+i;
+  div.style.cssText='display:grid;grid-template-columns:2rem 1fr 1fr 1fr auto;gap:.4rem;align-items:center;margin-bottom:.4rem';
+  div.innerHTML='<input class="fi" id="gico-'+i+'" placeholder="🎯" style="padding:.3rem;text-align:center;font-size:1rem">'+
+    '<input class="fi" id="gname-'+i+'" placeholder="Goal name">'+
+    '<input class="fi" id="gcur-'+i+'" placeholder="Current">'+
+    '<input class="fi" id="gtgt-'+i+'" placeholder="Target">'+
+    '<button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--bl2);cursor:pointer;font-size:1rem;padding:0 .25rem">×</button>';
+  list.appendChild(div);
+}
+function removeGoalRow(i){var el=g('grow-'+i);if(el)el.remove();}
+function saveGoals(){
+  var list=g('goal-editor-list');if(!list)return;
+  var newGoals=[];
+  Array.from(list.children).forEach(function(row,i){
+    var ico=row.querySelector('[id^="gico-"]'),name=row.querySelector('[id^="gname-"]'),cur=row.querySelector('[id^="gcur-"]'),tgt=row.querySelector('[id^="gtgt-"]');
+    if(name&&name.value.trim()){
+      var key='goal_'+Date.now()+'_'+i;
+      newGoals.push({ico:(ico?ico.value:'🎯'),name:name.value.trim(),key:key,cur:(cur?cur.value.trim():''),target:(tgt?tgt.value.trim():'')});
+    }
+  });
+  lsSave('chq-gd',newGoals);
+  closeM('m-goals');
+  showToast('Goals saved');
+  bDash();
+}
 function bLaneaDash(){
   var raised=S.sponsors.filter(function(s){return s.status==='closed';}).reduce(function(a,s){return a+(s.amount||0);},0);
   bPlaceholderDash('laneea',
@@ -1236,21 +1302,56 @@ function editSponsorInline(id){var s=S.sponsors.find(function(x){return x.id===i
 
 // ═══ CALENDAR ════════════════════════════════════════════════
 function bCalendar(){
+  var isMobile=window.innerWidth<=768;
   inject(
     '<div class="ph"><div><div class="ph-tag">Schedule</div><div class="ph-title"><em>Calendar</em></div></div>' +
     '<div class="ph-acts">' +
-    '<div class="cal-tabs">' +
-    ['week','month'].map(function(v){return '<button class="cal-tab '+(S.calView===v?'on':'')+'" onclick="S.calView=\''+v+'\';bCalendar()">'+v.charAt(0).toUpperCase()+v.slice(1)+'</button>';}).join('') +
-    '</div>' +
-    '<button class="btn bg" onclick="S.calWeekOffset--;bCalendar()">‹</button>' +
-    '<button class="btn bg" onclick="S.calWeekOffset=0;bCalendar()">Today</button>' +
-    '<button class="btn bg" onclick="S.calWeekOffset++;bCalendar()">›</button>' +
+    (isMobile?'':
+      '<div class="cal-tabs">' +
+      ['week','month'].map(function(v){return '<button class="cal-tab '+(S.calView===v?'on':'')+'" onclick="S.calView=\''+v+'\';bCalendar()">'+v.charAt(0).toUpperCase()+v.slice(1)+'</button>';}).join('') +
+      '</div>' +
+      '<button class="btn bg" onclick="S.calWeekOffset--;bCalendar()">&#8249;</button>' +
+      '<button class="btn bg" onclick="S.calWeekOffset=0;bCalendar()">Today</button>' +
+      '<button class="btn bg" onclick="S.calWeekOffset++;bCalendar()">&#8250;</button>'
+    ) +
     '<button class="btn bp" onclick="openM(\'m-ev\')">+ Add Event</button>' +
     '</div></div>' +
     '<div class="pb">' +
-    (S.calView==='week'?renderWeek():renderMonth()) +
+    (isMobile?renderCalList():(S.calView==='week'?renderWeek():renderMonth())) +
     '</div>'
   );
+}
+function renderCalList(){
+  var today=new Date();today.setHours(0,0,0,0);
+  var evs=S.calEvents.slice().sort(function(a,b){
+    return (a.date+' '+(a.time||'00:00'))>(b.date+' '+(b.time||'00:00'))?1:-1;
+  });
+  var groups={};var order=[];
+  evs.forEach(function(ev){
+    if(!groups[ev.date]){groups[ev.date]=[];order.push(ev.date);}
+    groups[ev.date].push(ev);
+  });
+  var tc={coach:'var(--ch2)',styling:'var(--bl2)',hair:'var(--lv2)',fitness:'var(--sg2)',photo:'var(--tz2)',strategy:'var(--tz)'};
+  var tl={coach:'Coach',styling:'Styling',hair:'Hair & MU',fitness:'Fitness',photo:'Photo',strategy:'Strategy'};
+  if(!order.length) return '<div style="text-align:center;padding:3rem;font-family:var(--fd);font-style:italic;color:var(--wg)">No events yet</div>';
+  var html='';
+  order.forEach(function(date){
+    var d=new Date(date+'T12:00:00');
+    var isToday=d.toDateString()===new Date().toDateString();
+    var isPast=d<today;
+    html+='<div style="margin-bottom:1.1rem">'+
+      '<div style="font-family:var(--fm);font-size:.5rem;letter-spacing:3px;text-transform:uppercase;color:'+(isToday?'var(--ch2)':'var(--wg)')+';margin-bottom:.4rem;padding-bottom:.3rem;border-bottom:1px solid var(--ch4)">'+(isToday?'Today &#8212; ':'')+d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})+'</div>';
+    groups[date].forEach(function(ev){
+      var color=tc[ev.type||'coach']||'var(--ch2)';
+      html+='<div onclick="editCalEvent('+ev.id+')" style="display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;background:var(--wh);border-radius:3px;margin-bottom:.4rem;border-left:3px solid '+color+';box-shadow:0 1px 4px rgba(46,37,96,.06);cursor:pointer;opacity:'+(isPast?'.55':'1')+'">'+
+        '<div style="min-width:38px;text-align:center"><div style="font-family:var(--fm);font-size:.72rem;color:'+color+';font-weight:600">'+(ev.time||'')+'</div></div>'+
+        '<div style="flex:1"><div style="font-size:.85rem;font-weight:600;color:var(--ink);margin-bottom:.1rem">'+ev.title+'</div>'+(ev.who?'<div style="font-family:var(--fm);font-size:.55rem;color:var(--wg)">'+ev.who+'</div>':'')+'</div>'+
+        '<div style="font-family:var(--fm);font-size:.45rem;letter-spacing:1px;text-transform:uppercase;color:'+color+'">'+(tl[ev.type||'coach']||ev.type)+'</div>'+
+        '</div>';
+    });
+    html+='</div>';
+  });
+  return html;
 }
 
 function renderWeek(){
@@ -1892,74 +1993,161 @@ function bCompProgress(){
 }
 function bAdvocacy(){
   var advDefaults={
-    energy:{stance:'SB 100 is law. Net-zero is the target. My platform is the bridge between legislation and lived reality — specifically in the textile supply chains that still run on fossil fuels.',stats:'65% of clothing is polyester — derived from crude oil. · SB 100 mandates 100% clean energy by 2045. · Textile mills are among the most energy-intensive manufacturers.',notes:'',progress:60},
-    fashion:{stance:'Every garment has a carbon cost. I advocate for the policy that makes brands pay it — not the planet. SB 707 is the mechanism. EPR is the framework.',stats:'Fashion = 10% of global carbon emissions. · SB 707 shifts waste costs from taxpayers to brands. · 85% of textiles end up in landfills.',notes:'',progress:75},
-    justice:{stance:'The communities closest to textile mills and fast fashion warehouses bear the greatest environmental burden. Clean fashion is not just a climate argument — it is a justice argument.',stats:'Low-income communities are 3x more likely to live near polluting facilities. · California SB 535 directs cap-and-trade revenue to disadvantaged communities.',notes:'',progress:35},
-    solarpunk:{stance:'Solarpunk is not a utopia. It is a building permit. Library of Morenita is solarpunk infrastructure — a digital archive designed not to burn.',stats:'Most creative work disappears within a generation. · The Library of Alexandria held 400,000 scrolls — and burned.',notes:'',progress:50},
+    energy:{stance:'SB 100 is law. Net-zero is the target. My platform is the bridge between legislation and lived reality — specifically in the textile supply chains that still run on fossil fuels.',stats:['65% of clothing is polyester — derived from crude oil','SB 100 mandates 100% clean energy by 2045','Textile mills rank among the most energy-intensive manufacturers','Green-collar jobs are the economic argument for transition'],notes:'',progress:'Developing',img:''},
+    fashion:{stance:'Every garment has a carbon cost. I advocate for the policy that makes brands pay it — not the planet. SB 707 is the mechanism. EPR is the framework.',stats:['Fashion = 10% of global carbon emissions','SB 707 shifts textile waste costs from taxpayers to brands','85% of textiles end up in landfills','Polyester takes 200+ years to decompose'],notes:'',progress:'Refined',img:''},
+    justice:{stance:'The communities closest to textile mills and fast fashion warehouses bear the greatest environmental burden. Clean fashion is not just a climate argument — it is a justice argument.',stats:['Low-income communities are 3x more likely to live near polluting facilities','California SB 535 directs cap-and-trade revenue to disadvantaged communities','Fast fashion workers earn an average $3/day globally','CA leads with the strongest environmental justice framework in the US'],notes:'',progress:'Drafting',img:''},
+    solarpunk:{stance:'Solarpunk is not a utopia. It is a building permit. Library of Morenita is solarpunk infrastructure — a digital archive designed not to burn.',stats:['Most creative work disappears within a generation','The Library of Alexandria held 400,000+ scrolls — and burned','Circular economy design could eliminate 45% of global emissions','Beauty and sustainability are not opposing forces'],notes:'',progress:'Concept',img:''},
   };
   var advSaved=lsGet('chq-adv',{});
   var adv={};
   ['energy','fashion','justice','solarpunk'].forEach(function(k){
     adv[k]=Object.assign({},advDefaults[k],advSaved[k]||{});
+    if(!Array.isArray(adv[k].stats)) adv[k].stats=advDefaults[k].stats;
   });
   var sections=[
-    {key:'energy',icon:'⚡',title:'Clean Energy & EV',color:'var(--ch3)',bg:'var(--ch4)'},
-    {key:'fashion',icon:'🌿',title:'Fashion Accountability',color:'var(--sg2)',bg:'rgba(90,138,82,.1)'},
-    {key:'justice',icon:'🌍',title:'Environmental Justice',color:'var(--lv2)',bg:'rgba(152,128,200,.1)'},
-    {key:'solarpunk',icon:'✦',title:'Solarpunk & Sustainable Tech',color:'var(--tz3)',bg:'var(--tz5)'},
+    {key:'energy',icon:'⚡',title:'Clean Energy & EV',subtitle:'SB 100 · Net-Zero · Textile Mills',accent:'var(--ch3)',accentRaw:'#C8A84C',accentBg:'var(--ch4)'},
+    {key:'fashion',icon:'🌿',title:'Fashion Accountability',subtitle:'SB 707 · EPR · Fashion Miles',accent:'var(--sg2)',accentRaw:'#5A8A52',accentBg:'rgba(90,138,82,.08)'},
+    {key:'justice',icon:'🌍',title:'Environmental Justice',subtitle:'Frontline Communities · Equity · Policy',accent:'var(--lv2)',accentRaw:'#9880C8',accentBg:'rgba(152,128,200,.08)'},
+    {key:'solarpunk',icon:'✦',title:'Solarpunk & Sustainable Tech',subtitle:'Library of Morenita · Circular Design',accent:'var(--tz3)',accentRaw:'#6B5FBA',accentBg:'var(--tz5)'},
   ];
+  var stages=['Concept','Drafting','Developing','Refined','Ready'];
   var html='<div class="ph"><div><div class="ph-tag">Platform</div><div class="ph-title"><em>Advocacy</em></div></div>'+
-    '<div class="ph-acts"><span style="font-family:var(--fm);font-size:.55rem;color:var(--wg);font-style:italic">One day this becomes ameliaarabe.com/advocacy</span></div></div>'+
-    '<div class="pb" id="adv-pb">';
+    '<div class="ph-acts"><span style="font-family:var(--fm);font-size:.55rem;color:var(--wg);font-style:italic">ameliaarabe.com/advocacy — coming soon</span></div></div>'+
+    '<div class="pb">';
   sections.forEach(function(sec){
     var d=adv[sec.key];
-    html+='<div class="card" style="margin-bottom:1.1rem;border-left:2px solid '+sec.color+'">'+
-      '<div style="display:flex;align-items:center;gap:.65rem;margin-bottom:.75rem">'+
-      '<span style="font-size:1.1rem">'+sec.icon+'</span>'+
-      '<div style="flex:1"><div style="font-family:var(--fm);font-size:.5rem;letter-spacing:4px;color:var(--wg);text-transform:uppercase">'+sec.title+'</div></div>'+
-      '<div style="font-family:var(--fm);font-size:.5rem;color:'+sec.color+'">'+d.progress+'% developed</div>'+
+    var hasImg=d.img&&d.img.length>0;
+    html+=
+      '<div class="adv-section" data-key="'+sec.key+'" style="margin-bottom:2rem;border-radius:3px;overflow:hidden;box-shadow:0 2px 16px rgba(46,37,96,.08);border:1px solid rgba(221,208,184,.25)">'+
+
+      // PHOTO HEADER
+      '<div class="adv-img-zone" data-key="'+sec.key+'" style="position:relative;height:200px;background:linear-gradient(135deg,var(--tz) 0%,var(--tz2) 60%,'+sec.accentRaw+'44 100%);overflow:hidden">'+
+      (hasImg?'<img src="'+d.img+'" style="width:100%;height:100%;object-fit:cover;opacity:.85">':
+        '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:.5rem">'+
+        '<div style="font-size:2.5rem;opacity:.25">'+sec.icon+'</div>'+
+        '<div style="font-family:var(--fm);font-size:.48rem;letter-spacing:4px;color:rgba(240,216,152,.3);text-transform:uppercase">Add a photo for this section</div>'+
+        '</div>')+
+      '<div style="position:absolute;inset:0;background:linear-gradient(transparent 30%,rgba(20,16,40,.75))"></div>'+
+      '<div style="position:absolute;bottom:0;left:0;right:0;padding:1.25rem 1.75rem">'+
+      '<div style="font-family:var(--fm);font-size:.44rem;letter-spacing:4px;color:rgba(240,216,152,.45);text-transform:uppercase;margin-bottom:.3rem">'+sec.subtitle+'</div>'+
+      '<div style="font-family:var(--fd);font-size:clamp(1.4rem,3vw,2rem);font-style:italic;color:var(--ch);line-height:1.1;font-weight:300">'+sec.title+'</div>'+
       '</div>'+
-      '<div style="height:2px;background:var(--du);border-radius:1px;overflow:hidden;margin-bottom:1rem">'+
-      '<div style="height:100%;width:'+d.progress+'%;background:'+sec.color+';transition:width .8s cubic-bezier(.34,1.56,.64,1)"></div></div>'+
-      '<div style="font-family:var(--fm);font-size:.48rem;letter-spacing:3px;color:'+sec.color+';text-transform:uppercase;margin-bottom:.35rem">Public Stance</div>'+
-      '<div class="adv-stance" data-key="'+sec.key+'" style="font-family:var(--fd);font-size:1rem;font-style:italic;color:var(--ink);line-height:1.7;margin-bottom:1rem;background:'+sec.bg+';padding:.85rem;border-radius:3px;outline:none" contenteditable="true">'+d.stance+'</div>'+
-      '<div style="font-family:var(--fm);font-size:.48rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.35rem">Key Stats & Facts</div>'+
-      '<textarea class="adv-stats" data-key="'+sec.key+'" style="width:100%;border:1.5px solid var(--du);border-radius:3px;padding:.6rem .8rem;font-family:var(--fm);font-size:.72rem;color:var(--st);line-height:1.8;resize:vertical;outline:none;background:var(--wh);min-height:70px">'+d.stats+'</textarea>'+
-      '<div style="font-family:var(--fm);font-size:.48rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin:.75rem 0 .35rem">Working Notes</div>'+
-      '<textarea class="adv-notes" data-key="'+sec.key+'" style="width:100%;border:1.5px dashed var(--du);border-radius:3px;padding:.6rem .8rem;font-family:var(--fb);font-size:.78rem;color:var(--st);line-height:1.7;resize:vertical;outline:none;background:var(--ch5);min-height:60px" placeholder="Research, ideas, things to fact-check...">'+d.notes+'</textarea>'+
-      '<div style="display:flex;align-items:center;gap:.5rem;margin-top:.75rem">'+
-      '<span style="font-family:var(--fm);font-size:.48rem;color:var(--wg);letter-spacing:2px;text-transform:uppercase">Progress</span>'+
-      '<input type="range" class="adv-range" data-key="'+sec.key+'" min="0" max="100" value="'+d.progress+'" style="flex:1;accent-color:'+sec.color+'">'+
-      '<span class="adv-prog" data-key="'+sec.key+'" style="font-family:var(--fm);font-size:.5rem;color:'+sec.color+'">'+d.progress+'%</span>'+
+      '<label class="adv-img-btn" data-key="'+sec.key+'" style="position:absolute;top:.65rem;right:.65rem;background:rgba(20,16,40,.55);border:1px solid rgba(240,216,152,.2);border-radius:3px;padding:.22rem .6rem;font-family:var(--fm);font-size:.44rem;color:rgba(240,216,152,.65);cursor:pointer;letter-spacing:1px;text-transform:uppercase">'+
+      (hasImg?'Change':'+ Photo')+
+      '<input type="file" accept="image/*" style="display:none" class="adv-img-input" data-key="'+sec.key+'"></label>'+
+      (hasImg?'<button class="adv-img-clear" data-key="'+sec.key+'" style="position:absolute;top:.65rem;left:.65rem;background:rgba(20,16,40,.55);border:1px solid rgba(240,216,152,.2);border-radius:3px;padding:.22rem .6rem;font-family:var(--fm);font-size:.44rem;color:rgba(240,216,152,.65);cursor:pointer;letter-spacing:1px;text-transform:uppercase">Remove</button>':'')+
+      '</div>'+
+
+      // STAGE PILLS
+      '<div style="background:var(--ch6);padding:.55rem 1.5rem;display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;border-bottom:1px solid rgba(221,208,184,.2)">'+
+      '<span style="font-family:var(--fm);font-size:.44rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-right:.25rem;flex-shrink:0">Stage</span>'+
+      stages.map(function(s){
+        var active=d.progress===s;
+        return '<button class="adv-stage-btn" data-key="'+sec.key+'" data-stage="'+s+'" data-accent="'+sec.accentRaw+'" style="font-family:var(--fm);font-size:.44rem;letter-spacing:1px;padding:.2rem .6rem;border-radius:3px;border:1px solid '+(active?sec.accentRaw:'var(--du)')+';background:'+(active?sec.accentRaw:'transparent')+';color:'+(active?'white':'var(--wg)')+';cursor:pointer;transition:all .15s;text-transform:uppercase">'+s+'</button>';
+      }).join('')+
+      '</div>'+
+
+      // BODY
+      '<div style="padding:1.35rem 1.75rem;background:var(--wh)">'+
+      '<div style="display:grid;grid-template-columns:1.15fr 1fr;gap:1.5rem;margin-bottom:1.25rem">'+
+
+      // Stance
+      '<div>'+
+      '<div style="font-family:var(--fm);font-size:.44rem;letter-spacing:3px;color:'+sec.accent+';text-transform:uppercase;margin-bottom:.5rem">Public Stance</div>'+
+      '<div class="adv-stance" data-key="'+sec.key+'" contenteditable="true" style="font-family:var(--fd);font-size:.98rem;font-style:italic;color:var(--ink);line-height:1.75;outline:none;border-left:2px solid '+sec.accent+';padding:.85rem 1rem;background:'+sec.accentBg+';border-radius:0 3px 3px 0;min-height:90px">'+d.stance+'</div>'+
+      '</div>'+
+
+      // Facts
+      '<div>'+
+      '<div style="font-family:var(--fm);font-size:.44rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.5rem">Key Facts</div>'+
+      '<div class="adv-stats-grid" data-key="'+sec.key+'">'+
+      d.stats.map(function(stat,si){
+        return '<div class="adv-stat-item" data-key="'+sec.key+'" data-idx="'+si+'" contenteditable="true" style="font-family:var(--fb);font-size:.72rem;color:var(--ink);line-height:1.5;padding:.5rem .7rem;margin-bottom:.35rem;background:var(--ch5);border-radius:3px;border-left:2px solid '+sec.accent+';outline:none">'+stat+'</div>';
+      }).join('')+
+      '<button class="adv-add-stat" data-key="'+sec.key+'" data-accent="'+sec.accentRaw+'" style="font-family:var(--fm);font-size:.44rem;letter-spacing:2px;color:var(--wg);background:transparent;border:1px dashed var(--du);border-radius:3px;padding:.25rem .7rem;cursor:pointer;width:100%;text-transform:uppercase;margin-top:.15rem">+ Add Fact</button>'+
+      '</div>'+
+      '</div>'+
+      '</div>'+
+
+      // Notes
+      '<div style="font-family:var(--fm);font-size:.44rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.35rem">Working Notes <span style="opacity:.4;text-transform:none;letter-spacing:0;font-size:.6rem;font-family:var(--fb)">— private</span></div>'+
+      '<textarea class="adv-notes" data-key="'+sec.key+'" placeholder="Research, quotes, talking points in progress..." style="width:100%;border:1.5px dashed var(--du);border-radius:3px;padding:.7rem;font-family:var(--fb);font-size:.75rem;color:var(--st);line-height:1.7;resize:vertical;outline:none;background:#FEFCF9;min-height:70px">'+d.notes+'</textarea>'+
       '</div></div>';
   });
   html+='</div>';
   inject(html);
-  // Attach event listeners after render
+
+  // Image upload — using class-based delegation, no inline handlers
+  document.querySelectorAll('.adv-img-input').forEach(function(inp){
+    inp.addEventListener('change',function(){
+      var key=inp.dataset.key;
+      var file=inp.files[0];if(!file)return;
+      var r=new FileReader();
+      r.onload=function(ev){saveAdv(key,'img',ev.target.result);bAdvocacy();};
+      r.readAsDataURL(file);
+    });
+  });
+  document.querySelectorAll('.adv-img-clear').forEach(function(btn){
+    btn.addEventListener('click',function(){saveAdv(btn.dataset.key,'img','');bAdvocacy();});
+  });
+
+  // Stage pills
+  document.querySelectorAll('.adv-stage-btn').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var key=btn.dataset.key,stage=btn.dataset.stage,acc=btn.dataset.accent;
+      saveAdv(key,'progress',stage);
+      document.querySelectorAll('.adv-stage-btn[data-key="'+key+'"]').forEach(function(b){
+        var active=b.dataset.stage===stage;
+        b.style.background=active?acc:'transparent';
+        b.style.borderColor=active?acc:'var(--du)';
+        b.style.color=active?'white':'var(--wg)';
+      });
+    });
+  });
+
+  // Stance
   document.querySelectorAll('.adv-stance').forEach(function(el){
-    el.addEventListener('blur',function(){saveAdv(el.dataset.key,'stance',el.textContent);});
+    el.addEventListener('blur',function(){saveAdv(el.dataset.key,'stance',el.textContent.trim());});
   });
-  document.querySelectorAll('.adv-stats').forEach(function(el){
-    el.addEventListener('blur',function(){saveAdv(el.dataset.key,'stats',el.value);});
+
+  // Stats
+  document.querySelectorAll('.adv-stat-item').forEach(function(el){
+    el.addEventListener('blur',function(){
+      var key=el.dataset.key;
+      var stats=Array.from(document.querySelectorAll('.adv-stat-item[data-key="'+key+'"]')).map(function(i){return i.textContent.trim();});
+      saveAdv(key,'stats',stats);
+    });
   });
+
+  // Add fact
+  document.querySelectorAll('.adv-add-stat').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var key=btn.dataset.key,acc=btn.dataset.accent;
+      var div=document.createElement('div');
+      div.className='adv-stat-item';div.dataset.key=key;div.contentEditable='true';
+      div.style.cssText='font-family:var(--fb);font-size:.72rem;color:var(--ink);line-height:1.5;padding:.5rem .7rem;margin-bottom:.35rem;background:var(--ch5);border-radius:3px;border-left:2px solid '+acc+';outline:none';
+      div.textContent='New fact...';
+      btn.parentElement.insertBefore(div,btn);div.focus();
+      div.addEventListener('blur',function(){
+        var stats=Array.from(document.querySelectorAll('.adv-stat-item[data-key="'+key+'"]')).map(function(i){return i.textContent.trim();});
+        saveAdv(key,'stats',stats);
+      });
+    });
+  });
+
+  // Notes
   document.querySelectorAll('.adv-notes').forEach(function(el){
     el.addEventListener('blur',function(){saveAdv(el.dataset.key,'notes',el.value);});
-  });
-  document.querySelectorAll('.adv-range').forEach(function(el){
-    el.addEventListener('input',function(){
-      saveAdv(el.dataset.key,'progress',parseInt(el.value));
-      var prog=document.querySelector('.adv-prog[data-key="'+el.dataset.key+'"]');
-      if(prog)prog.textContent=el.value+'%';
-    });
   });
 }
 function saveAdv(key,field,val){
   var adv=lsGet('chq-adv',{});
   if(!adv[key])adv[key]={};
-  adv[key][field]=field==='progress'?parseInt(val):val;
+  adv[key][field]=val;
   lsSave('chq-adv',adv);
   showToast();
 }
+
 function bPlaceholder(id){
   inject('<div class="ph"><div><div class="ph-tag">'+id+'</div><div class="ph-title"><em>Coming Soon</em></div></div></div><div class="pb"><div class="edit-hint" style="margin-top:1rem">This section is under construction. Switch on Edit Mode to customize.</div></div>');
 }
@@ -2069,5 +2257,12 @@ document.querySelectorAll('.ov').forEach(function(o){
 })();
 
 </script>
+
+<div class="ov" id="m-goals"><div class="modal" style="max-width:560px">
+  <h3>Edit Career Goals</h3>
+  <div id="goal-editor-list"></div>
+  <button class="btn bg" style="margin-top:.5rem;font-size:.65rem;width:100%" onclick="addGoalRow()">+ Add Goal</button>
+  <div class="m-acts"><button class="btn bg" onclick="closeM('m-goals')">Cancel</button><button class="btn bp" onclick="saveGoals()">Save All</button></div>
+</div></div>
 </body>
 </html>
