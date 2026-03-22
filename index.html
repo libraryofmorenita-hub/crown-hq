@@ -137,7 +137,7 @@ body{font-family:var(--fb);background:var(--ch5);color:var(--ink);display:flex;f
 .oath{background:var(--tz);border-radius:3px;padding:2rem;margin-bottom:.85rem;position:relative;overflow:hidden}
 .oath-glow{position:absolute;top:-40%;right:-20%;width:60%;height:200%;background:radial-gradient(circle,rgba(240,216,152,.07) 0%,transparent 65%);pointer-events:none}
 .oath-label{font-family:var(--fm);font-size:.5rem;letter-spacing:5px;color:rgba(240,216,152,.3);text-transform:uppercase;margin-bottom:.85rem;position:relative;z-index:2}
-.oath-text{font-family:var(--fd);font-size:clamp(1.2rem,2.5vw,1.7rem);font-style:italic;color:var(--ch);line-height:1.45;position:relative;z-index:2;font-weight:300;text-shadow:0 0 40px rgba(238, 236, 255, 0.3)}
+.oath-text{font-family:var(--fd);font-size:clamp(1.2rem,2.5vw,1.7rem);font-style:italic;color:var(--ch);line-height:1.45;position:relative;z-index:2;font-weight:300;text-shadow:0 0 40px rgba(180,170,255,.3)}
 .oath-attr{font-family:var(--fm);font-size:.52rem;color:rgba(240,216,152,.3);margin-top:.85rem;letter-spacing:2px;position:relative;z-index:2}
 
 .ns-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.65rem;margin-bottom:.85rem}
@@ -578,13 +578,36 @@ function sv(k,v){S[k]=v;lsSave('chq-'+k.replace(/[A-Z]/g,c=>'-'+c.toLowerCase())
 function seed(){
   if(!S.sponsors.length){
     S.sponsors=[
-      {id:1,name:'Paired Power',cat:'ev',ask:'$1,000-3,000',status:'new',amount:0,notes:'Just graduated Cleantech SD. Walk in pitch.'},
-      {id:2,name:'SD Community Power',cat:'ev',ask:'$500-1,500',status:'new',amount:0,notes:'Public agency. Community event first.'},
-      {id:3,name:'Lucid Motors SD',cat:'auto',ask:'$3,000-5,000',status:'new',amount:0,notes:'Opened Oct 2025. Walk in with deck.'},
-      {id:4,name:'Rivian San Diego',cat:'auto',ask:'$2,000-5,000',status:'new',amount:0,notes:'SD Space showroom.'},
-      {id:5,name:'H2OM',cat:'fashion',ask:'Swimsuit + $500',status:'new',amount:0,notes:'Ocean plastic swimwear. Swimsuit round perfect.'},
-      {id:6,name:'HES Solar',cat:'ev',ask:'$500-2,000',status:'contacted',amount:0,notes:'Family owned. Called last week.'},
-      {id:7,name:'MuXu Creations',cat:'fashion',ask:'Custom piece',status:'meeting',amount:0,notes:'Meeting with Ainara set.'},
+      {id:1,name:'Paired Power',cat:'ev',ask:'$1,000-3,000',status:'new',amount:0,notes:'Just graduated Cleantech SD. Walk in pitch.',link:'https://pairedpower.com'},
+      {id:2,name:'SD Community Power',cat:'ev',ask:'$500-1,500',status:'new',amount:0,notes:'Public agency. Community event first.',link:'https://sdcp.energy'},
+      {id:3,name:'Lucid Motors SD',cat:'auto',ask:'$3,000-5,000',status:'new',amount:0,notes:'Opened Oct 2025. Walk in with deck.',link:'https://lucidmotors.com'},
+      {id:4,name:'Rivian San Diego',cat:'auto',ask:'$2,000-5,000',status:'new',amount:0,notes:'SD Space showroom.',link:'https://rivian.com'},
+      {id:5,name:'H2OM',cat:'fashion',ask:'Swimsuit + $500',status:'new',amount:0,notes:'Ocean plastic swimwear. Swimsuit round perfect.',link:'https://h2om.com'},
+      {id:6,name:'HES Solar',cat:'ev',ask:'$500-2,000',status:'contacted',amount:0,notes:'Family owned. Called last week.',link:''},
+      {id:7,name:'MuXu Creations',cat:'fashion',ask:'Custom piece',status:'meeting',amount:0,notes:'Meeting with Ainara set.',link:''},
+      {id:8,name:'Cleantech San Diego',cat:'ev',ask:'$1,000-2,500',status:'new',amount:0,notes:'Industry org. Platform alignment perfect.',link:'https://cleantechsandiego.org'},
+      {id:9,name:'SDGE (SDG&E)',cat:'ev',ask:'$2,000-5,000',status:'new',amount:0,notes:'Local utility. SB 100 tie-in.',link:'https://sdge.com'},
+      {id:10,name:'Sunrun',cat:'ev',ask:'$1,500-3,000',status:'new',amount:0,notes:'Residential solar leader. SD presence.',link:'https://sunrun.com'},
+      {id:11,name:'Patagonia SD',cat:'fashion',ask:'$1,000-2,000',status:'new',amount:0,notes:'Sustainable fashion giant. Mission aligned.',link:'https://patagonia.com'},
+      {id:12,name:'prAna',cat:'fashion',ask:'$500-1,500',status:'new',amount:0,notes:'Sustainable activewear. SD-adjacent.',link:'https://prana.com'},
+      {id:13,name:'ECONYL / Aquafil',cat:'fashion',ask:'Product + $500',status:'new',amount:0,notes:'Regenerated nylon — the swimsuit material itself.',link:'https://econyl.com'},
+      {id:14,name:'Reformation',cat:'fashion',ask:'$1,000-3,000',status:'new',amount:0,notes:'Sustainable fashion brand. Big audience overlap.',link:'https://thereformation.com'},
+      {id:15,name:'Stella McCartney',cat:'fashion',ask:'Gown or product',status:'new',amount:0,notes:'Sustainable luxury. Dream collab.',link:'https://stellamccartney.com'},
+      {id:16,name:'Tesla SD',cat:'auto',ask:'$2,000-5,000',status:'new',amount:0,notes:'EV brand. Platform alignment.',link:'https://tesla.com'},
+      {id:17,name:'ChargePoint',cat:'ev',ask:'$1,000-2,500',status:'new',amount:0,notes:'EV charging network. SB 100 story.',link:'https://chargepoint.com'},
+      {id:18,name:'BioLite',cat:'ev',ask:'$500-1,500',status:'new',amount:0,notes:'Clean energy products. Engineer angle.',link:'https://bioliteenergy.com'},
+      {id:19,name:'Faherty Brand',cat:'fashion',ask:'$500-1,500',status:'new',amount:0,notes:'Sustainable coastal brand. SD aesthetic.',link:'https://fahertybrand.com'},
+      {id:20,name:'tentree',cat:'fashion',ask:'$500-1,000',status:'new',amount:0,notes:'Plants trees per item sold. Easy ask.',link:'https://tentree.com'},
+      {id:21,name:'San Diego Tourism Authority',cat:'local',ask:'$1,000-3,000',status:'new',amount:0,notes:'Local visibility. SD pride angle.',link:'https://sandiego.org'},
+      {id:22,name:'Miramar Solar',cat:'ev',ask:'$500-2,000',status:'new',amount:0,notes:'Local SD solar installer.',link:''},
+      {id:23,name:'Green Flash Brewing',cat:'local',ask:'$500-1,000',status:'new',amount:0,notes:'SD local brand. Sustainability messaging.',link:'https://greenflashbrew.com'},
+      {id:24,name:'Bumble and Bumble',cat:'fashion',ask:'Product + $500',status:'new',amount:0,notes:'Beauty brand. HMU partnership angle.',link:'https://bumbleandbumble.com'},
+      {id:25,name:'Anthropologie',cat:'fashion',ask:'$1,000-2,000',status:'new',amount:0,notes:'Sustainable line. Design-forward.',link:'https://anthropologie.com'},
+      {id:26,name:'REI San Diego',cat:'fashion',ask:'$500-1,500',status:'new',amount:0,notes:'Outdoor + sustainability. Co-op values.',link:'https://rei.com'},
+      {id:27,name:'Caliwater',cat:'local',ask:'$500-1,000',status:'new',amount:0,notes:'CA cactus water brand. Local + sustainable.',link:'https://caliwater.com'},
+      {id:28,name:'Pressed Juicery',cat:'local',ask:'Product + $500',status:'new',amount:0,notes:'Health brand. Breakfast girl energy.',link:'https://pressedjuicery.com'},
+      {id:29,name:'Gymshark',cat:'fashion',ask:'Product + $500',status:'new',amount:0,notes:'Activewear. Athlete body platform.',link:'https://gymshark.com'},
+      {id:30,name:'AETHER Apparel',cat:'fashion',ask:'$500-1,500',status:'new',amount:0,notes:'Sustainable premium outdoor fashion.',link:'https://aetherapparel.com'},
     ];
     lsSave('chq-sp',S.sponsors);
   }
@@ -662,7 +685,7 @@ function seedLibrary(){
 }
 
 // ═══ PASSWORDS ════════════════════════════════════════════════
-var PASSWORDS={amelia:'andi',laneea:'withlove'};
+var PASSWORDS={amelia:'serph',laneea:'withlove'};
 var PENDING_ROLE=null;
 
 function tryLogin(role,btn){
@@ -1262,7 +1285,7 @@ function renderWeek(){
             return evHour===actualHour;
           });
           return '<div class="wk-cell '+(d.toDateString()===todayStr?'wk-today':'')+' " onclick="quickAddEvent(\''+dateStr+'\','+actualHour+')">' +
-            evs.map(function(ev){return '<div class="wk-ev ev-'+(ev.type||'coach')+'" title="'+ev.title+'">'+'<span class="wk-ev-title">'+ev.title+'</span>'+(ev.who?'<span class="wk-ev-meta">'+ev.time+(ev.who?' · '+ev.who:'')+'</span>':'')+'</div>';}).join('') +
+            evs.map(function(ev){return '<div class="wk-ev ev-'+(ev.type||'coach')+'" title="'+ev.title+(ev.who?' — '+ev.who:'')+'">'+ev.title+'</div>';}).join('') +
             '</div>';
         }).join('');
     }).join('') +
@@ -1868,11 +1891,16 @@ function bCompProgress(){
     '</div></div>');
 }
 function bAdvocacy(){
-  var adv=lsGet('chq-adv',{
+  var advDefaults={
     energy:{stance:'SB 100 is law. Net-zero is the target. My platform is the bridge between legislation and lived reality — specifically in the textile supply chains that still run on fossil fuels.',stats:'65% of clothing is polyester — derived from crude oil. · SB 100 mandates 100% clean energy by 2045. · Textile mills are among the most energy-intensive manufacturers.',notes:'',progress:60},
     fashion:{stance:'Every garment has a carbon cost. I advocate for the policy that makes brands pay it — not the planet. SB 707 is the mechanism. EPR is the framework.',stats:'Fashion = 10% of global carbon emissions. · SB 707 shifts waste costs from taxpayers to brands. · 85% of textiles end up in landfills.',notes:'',progress:75},
     justice:{stance:'The communities closest to textile mills and fast fashion warehouses bear the greatest environmental burden. Clean fashion is not just a climate argument — it is a justice argument.',stats:'Low-income communities are 3x more likely to live near polluting facilities. · California SB 535 directs cap-and-trade revenue to disadvantaged communities.',notes:'',progress:35},
     solarpunk:{stance:'Solarpunk is not a utopia. It is a building permit. Library of Morenita is solarpunk infrastructure — a digital archive designed not to burn.',stats:'Most creative work disappears within a generation. · The Library of Alexandria held 400,000 scrolls — and burned.',notes:'',progress:50},
+  };
+  var advSaved=lsGet('chq-adv',{});
+  var adv={};
+  ['energy','fashion','justice','solarpunk'].forEach(function(k){
+    adv[k]=Object.assign({},advDefaults[k],advSaved[k]||{});
   });
   var sections=[
     {key:'energy',icon:'⚡',title:'Clean Energy & EV',color:'var(--ch3)',bg:'var(--ch4)'},
