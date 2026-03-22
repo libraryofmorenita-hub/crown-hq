@@ -2,7 +2,44 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Crown HQ">
+<meta name="theme-color" content="#1A1340">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0iIzFBMTM0MCIvPgogIDxyZWN0IHdpZHRoPSI1MTIiIGhlaWdodD0iNTEyIiByeD0iMTAwIiBmaWxsPSJ1cmwoI2JnKSIvPgogIDxkZWZzPgogICAgPHJhZGlhbEdyYWRpZW50IGlkPSJiZyIgY3g9IjQwJSIgY3k9IjM1JSIgcj0iNjUlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzJFMjU2MCIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMxQTEzNDAiLz4KICAgIDwvcmFkaWFsR3JhZGllbnQ+CiAgPC9kZWZzPgogIDwhLS0gQ3Jvd24gc2hhcGUgLS0+CiAgPHBhdGggZD0iTTEyOCAzNDAgTDE2MCAyMDAgTDIyMCAyNzAgTDI1NiAxNjAgTDI5MiAyNzAgTDM1MiAyMDAgTDM4NCAzNDAgWiIgCiAgICAgICAgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRjBEODk4IiBzdHJva2Utd2lkdGg9IjE0IiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICA8IS0tIEJhc2UgYmFyIC0tPgogIDxyZWN0IHg9IjExOCIgeT0iMzQ4IiB3aWR0aD0iMjc2IiBoZWlnaHQ9IjI4IiByeD0iMTQiIGZpbGw9IiNGMEQ4OTgiIG9wYWNpdHk9Ii45Ii8+CiAgPCEtLSBDcm93biBkb3RzIC0tPgogIDxjaXJjbGUgY3g9IjE2MCIgY3k9IjE5NiIgcj0iMTIiIGZpbGw9IiNGMEQ4OTgiLz4KICA8Y2lyY2xlIGN4PSIyNTYiIGN5PSIxNTYiIHI9IjE0IiBmaWxsPSIjRjBEODk4Ii8+CiAgPGNpcmNsZSBjeD0iMzUyIiBjeT0iMTk2IiByPSIxMiIgZmlsbD0iI0YwRDg5OCIvPgo8L3N2Zz4=">
+<link rel="manifest" href="manifest.json">
+<!-- Inline manifest fallback for single-file deploy -->
+<script type="application/json" id="pwa-manifest">{
+  "name": "Crown HQ — Amelia Arabe",
+  "short_name": "Crown HQ",
+  "description": "Miss California USA 2026 Command Center",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1A1340",
+  "theme_color": "#1A1340",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}</script>
+<script>
+  (function(){
+    var mf=document.getElementById('pwa-manifest');
+    if(!mf)return;
+    var blob=new Blob([mf.textContent],{type:'application/manifest+json'});
+    var url=URL.createObjectURL(blob);
+    var link=document.createElement('link');
+    link.rel='manifest';link.href=url;
+    document.head.appendChild(link);
+  })();
+</script>
 <title>STARDOM — Amelia Arabe</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=Plus+Jakarta+Sans:wght@300;400;500;600&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
 <style>
@@ -27,6 +64,9 @@
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%;overflow:hidden}
+html{height:-webkit-fill-available}
+body{min-height:-webkit-fill-available;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+:root{--sat:env(safe-area-inset-top);--sab:env(safe-area-inset-bottom)}
 body{font-family:var(--fb);background:var(--ch5);color:var(--ink);display:flex;flex-direction:column}
 
 /* LOGIN */
@@ -53,7 +93,7 @@ body{font-family:var(--fb);background:var(--ch5);color:var(--ink);display:flex;f
 /* APP */
 #app{display:none;flex-direction:column;height:100%}
 #app.on{display:flex}
-.topbar{height:48px;background:var(--tz);display:flex;align-items:center;justify-content:space-between;padding:0 1.25rem;flex-shrink:0;border-bottom:1px solid rgba(240,216,152,.07)}
+.topbar{height:48px;height:calc(48px + env(safe-area-inset-top));padding-top:env(safe-area-inset-top);background:var(--tz);display:flex;align-items:center;justify-content:space-between;padding-left:max(1.25rem,env(safe-area-inset-left));padding-right:max(1.25rem,env(safe-area-inset-right));flex-shrink:0;border-bottom:1px solid rgba(240,216,152,.07)}
 .tb-logo{font-family:var(--fd);font-size:1.15rem;font-style:italic;color:var(--ch)}
 .tb-logo span{color:var(--bl);font-size:.85rem}
 .tb-r{display:flex;align-items:center;gap:.6rem}
@@ -434,6 +474,31 @@ body.em [data-e]:focus{outline:2px solid var(--ch);background:rgba(240,216,152,.
   .adv-grid-2col{grid-template-columns:1fr !important}
 }
 </style>
+
+<script>
+// PWA Manifest — inline so no separate file needed
+(function(){
+  var manifest={
+    name:'Crown HQ — Amelia Arabe',
+    short_name:'Crown HQ',
+    description:'Miss California USA 2026 Command Center',
+    start_url:'/',
+    display:'standalone',
+    background_color:'#1A1340',
+    theme_color:'#1A1340',
+    orientation:'portrait',
+    icons:[
+      {src:'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"><rect width="192" height="192" fill="#1A1340"/><text x="96" y="130" text-anchor="middle" font-size="100" font-family="serif">👑</text></svg>'),sizes:'192x192',type:'image/svg+xml'},
+      {src:'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" fill="#1A1340"/><text x="256" y="340" text-anchor="middle" font-size="280" font-family="serif">👑</text></svg>'),sizes:'512x512',type:'image/svg+xml'}
+    ]
+  };
+  var blob=new Blob([JSON.stringify(manifest)],{type:'application/json'});
+  var url=URL.createObjectURL(blob);
+  var link=document.createElement('link');
+  link.rel='manifest';link.href=url;
+  document.head.appendChild(link);
+})();
+</script>
 </head>
 <body>
 
@@ -700,7 +765,7 @@ function seedLibrary(){
 }
 
 // ═══ PASSWORDS ════════════════════════════════════════════════
-var PASSWORDS={amelia:'andi',laneea:'withlove'};
+var PASSWORDS={amelia:'serph',laneea:'withlove'};
 var PENDING_ROLE=null;
 
 function tryLogin(role,btn){
