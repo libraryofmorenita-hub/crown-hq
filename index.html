@@ -1009,7 +1009,6 @@ function bDash(){
     '<div class="card">' +
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">' +
     '<div class="cl" style="margin-bottom:0">Career Goals</div>' +
-    '<button class="btn bg" style="font-size:.55rem;padding:.2rem .6rem" onclick="openGoalEditor()">Edit Goals</button>' +
     '</div>' +
     gDef.map(function(g2,gi){
       return '<div class="goal-item">' +
@@ -2323,11 +2322,7 @@ document.querySelectorAll('.ov').forEach(function(o){
 
 </script>
 
-<div class="ov" id="m-goals"><div class="modal" style="max-width:560px">
-  <h3>Edit Career Goals</h3>
-  <div id="goal-editor-list"></div>
-  <button class="btn bg" style="margin-top:.5rem;font-size:.65rem;width:100%" onclick="addGoalRow()">+ Add Goal</button>
-  <div class="m-acts"><button class="btn bg" onclick="closeM('m-goals')">Cancel</button><button class="btn bp" onclick="saveGoals()">Save All</button></div>
+
 </div></div>
 </body>
 </html>
