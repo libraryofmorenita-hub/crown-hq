@@ -856,15 +856,15 @@ var ROLES={
       {ico:'📊',lbl:'Progress',id:'comp-progress'},
       {ico:'💬',lbl:'Messages',id:'messages'},
     ],
-    editable:[]
+    editable:['todos','deliverables']
   },
   contributor:{name:'Contributor',abbr:'CO',color:'var(--tz4)',
     nav:[
       {ico:'📚',lbl:'Library',id:'library'},
-      {ico:'📣',lbl:'Advocacy',id:'advocacy'},
+      {ico:'📁',lbl:'Files',id:'files'},
       {ico:'💬',lbl:'Messages',id:'messages'},
     ],
-    editable:['library','todos']
+    editable:['library','todos','files']
   }
 };
 
@@ -960,9 +960,9 @@ function bDash(){
   ];
   var goals=S.goals;
   var gDefaults=[
-    {ico:'📱',name:'TikTok followers',key:'tiktok',target:'100K',cur:'95K'},
-    {ico:'📸',name:'Instagram followers',key:'ig',target:'20K',cur:'1.4K'},
-    {ico:'📝',name:'Written publications',key:'pubs',target:'12',cur:'2'},
+    {ico:'🎥',name:'Youtube followers',key:'youtube',target:'5k',cur:'0'},
+    {ico:'📸',name:'Instagram followers',key:'ig',target:'100K',cur:'1.4K'},
+    {ico:'📝',name:'Written publications',key:'pubs',target:'12',cur:'0'},
     {ico:'🌱',name:'Mother Earth volunteer',key:'vol',target:'3x',cur:'0x'},
     {ico:'👠',name:'Runways walked',key:'runways',target:'3',cur:'0'},
     {ico:'🏛',name:'Gallery show / oil paintings',key:'gallery',target:'1',cur:'Planning'},
@@ -997,7 +997,7 @@ function bDash(){
 
     // COUNTDOWN + STATS
     '<div class="g4" style="margin-bottom:.85rem">' +
-    '<div class="stat st-bl"><div class="sn" data-e="goal:days:text">'+days+'</div><div class="sl">Days to Crown</div><div class="prog"><div class="pf pf-s" style="width:'+Math.min(100,Math.round(((112-days)/112)*100))+'%"></div></div><div class="pl">July 10 2026</div></div>' +
+    '<div class="stat st-bl"><div class="sn""goal:days:text">'+days+'</div><div class="sl">Days to Crown</div><div class="prog"><div class="pf pf-s" style="width:'+Math.min(100,Math.round(((112-days)/112)*100))+'%"></div></div><div class="pl">July 10 2026</div></div>' +
     '<div class="stat st-ch"><div class="sn">$'+raised.toLocaleString()+'</div><div class="sl">Raised</div><div class="prog"><div class="pf pf-c" style="width:'+Math.min(100,Math.round((raised/2500)*100))+'%"></div></div><div class="pl">Goal: $<span data-e="goal:fundraise:text">'+(goals.fundraise||'2,500')+'</span></div></div>' +
     '<div class="stat st-tz"><div class="sn">'+closed+'</div><div class="sl">Sponsors Closed</div></div>' +
     '<div class="stat st-sg"><div class="sn">96.4K</div><div class="sl">Social Reach</div></div>' +
