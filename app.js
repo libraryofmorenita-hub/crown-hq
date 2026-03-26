@@ -774,13 +774,11 @@ function removeDashMood(role,i){
 
 // ═══ SPONSORS ════════════════════════════════════════════════
 var spFilter='all';
-function bSponsors(){
-  var raised=S.sponsors.filter(function(s){return s.status==='closed';}).reduce(function(a,s){return a+(s.amount||0);},0);
-  inject(
-    '<div class="ph"><div><div class="ph-tag">Pipeline</div><div class="ph-title"><em>Sponsor</em> Tracker</div></div>' +
-    '<div class="ph-acts"><button class="btn bp" onclick="openM(\'m-sponsor\')">+ Add Sponsor</button></div></div>' +
-    '<div class="pb">' +
-    '<div class="g4" style="margin-bottom:.85rem">' +
+function getSpTabContent(spTab, raised){
+  if(spTab==='pitch') return renderSpPitchDecks();
+  if(spTab==='emails') return renderSpEmails();
+  if(spTab==='objections') return renderSpObjections();
+  return '<div class="g4" style="margin-bottom:.85rem">' +
     '<div class="stat st-tz"><div class="sn">'+S.sponsors.length+'</div><div class="sl">Total</div></div>' +
     '<div class="stat st-ch"><div class="sn">'+S.sponsors.filter(function(s){return s.status==='meeting';}).length+'</div><div class="sl">Meeting Set</div></div>' +
     '<div class="stat st-sg"><div class="sn">'+S.sponsors.filter(function(s){return s.status==='closed';}).length+'</div><div class="sl">Closed</div></div>' +
@@ -788,17 +786,23 @@ function bSponsors(){
     '</div>' +
     '<div style="display:flex;gap:.3rem;margin-bottom:.85rem;flex-wrap:wrap">' +
     ['all','new','contacted','meeting','closed','declined'].map(function(f){
-      return '<button class="btn '+(f===spFilter?'bp':'bg')+'" onclick="spFilter=\''+f+'\';bSponsors()">'+
+      return '<button class="btn '+(f===spFilter?'bp':'bg')+'" onclick="spFilter=''+f+'';bSponsors()">'+
         (f==='all'?'All':f.charAt(0).toUpperCase()+f.slice(1))+'</button>';
     }).join('') +
     '</div>' +
     '<div class="card" style="padding:0;overflow:hidden">' +
     '<table class="sp-tbl"><thead><tr><th>Company</th><th>Ask</th><th>Status</th><th>Notes</th><th></th></tr></thead>' +
     '<tbody>'+renderSpRows()+'</tbody></table>' +
-    '</div>' :
-    spTab==='pitch' ? renderSpPitchDecks() :
-    spTab==='emails' ? renderSpEmails() :
-    renderSpObjections()) +
+    '</div>';
+}
+
+function bSponsors(){
+  var raised=S.sponsors.filter(function(s){return s.status==='closed';}).reduce(function(a,s){return a+(s.amount||0);},0);
+  inject(
+    '<div class="ph"><div><div class="ph-tag">Pipeline</div><div class="ph-title"><em>Sponsor</em> Tracker</div></div>' +
+    '<div class="ph-acts"><button class="btn bp" onclick="openM(\'m-sponsor\')">+ Add Sponsor</button></div></div>' +
+    '<div class="pb">' +
+    getSpTabContent(spTab, raised) +
     '</div>'
   );
 }
