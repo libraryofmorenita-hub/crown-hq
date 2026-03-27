@@ -2526,7 +2526,7 @@ function previewLookbook(){
 
 // ═══ SOCIAL MEDIA STRATEGY ═══════════════════════════════════
 function bSocial(){
-  var sd=lsGet('chq-social',{
+  var defaults={
     strategy:{ig:'',yt:'',substack:'',tiktok:''},
     pillars:['Clean Energy & Policy','Fashion Accountability','Personal Story','Behind the Scenes','Library of Morenita'],
     cadence:{ig:'3x per week',yt:'1x per week',substack:'1x per week',tiktok:'Paused — relaunching for competition'},
@@ -2540,9 +2540,16 @@ function bSocial(){
       {id:5,title:'Cello, Engineering, and Why I Need Both',platform:'YouTube',status:'planned',notes:'Film at home. Cello in frame. Most personal video.'},
       {id:6,title:'San Diego as a Clean Fashion Capital',platform:'YouTube',status:'planned',notes:'Film around SD. City + ocean + tech. Local pride.'},
     ]
-  });
-  var saved=lsGet('chq-social',null);
-  if(saved) sd=Object.assign({},sd,saved);
+  };
+  var saved=lsGet('chq-social',null)||{};
+  var sd={
+    strategy:Object.assign({},defaults.strategy,saved.strategy||{}),
+    pillars:Array.isArray(saved.pillars)&&saved.pillars.length?saved.pillars:defaults.pillars.slice(),
+    cadence:Object.assign({},defaults.cadence,saved.cadence||{}),
+    metrics:Object.assign({},defaults.metrics,saved.metrics||{}),
+    calendar:Array.isArray(saved.calendar)?saved.calendar:defaults.calendar.slice(),
+    videos:Array.isArray(saved.videos)&&saved.videos.length?saved.videos:defaults.videos.slice()
+  };
 
   var statColors={ig:'var(--lv2)',yt:'var(--bl2)',substack:'var(--ch2)',tiktok:'var(--sg2)'};
   var platforms=['ig','yt','substack'];
