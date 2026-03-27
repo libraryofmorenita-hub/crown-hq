@@ -875,10 +875,10 @@ function renderSpEmails(){
 function renderSpObjections(){
   var pd=lsGet('chq-pitch',{objections:{}});
   var defaults={
-    budget:{q:'We don't have budget for this.',a:'Totally understand — this doesn't have to be cash. Product placement, gifted item, or co-branded social post all count. We are flexible on structure.'},
+    budget:{q:"We don't have budget for this.",a:"Totally understand — this doesn't have to be cash. Product placement, gifted item, or co-branded social post all count. We are flexible on structure."},
     audience:{q:'Your audience is too small.',a:'Amelia's audience is highly engaged and values-aligned with sustainability brands. Quality over quantity — and she is actively growing into competition.'},
-    pageant:{q:'We don't typically sponsor pageants.',a:'This isn't a typical pageant. Amelia is an engineer with a policy platform — SB 100, SB 707. Your brand is backing a climate advocate on a national stage.'},
-    timing:{q:'The timing isn't right.',a:'The competition is July 10-12. Early partners get the best placement and most lead time for co-created content. The window is real.'},
+    pageant:{q:"We don't typically sponsor pageants.",a:"This isn't a typical pageant. Amelia is an engineer with a policy platform — SB 100, SB 707. Your brand is backing a climate advocate on a national stage."},
+    timing:{q:"The timing isn't right.",a:'The competition is July 10-12. Early partners get the best placement and most lead time for co-created content. The window is real.'},
     fit:{q:'Not sure it is a fit.',a:'Tell me what a good fit looks like for you. We built this to be flexible — brand awareness, social content, community goodwill, or something else.'}
   };
   return '<div style="display:flex;flex-direction:column;gap:.5rem;margin-top:.85rem">' +
