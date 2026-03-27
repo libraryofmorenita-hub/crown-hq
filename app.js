@@ -154,7 +154,7 @@ function seed(){
     ];
     lsSave('chq-sp',S.sponsors);
   }
-  if(!S.appts.length){  if(!S.appts.length){
+  if(!S.appts.length){
     S.appts=[
       {id:1,date:'2026-03-25',time:'10:00',title:'Runway Walk + Turns',who:'Pageant Coach',type:'coach',notes:'Heel placement and posture at turn'},
       {id:2,date:'2026-03-26',time:'07:00',title:'Strength + Posture',who:'Fitness Trainer',type:'fitness',notes:'Glutes, core, back. 75 min.'},
@@ -774,37 +774,60 @@ function removeDashMood(role,i){
 
 // ═══ SPONSORS ════════════════════════════════════════════════
 var spFilter='all';
+function setSpFilter(f){spFilter=f;bSponsors();}
 function getSpTabContent(spTab, raised){
   if(spTab==='pitch') return renderSpPitchDecks();
   if(spTab==='emails') return renderSpEmails();
   if(spTab==='objections') return renderSpObjections();
-  return '<div class="g4" style="margin-bottom:.85rem">' +
-    '<div class="stat st-tz"><div class="sn">'+S.sponsors.length+'</div><div class="sl">Total</div></div>' +
-    '<div class="stat st-ch"><div class="sn">'+S.sponsors.filter(function(s){return s.status==='meeting';}).length+'</div><div class="sl">Meeting Set</div></div>' +
-    '<div class="stat st-sg"><div class="sn">'+S.sponsors.filter(function(s){return s.status==='closed';}).length+'</div><div class="sl">Closed</div></div>' +
-    '<div class="stat st-bl"><div class="sn">$'+raised.toLocaleString()+'</div><div class="sl">Raised</div></div>' +
-    '</div>' +
-    '<div style="display:flex;gap:.3rem;margin-bottom:.85rem;flex-wrap:wrap">' +
-    ['all','new','contacted','meeting','closed','declined'].map(function(f){
-      return '<button class="btn '+(f===spFilter?'bp':'bg')+'" onclick="spFilter=''+f+'';bSponsors()">'+
-        (f==='all'?'All':f.charAt(0).toUpperCase()+f.slice(1))+'</button>';
-    }).join('') +
-    '</div>' +
-    '<div class="card" style="padding:0;overflow:hidden">' +
-    '<table class="sp-tbl"><thead><tr><th>Company</th><th>Ask</th><th>Status</th><th>Notes</th><th></th></tr></thead>' +
-    '<tbody>'+renderSpRows()+'</tbody></table>' +
-    '</div>';
+  var html = '';
+  html += '<div class="g4" style="margin-bottom:.85rem">';
+  html += '<div class="stat st-tz"><div class="sn">'+S.sponsors.length+'</div><div class="sl">Total</div></div>';
+  html += '<div class="stat st-ch"><div class="sn">'+S.sponsors.filter(function(s){return s.status==='meeting';}).length+'</div><div class="sl">Meeting Set</div></div>';
+  html += '<div class="stat st-sg"><div class="sn">'+S.sponsors.filter(function(s){return s.status==='closed';}).length+'</div><div class="sl">Closed</div></div>';
+  html += '<div class="stat st-bl"><div class="sn">$'+raised.toLocaleString()+'</div><div class="sl">Raised</div></div>';
+  html += '</div>';
+  html += '<div style="display:flex;gap:.3rem;margin-bottom:.85rem;flex-wrap:wrap">';
+  ['all','new','contacted','meeting','closed','declined'].forEach(function(f){
+    var label = f==='all'?'All':f.charAt(0).toUpperCase()+f.slice(1);
+    var cls = f===spFilter?'btn bp':'btn bg';
+    html += '<button class="'+cls+'" data-f="'+f+'" onclick="spFilter=this.getAttribute(String.fromCharCode(100,97,116,97,45,102));bSponsors()">'+label+'</button>';
+  });
+  html += '</div>';
+  html += '<div class="card" style="padding:0;overflow:hidden">';
+  html += '<table class="sp-tbl"><thead><tr><th>Company</th><th>Ask</th><th>Status</th><th>Notes</th><th></th></tr></thead>';
+  html += '<tbody>'+renderSpRows()+'</tbody></table>';
+  html += '</div>';
+  return html;
 }
 
 function bSponsors(){
+  var spTab=window._spTab||'tracker';
   var raised=S.sponsors.filter(function(s){return s.status==='closed';}).reduce(function(a,s){return a+(s.amount||0);},0);
+  var tabBar='<div style="display:flex;gap:0;border-bottom:2px solid var(--ch4);background:var(--wh);padding:0 1.75rem;flex-shrink:0">';
+  var spTabs=[{t:'tracker',l:'Pipeline'},{t:'pitch',l:'Pitch Decks'},{t:'emails',l:'Email Templates'},{t:'objections',l:'Objections'}];
+  for(var ti=0;ti<spTabs.length;ti++){
+    var xt=spTabs[ti];
+    var isActive=spTab===xt.t;
+    var bStyle='font-family:var(--fm);font-size:.55rem;letter-spacing:2px;text-transform:uppercase;padding:.7rem .9rem;border:none;background:transparent;cursor:pointer;margin-bottom:-2px;';
+    bStyle+='border-bottom:2px solid '+(isActive?'var(--tz)':'transparent')+';';
+    bStyle+='color:'+(isActive?'var(--tz)':'var(--wg)')+';';
+    tabBar+='<button class="sp-tab-btn" data-t="'+xt.t+'" style="'+bStyle+'">'+xt.l+'</button>';
+  }
+  tabBar+='</div>';
   inject(
-    '<div class="ph"><div><div class="ph-tag">Pipeline</div><div class="ph-title"><em>Sponsor</em> Tracker</div></div>' +
+    '<div class="ph"><div><div class="ph-tag">Pipeline</div><div class="ph-title"><em>Sponsors</em></div></div>' +
     '<div class="ph-acts"><button class="btn bp" onclick="openM(\'m-sponsor\')">+ Add Sponsor</button></div></div>' +
+    tabBar +
     '<div class="pb">' +
     getSpTabContent(spTab, raised) +
     '</div>'
   );
+  document.querySelectorAll('.sp-tab-btn').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      window._spTab=btn.getAttribute('data-t');
+      bSponsors();
+    });
+  });
 }
 
 function renderSpPitchDecks(){
@@ -820,7 +843,7 @@ function renderSpPitchDecks(){
         '</div>' +
         '<div style="font-family:var(--fm);font-size:.55rem;color:var(--wg);margin-bottom:.4rem">'+(saved.fileName?'📄 '+saved.fileName:'No PDF uploaded')+'</div>' +
         '<textarea class="deck-notes" data-key="'+k+'" placeholder="Key talking points..." style="width:100%;min-height:70px;border:1.5px dashed var(--du);border-radius:3px;padding:.55rem .7rem;font-family:var(--fb);font-size:.75rem;color:var(--st);line-height:1.7;resize:vertical;outline:none;background:var(--ch5)">'+(saved.notes||'')+'</textarea>' +
-        (saved.pdf?'<button class="btn bg" style="font-size:.55rem;margin-top:.4rem" onclick="window.open(lsGet('chq-pitch',{}).decks[''+k+''].pdf,'_blank')">View PDF</button>':'') +
+        (saved.pdf?'<button class="btn bg" style="font-size:.55rem;margin-top:.4rem" onclick="window.open(lsGet(\'chq-pitch\',{}).decks[\''+k+'\'].pdf,\'_blank\')">View PDF</button>':'') +
         '</div>';
     }).join('') +
     '</div>';
@@ -841,10 +864,10 @@ function renderSpEmails(){
       return '<div class="card" style="border-left:3px solid '+colors[k]+';padding:.85rem">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">' +
         '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:2px;color:'+colors[k]+';text-transform:uppercase">'+labels[k]+'</div>' +
-        '<button class="btn bg" style="font-size:.55rem;padding:.2rem .6rem" onclick="copySpEmail('se-body-'+k+'','se-subj-'+k+'',this)">Copy</button>' +
+        '<button class="btn bg" style="font-size:.55rem;padding:.2rem .6rem" onclick="copySpEmail(\'se-body-'+k+'\',\'se-subj-'+k+'\',this)">Copy</button>' +
         '</div>' +
-        '<input id="se-subj-'+k+'" value="'+e.subject.replace(/"/g,'&quot;')+'" style="width:100%;border:1px solid var(--du);border-radius:3px;padding:.35rem .65rem;font-family:var(--fb);font-size:.75rem;color:var(--ink);background:var(--wh);outline:none;margin-bottom:.45rem" onblur="saveSpEmail(''+k+'','subject',this.value)">' +
-        '<textarea id="se-body-'+k+'" style="width:100%;min-height:100px;border:1px solid var(--du);border-radius:3px;padding:.5rem .65rem;font-family:var(--fb);font-size:.75rem;color:var(--st);line-height:1.75;resize:vertical;outline:none;background:var(--wh)" onblur="saveSpEmail(''+k+'','body',this.value)">'+e.body+'</textarea>' +
+        '<input id="se-subj-'+k+'" value="'+e.subject.replace(/"/g,'&quot;')+'" style="width:100%;border:1px solid var(--du);border-radius:3px;padding:.35rem .65rem;font-family:var(--fb);font-size:.75rem;color:var(--ink);background:var(--wh);outline:none;margin-bottom:.45rem" onblur="saveSpEmail(\''+k+'\',\'subject\',this.value)">' +
+        '<textarea id="se-body-'+k+'" style="width:100%;min-height:100px;border:1px solid var(--du);border-radius:3px;padding:.5rem .65rem;font-family:var(--fb);font-size:.75rem;color:var(--st);line-height:1.75;resize:vertical;outline:none;background:var(--wh)" onblur="saveSpEmail(\''+k+'\',\'body\',this.value)">'+e.body+'</textarea>' +
         '</div>';
     }).join('') +
     '</div>';
@@ -865,7 +888,7 @@ function renderSpObjections(){
         '<div style="font-family:var(--fm);font-size:.48rem;letter-spacing:2px;color:var(--bl2);text-transform:uppercase;margin-bottom:.25rem">They say</div>' +
         '<div style="font-family:var(--fd);font-style:italic;font-size:.88rem;color:var(--ink);margin-bottom:.5rem;border-left:2px solid var(--bl);padding-left:.65rem">'+saved.q+'</div>' +
         '<div style="font-family:var(--fm);font-size:.48rem;letter-spacing:2px;color:var(--sg2);text-transform:uppercase;margin-bottom:.25rem">You say</div>' +
-        '<textarea style="width:100%;min-height:55px;border:1.5px solid var(--ch4);border-radius:3px;padding:.5rem .65rem;font-family:var(--fb);font-size:.75rem;color:var(--st);line-height:1.7;resize:vertical;outline:none;background:var(--ch5)" onblur="saveSpObjection(''+k+'',this.value)">'+saved.a+'</textarea>' +
+        '<textarea style="width:100%;min-height:55px;border:1.5px solid var(--ch4);border-radius:3px;padding:.5rem .65rem;font-family:var(--fb);font-size:.75rem;color:var(--st);line-height:1.7;resize:vertical;outline:none;background:var(--ch5)" onblur="saveSpObjection(\''+k+'\',this.value)">'+saved.a+'</textarea>' +
         '</div>';
     }).join('') +
     '</div>';
@@ -1597,7 +1620,7 @@ function bFiles(){
     '</div>' +
     '<div style="display:flex;gap:.35rem;margin-bottom:.85rem;flex-wrap:wrap" id="folder-tabs">' +
     ['All','Competition','Sponsors','Press','Looks','Personal'].map(function(f){
-      return '<button class="cal-tab '+(( window._fileFolder||'All')===f?'on':'')+'" onclick="window._fileFolder=''+f+'';renderFileList()">'+f+'</button>';
+      return '<button class="cal-tab '+(( window._fileFolder||'All')===f?'on':'')+'" onclick="window._fileFolder=\''+f+'\';renderFileList()">'+f+'</button>';
     }).join('') +
     '</div>' +
     '<div id="uploaded-files"></div>' +
@@ -2554,17 +2577,17 @@ function bSocial(){
       return '<div class="card" style="padding:.85rem">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem">' +
         '<div style="font-family:var(--fm);font-size:.5rem;letter-spacing:2px;color:var(--wg);text-transform:uppercase">'+a.title+'</div>' +
-        '<button class="btn bg" style="font-size:.52rem;padding:.18rem .5rem" onclick="copyAsset('sba-'+k+'',this)">Copy</button>' +
+        '<button class="btn bg" style="font-size:.52rem;padding:.18rem .5rem" onclick="copyAsset(\'sba-'+k+'\',this)">Copy</button>' +
         '</div>' +
-        '<textarea class="ba-ta" id="sba-'+k+'" oninput="S.brand[''+k+'']=this.value" style="min-height:55px;font-size:.75rem">'+(S.brand[k]||a.text)+'</textarea>' +
+        '<textarea class="ba-ta" id="sba-'+k+'" oninput="S.brand[\''+k+'\']=this.value" style="min-height:55px;font-size:.75rem">'+(S.brand[k]||a.text)+'</textarea>' +
         '</div>';
     }).join('') +
     '<div class="card" style="padding:.85rem;grid-column:1/-1">' +
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem">' +
     '<div style="font-family:var(--fm);font-size:.5rem;letter-spacing:2px;color:var(--wg);text-transform:uppercase">Voice Principles</div>' +
-    '<button class="btn bg" style="font-size:.52rem;padding:.18rem .5rem" onclick="copyAsset('sba-voice',this)">Copy</button>' +
+    '<button class="btn bg" style="font-size:.52rem;padding:.18rem .5rem" onclick="copyAsset(\'sba-voice\',this)">Copy</button>' +
     '</div>' +
-    '<textarea class="ba-ta" id="sba-voice" oninput="S.brand['voice']=this.value" style="min-height:45px;font-size:.75rem">'+(S.brand.voice||'Name the number. Name the bill. State, do not apologize. Curious, never preachy. Not for a crown, but for a microphone.')+'</textarea>' +
+    '<textarea class="ba-ta" id="sba-voice" oninput="S.brand[\'voice\']=this.value" style="min-height:45px;font-size:.75rem">'+(S.brand.voice||'Name the number. Name the bill. State, do not apologize. Curious, never preachy. Not for a crown, but for a microphone.')+'</textarea>' +
     '</div>' +
     '</div>' +
 
@@ -2994,4 +3017,3 @@ document.querySelectorAll('.ov').forEach(function(o){
   }
   tick();
 })();
-
