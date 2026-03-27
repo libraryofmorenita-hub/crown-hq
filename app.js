@@ -3,6 +3,27 @@
 // ═══ SUPABASE ════════════════════════════════════════════════
 var SB_URL='https://haqfxrcsszjwiyrchqnm.supabase.co';
 var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhcWZ4cmNzc3pqd2l5cmNocW5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMDY5NjIsImV4cCI6MjA4OTg4Mjk2Mn0.eioSLntQ0E1mIxUC_r4kmmVbzrIi-d69LLO4rnn0Nlg';
+var SB_SYNC_SUSPENDED=false;
+var SB_KV_MAP={
+  'chq-gl':'goals',
+  'chq-td':'todos',
+  'chq-an':'answers',
+  'chq-br':'brand',
+  'chq-adv':'adv',
+  'chq-gd':'gd',
+  'chq-timeline':'timeline',
+  'chq-ap':'appts',
+  'chq-md':'mood',
+  'chq-dm':'dashMood',
+  'chq-qz':'quiz',
+  'chq-pitch':'pitch',
+  'chq-board':'board',
+  'chq-lb-imgs':'lookbook_imgs',
+  'chq-lb-links':'lookbook_links',
+  'chq-lb-bio':'lookbook_bio',
+  'chq-social':'social',
+  'chq-inbox':'inbox'
+};
 function sbFetch(table,method,body,match){
   var url=SB_URL+'/rest/v1/'+table+(match?'?'+match:'');
   return fetch(url,{method:method||'GET',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':method==='POST'?'resolution=merge-duplicates':''},body:body?JSON.stringify(body):undefined})
@@ -10,6 +31,20 @@ function sbFetch(table,method,body,match){
 }
 function sbGet(table){return sbFetch(table,'GET',null,'order=id');}
 function sbUpsert(table,rows){if(!rows||!rows.length)return Promise.resolve();return sbFetch(table,'POST',rows);}
+function sbDelete(table,match){return sbFetch(table,'DELETE',null,match);}
+function sbReplace(table,rows){
+  rows=rows||[];
+  return sbGet(table).then(function(existing){
+    var nextIds=rows.map(function(r){return String(r.id);});
+    var ops=(existing||[]).filter(function(r){return nextIds.indexOf(String(r.id))<0;}).map(function(r){
+      return sbDelete(table,'id=eq.'+encodeURIComponent(r.id));
+    });
+    if(rows.length)ops.push(sbUpsert(table,rows));
+    return Promise.all(ops);
+  }).catch(function(){
+    return rows.length?sbUpsert(table,rows):Promise.resolve();
+  });
+}
 function sbGetKV(key){
   return fetch(SB_URL+'/rest/v1/app_data?key=eq.'+encodeURIComponent(key),{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}})
   .then(function(r){return r.json();}).then(function(rows){return rows&&rows.length?rows[0].value:null;}).catch(function(){return null;});
@@ -18,35 +53,59 @@ function sbSetKV(key,value){
   return fetch(SB_URL+'/rest/v1/app_data',{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},body:JSON.stringify({key:key,value:value,updated_at:new Date().toISOString()})}).catch(function(){});
 }
 function loadFromSupabase(){
-  return Promise.all([sbGet('sponsors'),sbGet('calendar_events'),sbGet('posts'),sbGet('looks'),sbGet('workouts'),sbGet('messages'),sbGet('files'),sbGet('mood_board')])
+  var kvKeys=['goals','todos','answers','brand','adv','gd','timeline','appts','mood','dashMood','quiz','pitch','board','lookbook_imgs','lookbook_links','lookbook_bio','social','inbox'];
+  return Promise.all([sbGet('sponsors'),sbGet('calendar_events'),sbGet('posts'),sbGet('looks'),sbGet('workouts'),sbGet('messages'),sbGet('files'),sbGet('mood_board')].concat(kvKeys.map(sbGetKV)))
   .then(function(results){
     var sp=results[0],ev=results[1],po=results[2],lk=results[3],wk=results[4],ms=results[5],fi=results[6],mb=results[7];
-    if(sp&&sp.length)S.sponsors=sp;
-    if(ev&&ev.length)S.calEvents=ev;
-    if(po&&po.length)S.posts=po;
-    if(lk&&lk.length)S.looks=lk.map(function(l){return{id:l.id,event:l.event_name,round:l.round_name,title:l.title,desc:l.description,img:l.img||''};});
-    if(wk&&wk.length)S.workouts=wk;
-    if(ms&&ms.length)S.messages=ms.map(function(m){return{id:m.id,from:m.from_role,to:m.to_role,text:m.body,time:m.time};});
-    if(fi&&fi.length)FILE_STORE=fi.map(function(f){return{name:f.name,size:f.size,type:f.file_type,data:f.data};});
-    if(mb&&mb.length){S.dashMood={};mb.forEach(function(m){if(!S.dashMood[m.role])S.dashMood[m.role]=[];S.dashMood[m.role].push({src:m.src,label:m.label});});}
-    return Promise.all([sbGetKV('goals'),sbGetKV('todos'),sbGetKV('answers'),sbGetKV('brand'),sbGetKV('adv'),sbGetKV('gd'),sbGetKV('timeline')]);
-  }).then(function(kv){
-    if(kv[0])S.goals=kv[0];
-    if(kv[1])S.todos=kv[1];
-    if(kv[2])S.answers=kv[2];
-    if(kv[3])S.brand=kv[3];
-    if(kv[4])lsSave('chq-adv',kv[4]);
-    if(kv[5])lsSave('chq-gd',kv[5]);
-    if(kv[6])lsSave('chq-timeline',kv[6]);
-  }).catch(function(e){console.log('Supabase load failed',e);});
+    var kv={};
+    kvKeys.forEach(function(key,idx){kv[key]=results[8+idx];});
+    SB_SYNC_SUSPENDED=true;
+    if(sp&&sp.length){S.sponsors=sp;lsWriteLocal('chq-sp',S.sponsors);}
+    if(ev&&ev.length){S.calEvents=ev;lsWriteLocal('chq-ce',S.calEvents);}
+    if(po&&po.length){S.posts=po;lsWriteLocal('chq-po',S.posts);}
+    if(lk&&lk.length){
+      S.looks=lk.map(function(l){return{id:l.id,event:l.event_name,round:l.round_name,title:l.title,desc:l.description,img:l.img||''};});
+      lsWriteLocal('chq-lk',S.looks);
+    }
+    if(wk&&wk.length){S.workouts=wk;lsWriteLocal('chq-wk',S.workouts);}
+    if(ms&&ms.length){
+      S.messages=ms.map(function(m){return{id:m.id,from:m.from_role,to:m.to_role,text:m.body,time:m.time};});
+      lsWriteLocal('chq-ms',S.messages);
+    }
+    if(fi&&fi.length){FILE_STORE=fi.map(function(f){return{id:f.id,name:f.name,size:f.size,type:f.file_type,data:f.data,folder:f.folder||'Personal'};});}
+    if(kv.goals){S.goals=kv.goals;lsWriteLocal('chq-gl',S.goals);}
+    if(kv.todos){S.todos=kv.todos;lsWriteLocal('chq-td',S.todos);}
+    if(kv.answers){S.answers=kv.answers;lsWriteLocal('chq-an',S.answers);}
+    if(kv.brand){S.brand=kv.brand;lsWriteLocal('chq-br',S.brand);}
+    if(kv.adv)lsWriteLocal('chq-adv',kv.adv);
+    if(kv.gd)lsWriteLocal('chq-gd',kv.gd);
+    if(kv.timeline)lsWriteLocal('chq-timeline',kv.timeline);
+    if(kv.appts){S.appts=kv.appts;lsWriteLocal('chq-ap',S.appts);}
+    if(kv.mood){S.mood=kv.mood;lsWriteLocal('chq-md',S.mood);}
+    if(kv.dashMood){S.dashMood=kv.dashMood;lsWriteLocal('chq-dm',S.dashMood);}
+    else if(mb&&mb.length){
+      S.dashMood={};
+      mb.forEach(function(m){if(!S.dashMood[m.role])S.dashMood[m.role]=[];S.dashMood[m.role].push({src:m.src,label:m.label});});
+      lsWriteLocal('chq-dm',S.dashMood);
+    }
+    if(kv.quiz){S.quiz={sessions:kv.quiz.sessions||0,total:kv.quiz.total||0};lsWriteLocal('chq-qz',S.quiz);}
+    if(kv.pitch)lsWriteLocal('chq-pitch',kv.pitch);
+    if(kv.board)lsWriteLocal('chq-board',kv.board);
+    if(kv.lookbook_imgs)lsWriteLocal('chq-lb-imgs',kv.lookbook_imgs);
+    if(kv.lookbook_links)lsWriteLocal('chq-lb-links',kv.lookbook_links);
+    if(kv.lookbook_bio)lsWriteLocal('chq-lb-bio',kv.lookbook_bio);
+    if(kv.social)lsWriteLocal('chq-social',kv.social);
+    if(kv.inbox)lsWriteLocal('chq-inbox',kv.inbox);
+    SB_SYNC_SUSPENDED=false;
+  }).catch(function(e){SB_SYNC_SUSPENDED=false;console.log('Supabase load failed',e);});
 }
-function sbSaveSponsors(){sbUpsert('sponsors',S.sponsors.map(function(s){return{id:s.id,name:s.name,cat:s.cat,ask:s.ask,status:s.status,amount:s.amount||0,notes:s.notes||'',link:s.link||'',updated_at:new Date().toISOString()};}));}
-function sbSaveEvents(){sbUpsert('calendar_events',S.calEvents.map(function(e){return{id:e.id,title:e.title,date:e.date,time:e.time||'',dur:e.dur||1,type:e.type||'coach',who:e.who||'',updated_at:new Date().toISOString()};}));}
-function sbSavePosts(){sbUpsert('posts',S.posts.map(function(p){return{id:p.id,title:p.title,tag:p.tag||'',cat:p.cat||'',date:p.date||'',status:p.status||'draft',cover:p.cover||'',body:p.body||'',updated_at:new Date().toISOString()};}));}
-function sbSaveLooks(){sbUpsert('looks',S.looks.map(function(l){return{id:l.id,event_name:l.event||'',round_name:l.round||'',title:l.title||'',description:l.desc||'',img:l.img||'',updated_at:new Date().toISOString()};}));}
-function sbSaveWorkouts(){sbUpsert('workouts',S.workouts.map(function(w){return{id:w.id,day:w.day||'',focus:w.focus||'',exercises:w.exercises||[],notes:w.notes||'',updated_at:new Date().toISOString()};}));}
-function sbSaveMessages(){sbUpsert('messages',S.messages.map(function(m){return{id:m.id,from_role:m.from||'',to_role:m.to||'',body:m.text||'',time:m.time||'',updated_at:new Date().toISOString()};}));}
-function sbSaveFiles(){sbUpsert('files',FILE_STORE.map(function(f,i){return{id:Date.now()+i,name:f.name,size:f.size,file_type:f.type,data:f.data,updated_at:new Date().toISOString()};}));}
+function sbSaveSponsors(){sbReplace('sponsors',S.sponsors.map(function(s){return{id:s.id,name:s.name,cat:s.cat,ask:s.ask,status:s.status,amount:s.amount||0,notes:s.notes||'',link:s.link||'',updated_at:new Date().toISOString()};}));}
+function sbSaveEvents(){sbReplace('calendar_events',S.calEvents.map(function(e){return{id:e.id,title:e.title,date:e.date,time:e.time||'',dur:e.dur||1,type:e.type||'coach',who:e.who||'',updated_at:new Date().toISOString()};}));}
+function sbSavePosts(){sbReplace('posts',S.posts.map(function(p){return{id:p.id,title:p.title,tag:p.tag||'',cat:p.cat||'',date:p.date||'',status:p.status||'draft',cover:p.cover||'',body:p.body||'',updated_at:new Date().toISOString()};}));}
+function sbSaveLooks(){sbReplace('looks',S.looks.map(function(l){return{id:l.id,event_name:l.event||'',round_name:l.round||'',title:l.title||'',description:l.desc||'',img:l.img||'',updated_at:new Date().toISOString()};}));}
+function sbSaveWorkouts(){sbReplace('workouts',S.workouts.map(function(w){return{id:w.id,day:w.day||'',focus:w.focus||'',exercises:w.exercises||[],notes:w.notes||'',updated_at:new Date().toISOString()};}));}
+function sbSaveMessages(){sbReplace('messages',S.messages.map(function(m){return{id:m.id,from_role:m.from||'',to_role:m.to||'',body:m.text||'',time:m.time||'',updated_at:new Date().toISOString()};}));}
+function sbSaveFiles(){sbReplace('files',FILE_STORE.map(function(f){return{id:f.id,name:f.name,size:f.size,file_type:f.type,data:f.data,folder:f.folder||'Personal',updated_at:new Date().toISOString()};}));}
 function sbSaveKV(key,value){sbSetKV(key,value);}
 
 // ═══ STATE ═══════════════════════════════════════════════════
@@ -80,8 +139,10 @@ var S={
 };
 
 function lsGet(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
+function lsWriteLocal(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 function lsSave(k,v){
-  try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}
+  lsWriteLocal(k,v);
+  if(SB_SYNC_SUSPENDED)return;
   if(k==='chq-sp')sbSaveSponsors();
   else if(k==='chq-ce')sbSaveEvents();
   else if(k==='chq-po')sbSavePosts();
@@ -95,6 +156,7 @@ function lsSave(k,v){
   else if(k==='chq-adv')sbSaveKV('adv',v);
   else if(k==='chq-gd')sbSaveKV('gd',v);
   else if(k==='chq-timeline')sbSaveKV('timeline',v);
+  else if(SB_KV_MAP[k])sbSaveKV(SB_KV_MAP[k],v);
 }
 function sv(k,v){S[k]=v;lsSave('chq-'+k.replace(/[A-Z]/g,function(c){return '-'+c.toLowerCase();}).replace('chq-',''),v);}
 
@@ -1640,7 +1702,11 @@ function renderFileList(){
 function handleUpload(e){
   Array.from(e.target.files).forEach(function(file){
     var r=new FileReader();
-    r.onload=function(ev){FILE_STORE.push({name:file.name,size:file.size,type:file.type,data:ev.target.result});renderFileList();sbSaveFiles();};
+    r.onload=function(ev){
+      FILE_STORE.push({id:Date.now()+Math.floor(Math.random()*1000000),name:file.name,size:file.size,type:file.type,data:ev.target.result,folder:window._fileFolder&&window._fileFolder!=='All'?window._fileFolder:'Personal'});
+      renderFileList();
+      sbSaveFiles();
+    };
     r.readAsDataURL(file);
   });
 }
@@ -1657,7 +1723,7 @@ function openFile(i){
   vw.style.display='block';vw.scrollIntoView({behavior:'smooth',block:'start'});
 }
 function closeFileViewer(){var v=g('file-viewer');if(v)v.style.display='none';}
-function removeFile(i){FILE_STORE.splice(i,1);renderFileList();}
+function removeFile(i){FILE_STORE.splice(i,1);renderFileList();sbSaveFiles();}
 function downloadFile(i){var f=FILE_STORE[i];var a=document.createElement('a');a.href=f.data;a.download=f.name;a.click();}
 
 // ═══ DELIVERABLES ════════════════════════════════════════════
