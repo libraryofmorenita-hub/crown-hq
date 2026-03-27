@@ -4,6 +4,8 @@
 var SB_URL='https://haqfxrcsszjwiyrchqnm.supabase.co';
 var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhcWZ4cmNzc3pqd2l5cmNocW5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMDY5NjIsImV4cCI6MjA4OTg4Mjk2Mn0.eioSLntQ0E1mIxUC_r4kmmVbzrIi-d69LLO4rnn0Nlg';
 var SB_SYNC_SUSPENDED=false;
+var SB_SAVE_PENDING=0;
+var SB_STATUS_RESET_TIMER=null;
 var SB_KV_MAP={
   'chq-gl':'goals',
   'chq-td':'todos',
@@ -24,10 +26,43 @@ var SB_KV_MAP={
   'chq-social':'social',
   'chq-inbox':'inbox'
 };
+function setSupabaseStatus(state,text,sticky){
+  var el=document.getElementById('tb-sync');
+  var txt=document.getElementById('tb-sync-text');
+  if(!el||!txt)return;
+  el.className='tb-sync '+state;
+  txt.textContent=text;
+  if(SB_STATUS_RESET_TIMER){clearTimeout(SB_STATUS_RESET_TIMER);SB_STATUS_RESET_TIMER=null;}
+  if(!sticky&&state!=='saving'&&state!=='idle'){
+    SB_STATUS_RESET_TIMER=setTimeout(function(){
+      if(SB_SAVE_PENDING===0)setSupabaseStatus('idle','Supabase ready',true);
+    },2200);
+  }
+}
+function beginSupabaseSave(){
+  SB_SAVE_PENDING+=1;
+  setSupabaseStatus('saving','Saving to Supabase',true);
+}
+function finishSupabaseSave(ok){
+  SB_SAVE_PENDING=Math.max(0,SB_SAVE_PENDING-1);
+  if(!ok){
+    setSupabaseStatus('error','Supabase save failed',true);
+    return;
+  }
+  if(SB_SAVE_PENDING===0)setSupabaseStatus('saved','Saved to Supabase',false);
+}
 function sbFetch(table,method,body,match){
   var url=SB_URL+'/rest/v1/'+table+(match?'?'+match:'');
+  var isWrite=(method||'GET')!=='GET';
+  if(isWrite)beginSupabaseSave();
   return fetch(url,{method:method||'GET',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':method==='POST'?'resolution=merge-duplicates':''},body:body?JSON.stringify(body):undefined})
-  .then(function(r){return r.ok?r.json().catch(function(){return[];}):[];}).catch(function(){return[];});
+  .then(function(r){
+    if(isWrite)finishSupabaseSave(r.ok);
+    return r.ok?r.json().catch(function(){return[];}):[];
+  }).catch(function(){
+    if(isWrite)finishSupabaseSave(false);
+    return[];
+  });
 }
 function sbGet(table){return sbFetch(table,'GET',null,'order=id');}
 function sbUpsert(table,rows){if(!rows||!rows.length)return Promise.resolve();return sbFetch(table,'POST',rows);}
@@ -50,7 +85,10 @@ function sbGetKV(key){
   .then(function(r){return r.json();}).then(function(rows){return rows&&rows.length?rows[0].value:null;}).catch(function(){return null;});
 }
 function sbSetKV(key,value){
-  return fetch(SB_URL+'/rest/v1/app_data',{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},body:JSON.stringify({key:key,value:value,updated_at:new Date().toISOString()})}).catch(function(){});
+  beginSupabaseSave();
+  return fetch(SB_URL+'/rest/v1/app_data',{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},body:JSON.stringify({key:key,value:value,updated_at:new Date().toISOString()})})
+  .then(function(r){finishSupabaseSave(r.ok);return r;})
+  .catch(function(){finishSupabaseSave(false);});
 }
 function loadFromSupabase(){
   var kvKeys=['goals','todos','answers','brand','adv','gd','timeline','appts','mood','dashMood','quiz','pitch','board','lookbook_imgs','lookbook_links','lookbook_bio','social','inbox'];

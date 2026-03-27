@@ -50,6 +50,12 @@ body{font-family:var(--fb);background:var(--ch5);color:var(--ink);display:flex;f
 .tb-logo{font-family:var(--fd);font-size:1.15rem;font-style:italic;color:var(--ch)}
 .tb-logo span{color:var(--bl);font-size:.85rem}
 .tb-r{display:flex;align-items:center;gap:.6rem}
+.tb-sync{display:flex;align-items:center;gap:.35rem;padding:.24rem .55rem;border-radius:3px;border:1px solid rgba(240,216,152,.15);background:rgba(240,216,152,.05);font-family:var(--fm);font-size:.5rem;letter-spacing:1.5px;text-transform:uppercase;color:rgba(240,216,152,.55);white-space:nowrap;transition:all .2s}
+.tb-sync-dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.85;flex-shrink:0}
+.tb-sync.idle{color:rgba(240,216,152,.5)}
+.tb-sync.saving{color:var(--gl);border-color:rgba(240,216,152,.35);background:rgba(240,216,152,.08)}
+.tb-sync.saved{color:#b7e2bf;border-color:rgba(168,196,160,.35);background:rgba(168,196,160,.08)}
+.tb-sync.error{color:#f0b0a7;border-color:rgba(212,132,122,.38);background:rgba(212,132,122,.08)}
 .tb-user{display:flex;align-items:center;gap:.4rem;background:rgba(240,216,152,.07);padding:.25rem .65rem;border-radius:3px}
 .tb-av{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:.55rem;font-weight:700;color:var(--ink);flex-shrink:0}
 .tb-un{font-family:var(--fm);font-size:.58rem;color:rgba(240,216,152,.6);letter-spacing:1px}
@@ -430,4 +436,3 @@ body.em [data-e]:focus{outline:2px solid var(--ch);background:rgba(240,216,152,.
 /* COUNTDOWN URGENCY — last 30 days */
 .countdown-urgent .oath{background:linear-gradient(135deg,var(--tz),#3D1060) !important}
 .countdown-urgent .sb-bot .sb-mn{color:var(--bl) !important}
-
