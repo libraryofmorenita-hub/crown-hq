@@ -1020,8 +1020,7 @@ function getSpTabContent(spTab, raised){
   });
   html += '</div>';
   html += '<div class="card" style="padding:0;overflow:hidden">';
-  html += '<table class="sp-tbl"><thead><tr><th>Company</th><th>Ask</th><th>Status</th><th>Notes</th><th></th></tr></thead>';
-  html += '<tbody>'+renderSpRows()+'</tbody></table>';
+  html += renderSponsorsTable();
   html += '</div>';
   return html;
 }
@@ -1029,7 +1028,7 @@ function getSpTabContent(spTab, raised){
 function bSponsors(){
   var spTab=window._spTab||'tracker';
   var raised=S.sponsors.filter(function(s){return s.status==='closed';}).reduce(function(a,s){return a+(s.amount||0);},0);
-  var tabBar='<div style="display:flex;gap:0;border-bottom:2px solid var(--ch4);background:var(--wh);padding:0 1.75rem;flex-shrink:0">';
+  var tabBar='<div class="sp-tabbar">';
   var spTabs=[{t:'tracker',l:'Pipeline'},{t:'pitch',l:'Pitch Decks'},{t:'emails',l:'Email Templates'},{t:'objections',l:'Objections'}];
   for(var ti=0;ti<spTabs.length;ti++){
     var xt=spTabs[ti];
@@ -1157,6 +1156,9 @@ function renderSpRows(){
       '<td><input class="n-inp" value="'+(s.notes||'').replace(/"/g,'&quot;')+'" onblur="updateNote('+s.id+',this.value)" placeholder="Notes..."></td>'+
       '<td style="display:flex;gap:.3rem"><button class="btn bg" style="padding:.2rem .55rem;font-size:.58rem" onclick="openStatusModal('+s.id+')">Update</button><button class="btn bg" style="padding:.2rem .55rem;font-size:.58rem" onclick="editSponsorInline('+s.id+')">Link</button></td></tr>';
   }).join('');
+}
+function renderSponsorsTable(){
+  return '<div class="sp-table-wrap"><table class="sp-tbl"><thead><tr><th>Company</th><th>Ask</th><th>Status</th><th>Notes</th><th></th></tr></thead><tbody>'+renderSpRows()+'</tbody></table></div>';
 }
 function openSponsorLink(id){
   var s=S.sponsors.find(function(x){return x.id===id;});
@@ -2068,7 +2070,7 @@ function bMessages(){
         '</div>';
     }).join('') +
     '</div></div>' +
-    '<div style="padding:.65rem 1.75rem;border-top:1px solid var(--du);background:var(--wh);display:flex;gap:.45rem">' +
+    '<div class="msg-compose">' +
     '<input class="msg-input" id="quick-msg" placeholder="Message the team..." onkeydown="if(event.key===\'Enter\')quickSend()">' +
     '<button class="msg-send" onclick="quickSend()">Send</button>' +
     '</div></div>'
@@ -2657,7 +2659,7 @@ function bBoard(){
   inject(
     '<div class="ph"><div><div class="ph-tag">Team Workspace</div><div class="ph-title"><em>Discussion</em></div></div>' +
     '<div class="ph-acts"><button class="btn bp" onclick="addBoardCard()">+ Add Card</button><button class="btn bc" onclick="addBoardColumn()">+ Column</button></div></div>' +
-    '<div style="display:flex;gap:.75rem;overflow-x:auto;padding:1.25rem 1.75rem;min-height:calc(100vh - 140px);align-items:flex-start;-webkit-overflow-scrolling:touch">' +
+    '<div class="board-strip">' +
     boardData.columns.map(function(col){
       return '<div class="board-col" id="bcol-'+col.id+'" data-col="'+col.id+'" style="min-width:240px;max-width:240px;flex-shrink:0">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.55rem">' +
@@ -2678,7 +2680,7 @@ function renderBoardCard(card,colId){
   var tagColors={sponsor:'var(--ch2)',event:'var(--sg2)',content:'var(--bl2)',urgent:'var(--bl2)',idea:'var(--tz3)'};
   return '<div class="board-card" id="bcard-'+card.id+'" style="background:var(--wh);border-radius:3px;padding:.75rem;box-shadow:0 2px 8px rgba(46,37,96,.08);border-left:3px solid var(--du);cursor:pointer" onclick="editBoardCard(\''+card.id+'\',\''+colId+'\')">' +
     (card.tag?'<span style="font-family:var(--fm);font-size:.44rem;letter-spacing:2px;text-transform:uppercase;color:'+(tagColors[card.tag]||'var(--wg)')+';background:'+(tagColors[card.tag]||'var(--wg)')+'22;padding:.1rem .4rem;border-radius:3px;display:inline-block;margin-bottom:.35rem">'+card.tag+'</span>':'') +
-    '<div style="font-size:.82rem;font-weight:600;color:var(--ink);margin-bottom:'+(card.body?'.3rem':'0')+'">'+card.title+'</div>' +
+    '<div class="board-card-title" style="font-size:.82rem;font-weight:600;color:var(--ink);margin-bottom:'+(card.body?'.3rem':'0')+'">'+card.title+'</div>' +
     (card.body?'<div style="font-size:.72rem;color:var(--wg);line-height:1.5;white-space:pre-wrap">'+card.body.substring(0,80)+(card.body.length>80?'...':'')+'</div>':'') +
     (card.due?'<div style="font-family:var(--fm);font-size:.5rem;color:var(--ch2);margin-top:.35rem">📅 '+card.due+'</div>':'') +
     (card.who?'<div style="font-family:var(--fm);font-size:.5rem;color:var(--wg);margin-top:.15rem">👤 '+card.who+'</div>':'') +
@@ -2800,6 +2802,7 @@ function bLookbook(){
     '<div class="ph"><div><div class="ph-tag">Public · Portfolio</div><div class="ph-title"><em>Editorial Portfolio</em></div></div>' +
     '<div class="ph-acts">' +
     '<button class="btn bg" onclick="previewLookbook()">Preview Public Page</button>' +
+    '<button class="btn bg" onclick="openPublicPortfolioRoute()">Open Public Route</button>' +
     '<label class="btn bp" style="cursor:pointer">+ Upload Look<input type="file" accept="image/*" multiple style="display:none" onchange="addLookbookImg(event)"></label>' +
     '</div></div>' +
     '<div class="pb">' +
@@ -2958,7 +2961,7 @@ function saveLookbookData(){
   showToast('Portfolio saved');
 }
 
-function previewLookbook(){
+function buildPublicPortfolioHTML(){
   var imgs=getLookbookImgs();
   var links=getLookbookLinks();
   var meta=getLookbookMeta();
@@ -3072,9 +3075,46 @@ function previewLookbook(){
     '<script>var ESSAYS='+JSON.stringify(essays)+';function openEssay(id){var p=ESSAYS.find(function(x){return String(x.id)===String(id);});if(!p)return;var ov=document.getElementById("essay-lightbox");var title=document.getElementById("essay-lightbox-title");var meta=document.getElementById("essay-lightbox-meta");var cover=document.getElementById("essay-lightbox-cover");var body=document.getElementById("essay-lightbox-body");if(title)title.textContent=p.title||"";if(meta)meta.textContent=((p.date||"")+(p.date?" · ":"")+"Library of Morenita"+(p.tag?" · "+p.tag:""));if(cover){cover.style.display=p.cover?"block":"none";cover.innerHTML=p.cover?\'<img src="\'+p.cover+\'" alt="\'+(p.title||"Essay")+\'">\':"";}if(body)body.innerHTML=p.body||"";if(ov){ov.classList.add("open");document.body.style.overflow="hidden";window.scrollTo({top:0,behavior:"smooth"});}}function closeEssay(){var ov=document.getElementById("essay-lightbox");if(ov)ov.classList.remove("open");document.body.style.overflow="";}document.addEventListener("keydown",function(e){if(e.key==="Escape")closeEssay();});</script>' +
     '</body></html>';
 
-  var blob=new Blob([html],{type:'text/html'});
+  return html;
+}
+
+function previewLookbook(){
+  var blob=new Blob([buildPublicPortfolioHTML()],{type:'text/html'});
   var url=URL.createObjectURL(blob);
   window.open(url,'_blank');
+}
+
+function getPublicPortfolioURL(){
+  var base=window.location.pathname||'';
+  return base+'?view=portfolio';
+}
+
+function openPublicPortfolioRoute(){
+  window.open(getPublicPortfolioURL(),'_blank');
+}
+
+function isPublicPortfolioRoute(){
+  try{
+    var qp=new URLSearchParams(window.location.search||'');
+    var view=(qp.get('view')||'').toLowerCase();
+    var hash=(window.location.hash||'').replace(/^#/,'').toLowerCase();
+    return view==='portfolio'||hash==='portfolio';
+  }catch(e){
+    return false;
+  }
+}
+
+function renderPublicPortfolioRoute(){
+  var login=g('login');
+  var app=g('app');
+  if(login)login.style.display='none';
+  if(app)app.style.display='none';
+  seed();
+  loadFromSupabase().then(function(){
+    document.open();
+    document.write(buildPublicPortfolioHTML());
+    document.close();
+  });
 }
 
 
@@ -3969,3 +4009,7 @@ document.querySelectorAll('.ov').forEach(function(o){
   }
   tick();
 })();
+
+if(isPublicPortfolioRoute()){
+  renderPublicPortfolioRoute();
+}
