@@ -16,32 +16,116 @@
 <div id="login">
   <canvas id="petal-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1"></canvas>
   <div class="login-bg"></div>
-  <div class="login-logo">STARDOM <span id="login-logo-slot" style="display:inline-block;vertical-align:middle;margin-left:.35rem"><!-- LOGO --></span><small>Miss California USA 2026 · Command Center</small></div>
-  <div class="login-tagline" style="font-family:var(--fd);font-size:1.1rem;font-style:italic;color:rgba(240,216,152,.45);text-align:center;position:relative;z-index:2;max-width:400px;line-height:1.65">Every crown starts with a team that believes.<br>Welcome back — let's build something beautiful.</div>
-  <a href="public.html" style="position:relative;z-index:2;font-family:var(--fm);font-size:.58rem;letter-spacing:2px;text-transform:uppercase;color:rgba(240,216,152,.3);text-decoration:none;margin-bottom:.5rem;display:inline-block;transition:color .2s" onmouseover="this.style.color='rgba(240,216,152,.7)'" onmouseout="this.style.color='rgba(240,216,152,.3)'">&#8592; View Campaign Site</a>
-  <div class="login-roles" id="login-roles">
-    <div class="role-btn" id="rb-amelia" onclick="tryLogin('amelia',this)">
-      <div class="role-icon">👑</div><div class="role-name">Amelia</div><div class="role-desc">Full Access</div>
-      <div class="pw-overlay" id="pw-amelia">
-        <div style="font-family:var(--fm);font-size:.52rem;letter-spacing:2px;color:rgba(180,170,240,.6);text-transform:uppercase;margin-bottom:.35rem">Password</div>
-        <input class="pw-input" id="pw-inp-amelia" type="password" placeholder="enter password" onkeydown="if(event.key==='Enter')submitPw('amelia')">
-        
-        <div class="pw-cancel" onclick="cancelPw('amelia',event)">cancel</div>
+
+  <div style="
+    position:relative;z-index:2;
+    display:flex;flex-direction:column;align-items:center;
+    width:100%;max-width:420px;padding:0 1.5rem;
+  ">
+    <!-- Logo -->
+    <img src="assets/library_of_morenita_logo_fancy.png" alt="Library of Morenita"
+      style="height:72px;width:auto;margin-bottom:1.6rem;opacity:.9;">
+
+    <!-- Title -->
+    <div style="
+      font-family:var(--fd);font-size:1.5rem;font-weight:300;
+      font-style:italic;color:rgba(240,216,152,.85);
+      text-align:center;margin-bottom:.3rem;letter-spacing:.01em;
+    ">Crown HQ</div>
+    <div style="
+      font-family:var(--fm);font-size:.52rem;letter-spacing:3px;
+      text-transform:uppercase;color:rgba(240,216,152,.3);
+      text-align:center;margin-bottom:2.2rem;
+    ">Miss Temecula USA 2026 &middot; Command Center</div>
+
+    <!-- Login card -->
+    <div style="
+      background:rgba(250,247,242,.04);
+      border:0.5px solid rgba(240,216,152,.12);
+      border-radius:14px;padding:2rem;width:100%;
+      backdrop-filter:blur(12px);
+    ">
+      <div style="
+        font-family:var(--fm);font-size:.52rem;letter-spacing:2.5px;
+        text-transform:uppercase;color:rgba(240,216,152,.35);
+        margin-bottom:1.4rem;
+      ">Sign in to your workspace</div>
+
+      <div style="margin-bottom:.9rem;">
+        <label style="
+          font-family:var(--fm);font-size:.5rem;letter-spacing:2px;
+          text-transform:uppercase;color:rgba(240,216,152,.35);
+          display:block;margin-bottom:.45rem;
+        ">Username</label>
+        <input id="login-username" type="text" autocomplete="username"
+          placeholder="your username"
+          onkeydown="if(event.key==='Enter')document.getElementById('login-password').focus()"
+          style="
+            width:100%;padding:.7rem .9rem;
+            background:rgba(250,247,242,.06);
+            border:0.5px solid rgba(240,216,152,.15);
+            border-radius:7px;color:rgba(250,247,242,.85);
+            font-family:var(--fb);font-size:.82rem;outline:none;
+            transition:border-color .2s;
+          "
+          onfocus="this.style.borderColor='rgba(240,216,152,.4)'"
+          onblur="this.style.borderColor='rgba(240,216,152,.15)'">
       </div>
-    </div>
-    <div class="role-btn" id="rb-laneea" onclick="tryLogin('laneea',this)">
-      <div class="role-icon">✨</div><div class="role-name">Laneea</div><div class="role-desc">Manager · Stylist</div>
-      <div class="pw-overlay" id="pw-laneea">
-        <div style="font-family:var(--fm);font-size:.52rem;letter-spacing:2px;color:rgba(180,170,240,.6);text-transform:uppercase;margin-bottom:.35rem">Password</div>
-        <input class="pw-input" id="pw-inp-laneea" type="password" placeholder="enter password" onkeydown="if(event.key==='Enter')submitPw('laneea')">
-        
-        <div class="pw-cancel" onclick="cancelPw('laneea',event)">cancel</div>
+
+      <div style="margin-bottom:1.4rem;">
+        <label style="
+          font-family:var(--fm);font-size:.5rem;letter-spacing:2px;
+          text-transform:uppercase;color:rgba(240,216,152,.35);
+          display:block;margin-bottom:.45rem;
+        ">Password</label>
+        <input id="login-password" type="password" autocomplete="current-password"
+          placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"
+          onkeydown="if(event.key==='Enter')submitUnifiedLogin()"
+          style="
+            width:100%;padding:.7rem .9rem;
+            background:rgba(250,247,242,.06);
+            border:0.5px solid rgba(240,216,152,.15);
+            border-radius:7px;color:rgba(250,247,242,.85);
+            font-family:var(--fb);font-size:.82rem;outline:none;
+            letter-spacing:.15em;transition:border-color .2s;
+          "
+          onfocus="this.style.borderColor='rgba(240,216,152,.4)'"
+          onblur="this.style.borderColor='rgba(240,216,152,.15)'">
       </div>
+
+      <button onclick="submitUnifiedLogin()" style="
+        width:100%;padding:.8rem;
+        background:rgba(201,168,76,.18);
+        border:0.5px solid rgba(201,168,76,.35);
+        border-radius:7px;
+        font-family:var(--fm);font-size:.58rem;
+        letter-spacing:2.5px;text-transform:uppercase;
+        color:rgba(240,216,152,.85);cursor:pointer;
+        transition:all .2s;
+      "
+      onmouseover="this.style.background='rgba(201,168,76,.28)';this.style.borderColor='rgba(201,168,76,.55)'"
+      onmouseout="this.style.background='rgba(201,168,76,.18)';this.style.borderColor='rgba(201,168,76,.35)'">
+        Enter &rarr;
+      </button>
+
+      <div id="login-error" style="
+        font-family:var(--fm);font-size:.52rem;letter-spacing:1px;
+        color:rgba(255,120,80,.6);text-align:center;
+        margin-top:.8rem;min-height:1rem;
+      "></div>
     </div>
-    <div class="role-btn" onclick="openPortalLogin('hmu')"><div class="role-icon">💄</div><div class="role-name">Hair & Makeup</div><div class="role-desc">Sign In · Create Account</div></div>
-    <div class="role-btn" onclick="doLogin('trainer')"><div class="role-icon">💪</div><div class="role-name">Donovan</div><div class="role-desc">Fitness Coach · Check-ins</div></div>
-    <div class="role-btn" onclick="openPortalLogin('sponsor')"><div class="role-icon">🤝</div><div class="role-name">Sponsor</div><div class="role-desc">Sign In · Create Account</div></div>
-    <div class="role-btn" onclick="openPortalLogin('contributor')"><div class="role-icon">📸</div><div class="role-name">Contributor</div><div class="role-desc">Sign In · Create Account</div></div>
+
+    <!-- Back to campaign site -->
+    <a href="public.html" style="
+      margin-top:1.6rem;
+      font-family:var(--fm);font-size:.52rem;letter-spacing:2px;
+      text-transform:uppercase;color:rgba(240,216,152,.25);
+      text-decoration:none;transition:color .2s;
+    "
+    onmouseover="this.style.color='rgba(240,216,152,.55)'"
+    onmouseout="this.style.color='rgba(240,216,152,.25)'">
+      &larr; View Campaign Site
+    </a>
   </div>
 </div>
 

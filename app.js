@@ -538,6 +538,74 @@ function seedLibrary(){
 
 // ═══ PASSWORDS ════════════════════════════════════════════════
 var PASSWORDS={amelia:'serph',laneea:'withlove'};
+
+// ═══ UNIFIED LOGIN ═══════════════════════════════════════════
+// Single username/password login that routes to the right role
+// Amelia and Laneea use their name as username + their password
+// Portal users (hmu, sponsor, contributor, trainer) use their portal profile username/password
+function submitUnifiedLogin(){
+  var username=(document.getElementById('login-username').value||'').trim().toLowerCase();
+  var password=(document.getElementById('login-password').value||'').trim();
+  var errEl=document.getElementById('login-error');
+  if(errEl) errEl.textContent='';
+
+  if(!username||!password){
+    if(errEl) errEl.textContent='Please enter your username and password.';
+    return;
+  }
+
+  // 1. Check Amelia
+  if(username==='amelia'||username==='amelia arabe'||username==='ameliaarabe'){
+    if(password===PASSWORDS.amelia){ doLogin('amelia'); return; }
+    showLoginError(); return;
+  }
+
+  // 2. Check Laneea
+  if(username==='laneea'||username==='laneea love'||username==='laneeалove'){
+    if(password===PASSWORDS.laneea){ doLogin('laneea'); return; }
+    showLoginError(); return;
+  }
+
+  // 3. Check Donovan (trainer — no portal profile, direct role)
+  if(username==='donovan'||username==='trainer'){
+    if(password==='train2026'){ doLogin('trainer'); return; }
+    showLoginError(); return;
+  }
+
+  // 4. Check portal profiles across all portal roles
+  var portalRoles=['hmu','sponsor','contributor'];
+  for(var ri=0;ri<portalRoles.length;ri++){
+    var role=portalRoles[ri];
+    var profile=findPortalProfileByUsername(role,username);
+    if(profile){
+      if(String(profile.password||'')===password){
+        if(!profile.active){
+          if(errEl) errEl.textContent='Your account is not active yet. Contact Amelia\'s team.';
+          return;
+        }
+        doLogin(role,profile.id);
+        return;
+      } else {
+        showLoginError(); return;
+      }
+    }
+  }
+
+  // Not found
+  showLoginError();
+}
+
+function showLoginError(){
+  var pw=document.getElementById('login-password');
+  var errEl=document.getElementById('login-error');
+  if(pw){
+    pw.style.borderColor='rgba(255,100,60,.5)';
+    pw.value='';
+    setTimeout(function(){pw.style.borderColor='rgba(240,216,152,.15)';},1200);
+    pw.focus();
+  }
+  if(errEl) errEl.textContent='Incorrect username or password.';
+}
 var PENDING_ROLE=null;
 
 function tryLogin(role,btn){
@@ -787,6 +855,7 @@ var ROLES={
   amelia:{name:'Amelia Arabe',abbr:'AA',color:'var(--ch)',
     nav:[
       {ico:'🏠',lbl:'Dashboard',id:'dashboard'},
+      {ico:'👤',lbl:'My Profile',id:'profile'},
       {ico:'✍️',lbl:'Library Editor',id:'library-editor'},
       {ico:'💰',lbl:'Sponsors',id:'sponsors',badge:true},
       {ico:'📅',lbl:'Calendar',id:'calendar'},
@@ -807,13 +876,13 @@ var ROLES={
   laneea:{name:'Laneea Love',abbr:'LL',color:'var(--lv)',
     nav:[
       {ico:'🏠',lbl:'Dashboard',id:'laneea-dash'},
+      {ico:'👤',lbl:'My Profile',id:'profile'},
       {ico:'💰',lbl:'Sponsors',id:'sponsors',badge:true},
       {ico:'📅',lbl:'Calendar',id:'calendar'},
       {ico:'👗',lbl:'Looks & Styling',id:'looks'},
       {ico:'🖼',lbl:'Mood Board',id:'moodboard'},
       {ico:'📬',lbl:'Inbox',id:'inbox'},
       {ico:'🗂',lbl:'Discussion',id:'board'},
-      {ico:'🔗',lbl:'Portfolio',id:'lookbook'},
       {ico:'📁',lbl:'Files',id:'files'},
     ],
     editable:['sponsors','looks','appointments','todos']
@@ -821,14 +890,16 @@ var ROLES={
   hmu:{name:'Hair & Makeup',abbr:'HM',color:'var(--bl)',
     nav:[
       {ico:'🏠',lbl:'Dashboard',id:'hmu-dash'},
+      {ico:'👤',lbl:'My Profile',id:'profile'},
       {ico:'💬',lbl:'Chat',id:'messages'},
       {ico:'📁',lbl:'Files',id:'files'},
     ],
     editable:[]
   },
-  trainer:{name:'Donovan',abbr:'LL',color:'var(--sg)',
+  trainer:{name:'Donovan',abbr:'TR',color:'var(--sg)',
     nav:[
       {ico:'💪',lbl:'Fitness',id:'fitness'},
+      {ico:'👤',lbl:'My Profile',id:'profile'},
       {ico:'📅',lbl:'Calendar',id:'calendar'},
       {ico:'🗂',lbl:'Discussion',id:'board'},
     ],
@@ -837,6 +908,7 @@ var ROLES={
   sponsor:{name:'Sponsor',abbr:'SP',color:'var(--ch3)',
     nav:[
       {ico:'🏠',lbl:'Dashboard',id:'sponsor-portal'},
+      {ico:'👤',lbl:'My Profile',id:'profile'},
       {ico:'💬',lbl:'Chat',id:'messages'},
       {ico:'📁',lbl:'Files',id:'files'},
     ],
@@ -845,6 +917,7 @@ var ROLES={
   contributor:{name:'Contributor',abbr:'CO',color:'var(--tz4)',
     nav:[
       {ico:'🏠',lbl:'Dashboard',id:'contributor-dash'},
+      {ico:'👤',lbl:'My Profile',id:'profile'},
       {ico:'💬',lbl:'Chat',id:'messages'},
       {ico:'📁',lbl:'Files',id:'files'},
     ],
@@ -913,7 +986,7 @@ var PANELS={
   'dashboard':bDash,'laneea-dash':bLaneaDash,'hmu-dash':bHMUDash,
   'sponsor-portal':bSponsorPortal,'sponsors':bSponsors,'calendar':bCalendar,
   'library':bLibrary,'quiz':bQuiz,'brand':bBrand,'moodboard':bMoodboard,
-  'library-editor':bLibraryEditor,
+  'library-editor':bLibraryEditor,'profile':bProfile,
   'looks':bLooks,'fitness':bFitness,'messages':bMessages,'files':bFiles,
   'deliverables':bDeliverables,'comp-progress':bCompProgress,'advocacy':bAdvocacy,'board':bBoard,'lookbook':bLookbook,'social':bSocial,'inbox':bInbox,'peace':bPeace,'contributor-dash':bContributorDash
 };
@@ -4450,3 +4523,277 @@ document.querySelectorAll('.ov').forEach(function(o){
 if(isPublicPortfolioRoute()){
   renderPublicPortfolioRoute();
 }
+
+// ═══════════════════════════════════════════════════════════════
+// PROFILE SYSTEM
+// Each team member has a profile stored in localStorage under
+// 'chq-profiles'. The public.html page reads this same key to
+// populate the live Team section.
+// ═══════════════════════════════════════════════════════════════
+
+var PROFILE_KEY = 'chq-profiles';
+
+var CATEGORY_LABELS = {
+  'amelia':    'Miss Temecula USA 2026',
+  'laneea':    'Styling & Fashion',
+  'trainer':   'Fitness & Training',
+  'hmu':       'Hair & Makeup',
+  'sponsor':   'Sponsor',
+  'contributor':'Photography & Video',
+  'Styling & Fashion':   'Styling & Fashion',
+  'Fitness & Training':  'Fitness & Training',
+  'Photography & Video': 'Photography & Video',
+  'Hair & Makeup':       'Hair & Makeup',
+  'Finance & Operations':'Finance & Operations',
+  'Press & Media':       'Press & Media',
+  'Sponsor':             'Sponsor',
+  'Volunteer / General': 'Volunteer / General'
+};
+
+// Get the profile key for the current user
+function getMyProfileKey(){
+  if(S.portalProfile) return 'portal:'+S.role+':'+S.portalProfile.id;
+  return S.role || '';
+}
+
+// Load all profiles
+function getAllProfiles(){
+  return lsGet(PROFILE_KEY, {});
+}
+
+// Load current user's profile
+function getMyProfile(){
+  var profiles = getAllProfiles();
+  var key = getMyProfileKey();
+  return profiles[key] || {};
+}
+
+// Save current user's profile patch
+function saveMyProfile(patch){
+  var profiles = getAllProfiles();
+  var key = getMyProfileKey();
+  profiles[key] = Object.assign({}, profiles[key]||{}, patch, {
+    updatedAt: new Date().toISOString(),
+    role: S.role,
+    profileKey: key
+  });
+  lsSave(PROFILE_KEY, profiles);
+  // Also write to the public-readable key
+  localStorage.setItem('chq-team-public', JSON.stringify(buildPublicTeamData()));
+}
+
+// Build the public team data object that public.html reads
+function buildPublicTeamData(){
+  var profiles = getAllProfiles();
+  var team = [];
+  Object.keys(profiles).forEach(function(key){
+    var p = profiles[key];
+    if(p && p.displayOnPublic !== false && p.name){
+      team.push({
+        key: key,
+        name: p.name,
+        role: S.role === key ? ROLES[S.role] && ROLES[S.role].name : (p.roleLabel || p.category || ''),
+        roleLabel: p.roleLabel || p.category || '',
+        bio: p.bio || '',
+        photo: p.photo || '',
+        category: p.category || p.role || '',
+        sortOrder: p.sortOrder || 99,
+        displayOnPublic: p.displayOnPublic !== false
+      });
+    }
+  });
+  team.sort(function(a,b){ return (a.sortOrder||99)-(b.sortOrder||99); });
+  return team;
+}
+
+// Render the profile panel
+function bProfile(){
+  var profile = getMyProfile();
+  var r = ROLES[S.role] || {};
+  var displayName = S.portalProfile ? S.portalProfile.name : r.name;
+  var categoryLabel = CATEGORY_LABELS[S.role] || S.role || '';
+  if(S.portalProfile) categoryLabel = S.portalProfile.specialty || categoryLabel;
+
+  // Seed defaults if first time
+  if(!profile.name) profile.name = displayName;
+  if(!profile.roleLabel) profile.roleLabel = categoryLabel;
+  if(profile.displayOnPublic === undefined) profile.displayOnPublic = true;
+  if(!profile.sortOrder){
+    var orderMap = {amelia:1, laneea:2, trainer:3};
+    profile.sortOrder = orderMap[S.role] || 10;
+  }
+
+  inject(
+    '<div style="padding:1.5rem 1.75rem;max-width:720px">' +
+
+    // Header
+    '<div style="margin-bottom:1.5rem">' +
+      '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;text-transform:uppercase;color:var(--ch2);margin-bottom:.3rem">My Profile</div>' +
+      '<div style="font-family:var(--fd);font-size:1.6rem;font-style:italic;color:var(--ch);margin-bottom:.3rem">'+profile.name+'</div>' +
+      '<div style="font-size:.78rem;color:var(--st)">'+categoryLabel+' &middot; Crown HQ Team</div>' +
+    '</div>' +
+
+    // Photo upload
+    '<div style="display:flex;align-items:flex-start;gap:1.5rem;margin-bottom:1.5rem">' +
+      '<div style="flex-shrink:0">' +
+        '<div id="prof-photo-preview" style="' +
+          'width:90px;height:90px;border-radius:50%;' +
+          'background:'+(profile.photo?'url('+profile.photo+') center/cover':'var(--du)')+';' +
+          'border:2px solid var(--ch4);display:flex;align-items:center;justify-content:center;' +
+          'font-family:var(--fd);font-size:2rem;font-style:italic;color:var(--ch);' +
+          'overflow:hidden;' +
+        '">'+(profile.photo?'':profile.name.charAt(0).toUpperCase())+'</div>' +
+        '<label style="display:block;text-align:center;margin-top:.5rem;font-size:.65rem;color:var(--wg);cursor:pointer;letter-spacing:1px">'+
+          'CHANGE PHOTO' +
+          '<input type="file" accept="image/*" style="display:none" onchange="uploadProfilePhoto(event)">' +
+        '</label>' +
+      '</div>' +
+      '<div style="flex:1">' +
+        '<div style="font-size:.76rem;color:var(--st);line-height:1.7;margin-bottom:.8rem">' +
+          'Your profile photo and bio appear on the <strong style="color:var(--ch)">public campaign site</strong> under the Team section. ' +
+          'Keep your bio to 1–2 sentences &mdash; punchy and real.' +
+        '</div>' +
+        '<label style="display:flex;align-items:center;gap:.5rem;font-size:.74rem;color:var(--st);cursor:pointer">' +
+          '<input type="checkbox" id="prof-public-toggle" '+(profile.displayOnPublic!==false?'checked':'')+' onchange="toggleProfilePublic()" style="width:14px;height:14px">' +
+          'Show my profile on the public campaign site' +
+        '</label>' +
+      '</div>' +
+    '</div>' +
+
+    // Form fields
+    '<div class="card">' +
+      '<div class="cl">Profile Details</div>' +
+
+      '<div style="margin-bottom:.85rem">' +
+        '<div style="font-size:.68rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--wg);margin-bottom:.3rem">Display Name</div>' +
+        '<input id="prof-name" class="fi" value="'+escHtml(profile.name||'')+'" placeholder="Your display name" ' +
+          'style="width:100%">' +
+      '</div>' +
+
+      '<div style="margin-bottom:.85rem">' +
+        '<div style="font-size:.68rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--wg);margin-bottom:.3rem">Role / Title</div>' +
+        '<input id="prof-role" class="fi" value="'+escHtml(profile.roleLabel||categoryLabel)+'" placeholder="e.g. Campaign Manager &middot; Stylist" ' +
+          'style="width:100%">' +
+        '<div style="font-size:.64rem;color:var(--wg);margin-top:.2rem">This appears as your role under your name on the public site.</div>' +
+      '</div>' +
+
+      '<div style="margin-bottom:.85rem">' +
+        '<div style="font-size:.68rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--wg);margin-bottom:.3rem">Bio <span style="opacity:.5">(shown publicly)</span></div>' +
+        '<textarea id="prof-bio" class="ft" placeholder="1-2 sentences about who you are and what you bring to this campaign..." ' +
+          'style="width:100%;min-height:80px;resize:vertical">'+escHtml(profile.bio||'')+'</textarea>' +
+      '</div>' +
+
+      '<div style="margin-bottom:1rem">' +
+        '<div style="font-size:.68rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--wg);margin-bottom:.3rem">Sort Order <span style="opacity:.5">(1 = first on team page)</span></div>' +
+        '<input id="prof-order" class="fi" type="number" min="1" max="20" value="'+(profile.sortOrder||10)+'" style="width:80px">' +
+      '</div>' +
+
+      '<button class="btn bp" onclick="saveProfileForm()" style="width:100%;padding:.7rem">Save Profile &rarr;</button>' +
+    '</div>' +
+
+    // Preview card
+    '<div style="margin-top:1.25rem">' +
+      '<div style="font-size:.68rem;letter-spacing:2px;text-transform:uppercase;color:var(--wg);margin-bottom:.6rem">Public preview</div>' +
+      '<div id="prof-preview-card" style="' +
+        'background:var(--tz);border-radius:11px;padding:1.25rem;' +
+        'display:flex;align-items:flex-start;gap:1rem;' +
+      '">' +
+        renderProfilePreviewCard(profile) +
+      '</div>' +
+    '</div>' +
+
+    '</div>'
+  );
+}
+
+function renderProfilePreviewCard(profile){
+  var initials = (profile.name||'?').split(' ').map(function(x){return x.charAt(0);}).join('').slice(0,2).toUpperCase();
+  return (
+    '<div style="' +
+      'width:56px;height:56px;border-radius:50%;flex-shrink:0;' +
+      'background:'+(profile.photo?'url('+profile.photo+') center/cover':'rgba(240,216,152,.15)')+';' +
+      'display:flex;align-items:center;justify-content:center;' +
+      'font-family:var(--fd);font-size:1.2rem;font-style:italic;color:var(--ch);' +
+      'border:1.5px solid rgba(240,216,152,.2);overflow:hidden;' +
+    '">'+(profile.photo?'':initials)+'</div>' +
+    '<div>' +
+      '<div style="font-family:var(--fd);font-size:1rem;font-weight:500;color:var(--wh);margin-bottom:.15rem">'+(profile.name||'Your Name')+'</div>' +
+      '<div style="font-size:.72rem;color:var(--ch);letter-spacing:.5px;margin-bottom:.4rem">'+(profile.roleLabel||'Your Role')+'</div>' +
+      '<div style="font-size:.74rem;color:rgba(254,252,247,.6);line-height:1.6">'+(profile.bio||'Your bio will appear here.')+'</div>' +
+    '</div>'
+  );
+}
+
+function escHtml(s){
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function saveProfileForm(){
+  var patch = {
+    name:      (document.getElementById('prof-name').value||'').trim(),
+    roleLabel: (document.getElementById('prof-role').value||'').trim(),
+    bio:       (document.getElementById('prof-bio').value||'').trim(),
+    sortOrder: parseInt(document.getElementById('prof-order').value)||10,
+    category:  CATEGORY_LABELS[S.role] || S.role
+  };
+  if(!patch.name){ showToast('Name required'); return; }
+  saveMyProfile(patch);
+  showToast('Profile saved \u2713');
+  // Refresh preview card
+  var profile = getMyProfile();
+  var card = document.getElementById('prof-preview-card');
+  if(card) card.innerHTML = renderProfilePreviewCard(profile);
+  // Update topbar name
+  var un = document.getElementById('tb-un');
+  if(un) un.textContent = patch.name;
+}
+
+function toggleProfilePublic(){
+  var checked = document.getElementById('prof-public-toggle').checked;
+  saveMyProfile({ displayOnPublic: checked });
+  showToast(checked ? 'Showing on public site' : 'Hidden from public site');
+}
+
+function uploadProfilePhoto(e){
+  var file = e.target.files && e.target.files[0];
+  if(!file) return;
+  if(file.size > 2*1024*1024){ showToast('Photo must be under 2MB'); return; }
+  var reader = new FileReader();
+  reader.onload = function(ev){
+    var dataUrl = ev.target.result;
+    saveMyProfile({ photo: dataUrl });
+    // Update preview circle
+    var preview = document.getElementById('prof-photo-preview');
+    if(preview){
+      preview.style.background = 'url('+dataUrl+') center/cover';
+      preview.textContent = '';
+    }
+    // Refresh preview card
+    var card = document.getElementById('prof-preview-card');
+    if(card) card.innerHTML = renderProfilePreviewCard(getMyProfile());
+    showToast('Photo saved \u2713');
+  };
+  reader.readAsDataURL(file);
+}
+
+// Seed default profiles for known team members on first load
+(function seedDefaultProfiles(){
+  var profiles = getAllProfiles();
+  var defaults = [
+    { key:'amelia',  name:'Amelia Arabe',  roleLabel:'Miss Temecula USA 2026',    bio:'Engineer, artist, cellist, and the force behind this campaign. Competing July 10.',                          sortOrder:1, category:'Miss Temecula USA 2026',  displayOnPublic:true  },
+    { key:'laneea',  name:'Laneea',        roleLabel:'Campaign Manager \u00b7 Stylist', bio:'Directing campaign strategy and curating every look from competition gown to interview day.',        sortOrder:2, category:'Styling & Fashion',        displayOnPublic:true  },
+    { key:'trainer', name:'Donovan',       roleLabel:'Fitness Coach',             bio:'Training program designed for competition performance \u2014 strength, posture, and stage presence.',      sortOrder:3, category:'Fitness & Training',        displayOnPublic:true  },
+  ];
+  var changed = false;
+  defaults.forEach(function(d){
+    if(!profiles[d.key]){
+      profiles[d.key] = Object.assign({}, d, { photo:'', updatedAt: new Date().toISOString(), role: d.key, profileKey: d.key });
+      changed = true;
+    }
+  });
+  if(changed){
+    lsSave(PROFILE_KEY, profiles);
+    localStorage.setItem('chq-team-public', JSON.stringify(buildPublicTeamData()));
+  }
+})();
+

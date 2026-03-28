@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Amelia Arabe · Miss California USA 2026</title>
-<meta name="description" content="Amelia Arabe is running for Miss California USA 2026. Senior software engineer, artist, and cellist — building solar energy and green infrastructure in underserved communities.">
-<meta property="og:title" content="Amelia Arabe · Miss California USA 2026">
-<meta property="og:description" content="Engineer. Artist. Cellist. Platform: green energy access, community infrastructure, and fashion sustainability policy.">
-<meta property="og:image" content="portfolio-hero.jpeg">
+<title>Amelia Arabe &middot; Miss Temecula USA 2026 &middot; Competing for Miss California USA</title>
+<meta name="description" content="Amelia Arabe, Miss Temecula USA 2026, competing for Miss California USA. Engineer, artist, and cellist — building solar energy and green infrastructure in underserved communities.">
+<meta property="og:title" content="Amelia Arabe &middot; Miss Temecula USA 2026">
+<meta property="og:description" content="Engineer. Artist. Cellist. Miss Temecula USA 2026 competing for Miss California USA. Platform: green energy access, community infrastructure, and fashion sustainability policy.">
+<meta property="og:image" content="assets/portfolio-hero.jpeg">
 <style>
 /* ── FONTS ── */
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500;1,600&family=Figtree:wght@300;400;500;600&display=swap');
@@ -31,22 +31,35 @@ body{font-family:var(--fb);background:var(--ivory);color:var(--ink);font-size:13
 .nav{
   position:fixed;top:0;left:0;right:0;z-index:200;
   display:flex;align-items:center;justify-content:space-between;
-  padding:0 2.5rem;height:54px;
-  background:rgba(250,247,242,0.92);backdrop-filter:blur(16px);
+  padding:0 2rem;height:56px;
+  background:rgba(250,247,242,0.94);backdrop-filter:blur(16px);
   border-bottom:0.5px solid var(--bd);transition:background .3s;
 }
 .nav-logo{
   font-family:var(--fd);font-size:17px;font-weight:400;
   color:var(--ink);text-decoration:none;
-  display:flex;align-items:center;gap:7px;
+  display:flex;align-items:center;gap:10px;
 }
-.nav-logo em{font-style:italic;color:var(--si);}
-.nav-dot{width:5px;height:5px;border-radius:50%;background:var(--gold);}
+.nav-logo-img{height:32px;width:auto;object-fit:contain;}
+.nav-logo-text{display:flex;flex-direction:column;line-height:1.1;}
+.nav-logo-name{font-size:14px;font-weight:400;color:var(--ink);}
+.nav-logo-title{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);}
 .nav-links{display:flex;gap:2px;}
-.nav-link{font-size:12px;color:var(--muted);padding:5px 12px;border-radius:20px;text-decoration:none;transition:all .15s;}
+.nav-link{font-size:12px;color:var(--muted);padding:5px 11px;border-radius:20px;text-decoration:none;transition:all .15s;}
 .nav-link:hover{color:var(--ink);background:var(--iv2);}
-.nav-actions{display:flex;gap:8px;align-items:center;}
-.nav-btn{font-size:11px;letter-spacing:.07em;text-transform:uppercase;padding:7px 16px;border-radius:5px;text-decoration:none;transition:all .15s;cursor:pointer;border:none;}
+.nav-actions{display:flex;gap:6px;align-items:center;}
+.nav-social{
+  display:flex;align-items:center;gap:4px;
+  padding:0 4px;border-right:0.5px solid var(--bd);margin-right:4px;
+}
+.nav-social-link{
+  width:30px;height:30px;border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  color:var(--muted);text-decoration:none;font-size:13px;
+  transition:all .15s;
+}
+.nav-social-link:hover{background:var(--iv2);color:var(--si);}
+.nav-btn{font-size:11px;letter-spacing:.07em;text-transform:uppercase;padding:6px 14px;border-radius:5px;text-decoration:none;transition:all .15s;cursor:pointer;border:none;}
 .nb-secondary{background:transparent;color:var(--muted);border:0.5px solid var(--bd);}
 .nb-secondary:hover{border-color:var(--sil);color:var(--si);background:var(--sip);}
 .nb-primary{background:var(--ink);color:var(--ivory);}
@@ -59,7 +72,7 @@ body{font-family:var(--fb);background:var(--ivory);color:var(--ink);font-size:13
 }
 .hero-img{
   position:absolute;inset:0;
-  background:url('portfolio-hero.jpeg') center 20%/cover no-repeat;
+  background:url('assets/portfolio-hero.jpeg') center 20%/cover no-repeat;
 }
 .hero-overlay{
   position:absolute;inset:0;
@@ -215,7 +228,7 @@ body{font-family:var(--fb);background:var(--ivory);color:var(--ink);font-size:13
 .about-photo{
   width:100%;aspect-ratio:3/4;border-radius:12px;overflow:hidden;
   border:0.5px solid var(--bd);
-  background:url('portfolio-hero.jpeg') center top/cover no-repeat;
+  background:url('assets/portfolio-hero.jpeg') center top/cover no-repeat;
 }
 .about-badge{
   position:absolute;bottom:-1.5rem;right:-1.5rem;
@@ -402,16 +415,32 @@ body{font-family:var(--fb);background:var(--ivory);color:var(--ink);font-size:13
 
 <!-- ══ NAV ══ -->
 <nav class="nav">
-  <a href="#" class="nav-logo"><div class="nav-dot"></div>Amelia <em>Arabe</em></a>
+  <a href="#" class="nav-logo">
+    <img src="assets/Library_of_Morenita_Logo_brown-02.png" alt="Library of Morenita" class="nav-logo-img">
+    <div class="nav-logo-text">
+      <span class="nav-logo-name">Amelia Arabe</span>
+      <span class="nav-logo-title">Miss Temecula USA 2026</span>
+    </div>
+  </a>
   <div class="nav-links">
     <a href="#platform" class="nav-link">Platform</a>
     <a href="#about" class="nav-link">About</a>
     <a href="#team" class="nav-link">Team</a>
+    <a href="#join" class="nav-link">Join</a>
     <a href="#sponsor" class="nav-link">Sponsor</a>
-    <a href="#press" class="nav-link">Press</a>
   </div>
   <div class="nav-actions">
-    <a href="#join" class="nav-btn nb-secondary">Join the team</a>
+    <div class="nav-social">
+      <a href="https://instagram.com/ameliavarabe" target="_blank" class="nav-social-link" title="Instagram">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+      </a>
+      <a href="https://www.youtube.com/@ameliavarabe" target="_blank" class="nav-social-link" title="YouTube">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.97C18.88 4 12 4 12 4s-6.88 0-8.59.45A2.78 2.78 0 0 0 1.46 6.42 29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.95 1.97C5.12 20 12 20 12 20s6.88 0 8.59-.45a2.78 2.78 0 0 0 1.95-1.97A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="currentColor" stroke="none"/></svg>
+      </a>
+      <a href="https://substack.com/@musesofmorenita" target="_blank" class="nav-social-link" title="Substack">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z"/></svg>
+      </a>
+    </div>
     <a href="index.html" class="nav-btn nb-primary">Team login &#8599;</a>
   </div>
 </nav>
@@ -420,9 +449,10 @@ body{font-family:var(--fb);background:var(--ivory);color:var(--ink);font-size:13
 <section class="hero">
   <div class="hero-img"></div>
   <div class="hero-overlay"></div>
+  <div style="position:absolute;bottom:1rem;right:1.5rem;z-index:2;font-size:10px;color:rgba(250,247,242,.3);letter-spacing:.06em">Miss Philippines USA Top Model &middot; Bontika Swim Ambassador</div>
   <div class="hero-content">
     <div>
-      <div class="hero-eyebrow">Miss California USA 2026 &middot; Candidate</div>
+      <div class="hero-eyebrow">Miss Temecula USA 2026 &middot; Competing for Miss California USA</div>
       <h1 class="hero-name">Amelia <em>Arabe</em></h1>
       <p class="hero-title">Engineer &middot; Artist &middot; Cellist &middot; Builder</p>
       <p class="hero-bio">
@@ -446,7 +476,7 @@ body{font-family:var(--fb);background:var(--ivory);color:var(--ink);font-size:13
     <!-- Countdown -->
     <div class="cd-card">
       <div class="cd-label">Competition Day</div>
-      <div class="cd-event">Miss California USA 2026 &middot; July 10</div>
+      <div class="cd-event">Miss California USA &middot; July 10, 2026</div>
       <div class="cd-nums">
         <div class="cd-unit"><span class="cd-n" id="cd-d">--</span><span class="cd-u">Days</span></div>
         <div class="cd-unit"><span class="cd-n" id="cd-h">--</span><span class="cd-u">Hours</span></div>
@@ -512,15 +542,15 @@ body{font-family:var(--fb);background:var(--ivory);color:var(--ink);font-size:13
         <div class="about-photo"></div>
         <div class="about-badge">
           <div class="ab-label">Competition</div>
-          <div class="ab-val">&#x23; 16</div>
-          <div class="ab-sub">Miss California USA 2026</div>
+          <div class="ab-val">Miss Temecula</div>
+          <div class="ab-sub">Competing for Miss California USA</div>
         </div>
       </div>
       <div>
         <div class="s-eyebrow ey-si reveal">About Amelia</div>
         <h2 class="s-title reveal">Engineer. <em>Artist.</em><br>Cellist. Builder.</h2>
         <p class="about-text reveal" style="margin-top:1.2rem">I grew up believing that the pursuit of knowledge and the pursuit of happiness are the same pursuit. I&rsquo;m a senior software engineer, co-founder, oil painter, and cellist &mdash; and I move through the world convinced that human creations are most beautiful when the process behind them cultivates healthy human connections.</p>
-        <p class="about-text reveal">I build systems that breathe. At Ballmecca and across the teams I&rsquo;ve led, I&rsquo;ve learned that the best infrastructure &mdash; technical or human &mdash; is the kind that holds space for people to fully show up. That&rsquo;s the leadership I bring to Miss California USA.</p>
+        <p class="about-text reveal">I build systems that breathe. At Ballmecca and across the teams I&rsquo;ve led, I&rsquo;ve learned that the best infrastructure &mdash; technical or human &mdash; is the kind that holds space for people to fully show up. That&rsquo;s the leadership I bring to this campaign.</p>
         <div class="creds reveal">
           <div class="cred"><div class="cred-dot"></div>Senior Software Engineer &amp; Co-founder, Ballmecca</div>
           <div class="cred"><div class="cred-dot"></div>Computer Engineering, Loyola University Maryland</div>
@@ -540,12 +570,12 @@ body{font-family:var(--fb);background:var(--ivory);color:var(--ink);font-size:13
     <h2 class="s-title reveal">Every crown starts<br>with <em>people who believe.</em></h2>
     <p class="s-sub reveal">This campaign runs like the operation it is. Each team member owns their domain and brings the same level of excellence to this that they bring to everything they do.</p>
 
-    <div class="team-grid">
+    <div class="team-grid" id="team-grid">
       <!-- Amelia -->
       <div class="tc reveal">
         <div class="tc-av si">A</div>
         <div class="tc-name">Amelia Arabe</div>
-        <div class="tc-role">Candidate</div>
+        <div class="tc-role">Miss Temecula USA 2026</div>
         <div class="tc-bio">Engineer, artist, cellist, and the force behind this entire operation. Competes July 10.</div>
       </div>
       <!-- Laneea -->
@@ -609,6 +639,65 @@ body{font-family:var(--fb);background:var(--ivory);color:var(--ink);font-size:13
         <div class="jb-sub">We&rsquo;re building a team that operates at the highest level. If you have skills and you believe in the mission &mdash; let&rsquo;s talk.</div>
       </div>
       <a href="#join" class="btn btn-dark" style="white-space:nowrap">Apply to join &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<!-- ══ GALLERY ══ -->
+<section class="section press-section" id="press">
+  <div class="section-inner">
+    <div class="s-eyebrow ey-si reveal">The Journey</div>
+    <h2 class="s-title reveal">Following <em>along</em></h2>
+    <p class="s-sub reveal">Behind the scenes, on stage, and everywhere in between. Updated as the campaign builds.</p>
+
+    <!-- Gallery grid — add photos to assets/ folder and list them here -->
+    <div id="gallery-grid" style="
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:.75rem;
+      margin:2.5rem 0 2rem;
+    "></div>
+
+    <!-- Empty state shown until photos are added -->
+    <div id="gallery-empty" style="
+      text-align:center;padding:4rem 2rem;
+      border:0.5px dashed var(--bd);border-radius:12px;
+      margin:2.5rem 0 2rem;display:none;
+    ">
+      <div style="font-family:var(--fd);font-size:22px;font-style:italic;color:var(--muted);margin-bottom:.5rem">Photos coming soon</div>
+      <div style="font-size:12px;color:var(--faint)">Upload images to the <code style="background:var(--iv2);padding:2px 6px;border-radius:3px">assets/</code> folder in the crown-hq repo and add them to the <code style="background:var(--iv2);padding:2px 6px;border-radius:3px">GALLERY_PHOTOS</code> array in public.html</div>
+    </div>
+
+    <!-- Lightbox -->
+    <div id="lightbox" onclick="closeLightbox()" style="
+      display:none;position:fixed;inset:0;z-index:500;
+      background:rgba(28,23,20,.92);backdrop-filter:blur(8px);
+      align-items:center;justify-content:center;cursor:pointer;
+    ">
+      <img id="lightbox-img" style="max-width:90vw;max-height:88vh;border-radius:8px;object-fit:contain;" src="" alt="">
+      <div id="lightbox-cap" style="
+        position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);
+        font-family:var(--fd);font-size:14px;font-style:italic;
+        color:rgba(250,247,242,.6);text-align:center;pointer-events:none;
+      "></div>
+      <button onclick="closeLightbox()" style="
+        position:fixed;top:1.5rem;right:1.5rem;
+        background:rgba(250,247,242,.1);border:0.5px solid rgba(250,247,242,.15);
+        color:white;font-size:20px;width:40px;height:40px;
+        border-radius:50%;cursor:pointer;line-height:1;
+      ">&times;</button>
+    </div>
+
+    <!-- Press contact bar — kept at bottom -->
+    <div class="press-contact-bar reveal">
+      <div>
+        <div class="pcb-title">Press &amp; media inquiries</div>
+        <div class="pcb-sub">For interviews, features, and press kit requests &mdash; reach out directly.</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <a href="mailto:laneealovemgmt@gmail.com?subject=[Press] Miss California USA 2026" class="btn btn-dark" style="white-space:nowrap">Contact press team &rarr;</a>
+        <a href="https://libraryofmorenita-hub.github.io/amelia-arabe/" target="_blank" class="btn" style="background:var(--iv2);color:var(--ink);white-space:nowrap">View portfolio &rarr;</a>
+      </div>
     </div>
   </div>
 </section>
@@ -721,51 +810,22 @@ body{font-family:var(--fb);background:var(--ivory);color:var(--ink);font-size:13
   </div>
 </section>
 
-<!-- ══ PRESS ══ -->
-<section class="section press-section" id="press">
-  <div class="section-inner">
-    <div class="s-eyebrow ey-si reveal">Press &amp; Media</div>
-    <h2 class="s-title reveal">Following the <em>journey</em></h2>
-    <p class="s-sub reveal">Media coverage, features, and press mentions. More coming as the campaign builds.</p>
-
-    <div class="press-grid">
-      <div class="press-card placeholder reveal">
-        <div class="press-outlet">Feature &middot; Coming Soon</div>
-        <div class="press-hed">Engineer runs for Miss California USA with a platform rooted in green energy and community infrastructure</div>
-        <div class="press-date">2026</div>
-      </div>
-      <div class="press-card placeholder reveal">
-        <div class="press-outlet">Profile &middot; Coming Soon</div>
-        <div class="press-hed">Meet the candidate pushing fashion sustainability from runway to policy</div>
-        <div class="press-date">2026</div>
-      </div>
-      <div class="press-card placeholder reveal">
-        <div class="press-outlet">Interview &middot; Coming Soon</div>
-        <div class="press-hed">&ldquo;The crown is a tool&rdquo; &mdash; Amelia Arabe on building something that lasts</div>
-        <div class="press-date">2026</div>
-      </div>
-    </div>
-
-    <div class="press-contact-bar reveal">
-      <div>
-        <div class="pcb-title">Press &amp; media inquiries</div>
-        <div class="pcb-sub">For interviews, features, and press kit requests &mdash; reach out directly.</div>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <a href="mailto:missameliava@gmail.com?subject=[Press] Miss California USA 2026" class="btn btn-dark" style="white-space:nowrap">Contact press team &rarr;</a>
-        <a href="https://libraryofmorenita-hub.github.io/muses-of-morenita" target="_blank" class="btn" style="background:var(--iv2);color:var(--ink);white-space:nowrap">View portfolio &rarr;</a>
-      </div>
-    </div>
-  </div>
-</section>
-
 <!-- ══ FOOTER ══ -->
 <footer class="footer">
   <div class="footer-inner">
-    <div class="footer-logo">Amelia <em>Arabe</em> &middot; Miss California USA 2026</div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <img src="assets/Library_of_Morenita_Logo_brown-02.png" alt="Library of Morenita" style="height:28px;width:auto;opacity:.7;">
+      <div>
+        <div class="footer-logo">Amelia <em>Arabe</em></div>
+        <div style="font-size:10px;color:var(--faint);letter-spacing:.06em;">Miss Temecula USA 2026 &middot; Competing for Miss California USA</div>
+      </div>
+    </div>
     <div class="footer-links">
-      <a href="https://linkedin.com/in/ameliaarabe" target="_blank" class="footer-link">LinkedIn</a>
-      <a href="https://libraryofmorenita-hub.github.io/muses-of-morenita" target="_blank" class="footer-link">Portfolio</a>
+      <a href="https://instagram.com/ameliavarabe" target="_blank" class="footer-link">Instagram</a>
+      <a href="https://www.youtube.com/@ameliavarabe" target="_blank" class="footer-link">YouTube</a>
+      <a href="https://substack.com/@musesofmorenita" target="_blank" class="footer-link">Substack</a>
+      <a href="https://libraryofmorenita-hub.github.io/amelia-arabe/" target="_blank" class="footer-link">Portfolio</a>
+      <a href="mailto:laneealovemgmt@gmail.com" class="footer-link">Press</a>
       <a href="mailto:missameliava@gmail.com" class="footer-link">Contact</a>
       <a href="index.html" class="footer-link">Team Login</a>
     </div>
@@ -878,7 +938,110 @@ function submitSponsor(){
   }).catch(function(){alert('Network error. Please email missameliava@gmail.com directly.');});
 }
 
-// ── NAV ACTIVE SECTION ────────────────────────────
+// ── PHOTO GALLERY ─────────────────────────────────
+// TO ADD PHOTOS:
+// 1. Upload image files to the assets/ folder in your crown-hq repo
+// 2. Add entries to this array: { src:'assets/filename.jpg', caption:'Description' }
+// The gallery will render automatically.
+
+var GALLERY_PHOTOS = [
+  { src:'assets/portfolio-hero.jpeg', caption:'On stage &middot; Miss Temecula USA 2026' },
+  // Add more photos here as you upload them:
+  // { src:'assets/training-01.jpg', caption:'Training with Donovan' },
+  // { src:'assets/gown-fitting.jpg', caption:'Gown consultation with Laneea' },
+  // { src:'assets/headshot-01.jpg', caption:'Official headshots by Dorian Qi' },
+  // { src:'assets/stage-swimsuit.jpg', caption:'Swimsuit competition' },
+  // { src:'assets/interview-day.jpg', caption:'Interview prep' },
+];
+
+function renderGallery() {
+  var grid = document.getElementById('gallery-grid');
+  var empty = document.getElementById('gallery-empty');
+  if (!grid) return;
+
+  var live = GALLERY_PHOTOS.filter(function(p) { return p.src; });
+
+  if (!live.length) {
+    grid.style.display = 'none';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+
+  grid.style.display = 'grid';
+  if (empty) empty.style.display = 'none';
+
+  // First photo spans 2 columns for visual weight
+  grid.innerHTML = live.map(function(photo, i) {
+    var span = i === 0 ? 'grid-column:span 2;grid-row:span 2;' : '';
+    var aspect = i === 0 ? '2/3' : '1/1';
+    return '<div onclick="openLightbox(\'' + photo.src + '\',\'' + (photo.caption||'') + '\')" style="' +
+      span +
+      'aspect-ratio:' + aspect + ';' +
+      'border-radius:10px;overflow:hidden;cursor:pointer;' +
+      'background:#E5DDD2 url(\'' + photo.src + '\') center/cover no-repeat;' +
+      'border:0.5px solid var(--bd);transition:transform .2s,border-color .2s;' +
+      '" onmouseover="this.style.transform=\'scale(1.02)\';this.style.borderColor=\'var(--sil)\'" ' +
+      'onmouseout="this.style.transform=\'\';this.style.borderColor=\'\'"></div>';
+  }).join('');
+}
+
+function openLightbox(src, cap) {
+  var lb = document.getElementById('lightbox');
+  var img = document.getElementById('lightbox-img');
+  var capEl = document.getElementById('lightbox-cap');
+  if (!lb || !img) return;
+  img.src = src;
+  if (capEl) capEl.innerHTML = cap || '';
+  lb.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeLightbox() {
+  var lb = document.getElementById('lightbox');
+  if (lb) lb.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeLightbox();
+});
+
+renderGallery();
+
+// ── LIVE TEAM DATA FROM DASHBOARD ─────────────────
+// Reads from localStorage written by app.js when team members
+// save their profiles. Works because both pages share the same origin.
+function loadLiveTeamData(){
+  try {
+    var raw = localStorage.getItem('chq-team-public');
+    if(!raw) return;
+    var team = JSON.parse(raw);
+    if(!Array.isArray(team)||!team.length) return;
+    renderLiveTeam(team);
+  } catch(e){}
+}
+
+function renderLiveTeam(team){
+  var grid = document.getElementById('team-grid');
+  if(!grid) return;
+  var openCards = Array.from(grid.querySelectorAll('.tc.open')).map(function(c){return c.outerHTML;}).join('');
+  var memberHtml = team.filter(function(m){return m.displayOnPublic!==false&&m.name;})
+    .map(function(m){
+      var initials = String(m.name||'?').split(' ').map(function(x){return x.charAt(0);}).join('').slice(0,2).toUpperCase();
+      var colorClass = m.category==='Miss Temecula USA 2026'?'si':m.category==='Styling & Fashion'?'sa':m.category==='Fitness & Training'?'ink':m.category==='Finance & Operations'?'go':'si';
+      var photoStyle = m.photo ? 'background:url('+m.photo+') center/cover no-repeat;font-size:0' : '';
+      return '<div class="tc">' +
+        '<div class="tc-av '+colorClass+'" style="'+photoStyle+'">'+(m.photo?'&nbsp;':initials)+'</div>' +
+        '<div class="tc-name">'+m.name+'</div>' +
+        '<div class="tc-role">'+m.roleLabel+'</div>' +
+        '<div class="tc-bio">'+m.bio+'</div>' +
+        '</div>';
+    }).join('');
+  if(memberHtml) grid.innerHTML = memberHtml + openCards;
+}
+
+loadLiveTeamData();
+
 var sections=['platform','about','team','join','sponsor','press'];
 var navLinks=document.querySelectorAll('.nav-link');
 window.addEventListener('scroll',function(){
