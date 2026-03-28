@@ -24,7 +24,11 @@ var SB_KV_MAP={
   'chq-lb-links':'lookbook_links',
   'chq-lb-bio':'lookbook_bio',
   'chq-social':'social',
-  'chq-inbox':'inbox'
+  'chq-inbox':'inbox',
+  'chq-fitness':'fitness',
+  'chq-peace':'peace',
+  'chq-role-pages':'role_pages',
+  'chq-contacts':'contacts'
 };
 function setSupabaseStatus(state,text,sticky){
   var el=document.getElementById('tb-sync');
@@ -91,7 +95,7 @@ function sbSetKV(key,value){
   .catch(function(){finishSupabaseSave(false);});
 }
 function loadFromSupabase(){
-  var kvKeys=['goals','todos','answers','brand','adv','gd','timeline','appts','mood','dashMood','quiz','pitch','board','lookbook_imgs','lookbook_links','lookbook_bio','social','inbox'];
+  var kvKeys=['goals','todos','answers','brand','adv','gd','timeline','appts','mood','dashMood','quiz','pitch','board','lookbook_imgs','lookbook_links','lookbook_bio','social','inbox','fitness','peace','role_pages','contacts'];
   return Promise.all([sbGet('sponsors'),sbGet('calendar_events'),sbGet('posts'),sbGet('looks'),sbGet('workouts'),sbGet('messages'),sbGet('files'),sbGet('mood_board')].concat(kvKeys.map(sbGetKV)))
   .then(function(results){
     var sp=results[0],ev=results[1],po=results[2],lk=results[3],wk=results[4],ms=results[5],fi=results[6],mb=results[7];
@@ -134,6 +138,10 @@ function loadFromSupabase(){
     if(kv.lookbook_bio)lsWriteLocal('chq-lb-bio',kv.lookbook_bio);
     if(kv.social)lsWriteLocal('chq-social',kv.social);
     if(kv.inbox)lsWriteLocal('chq-inbox',kv.inbox);
+    if(kv.fitness)lsWriteLocal('chq-fitness',kv.fitness);
+    if(kv.peace)lsWriteLocal('chq-peace',kv.peace);
+    if(kv.role_pages)lsWriteLocal('chq-role-pages',kv.role_pages);
+    if(kv.contacts)lsWriteLocal('chq-contacts',kv.contacts);
     SB_SYNC_SUSPENDED=false;
   }).catch(function(e){SB_SYNC_SUSPENDED=false;console.log('Supabase load failed',e);});
 }
@@ -197,6 +205,71 @@ function lsSave(k,v){
   else if(SB_KV_MAP[k])sbSaveKV(SB_KV_MAP[k],v);
 }
 function sv(k,v){S[k]=v;lsSave('chq-'+k.replace(/[A-Z]/g,function(c){return '-'+c.toLowerCase();}).replace('chq-',''),v);}
+
+function getRolePages(){
+  var defaults={
+    laneea:{
+      quote:'"Every room Amelia walks into, she\'s already won it."',
+      focus:'Keep the calendar clean, the sponsor pipeline warm, and every detail one step ahead.'
+    },
+    hmu:{
+      quote:'"Beauty that has a story worth telling."',
+      focus:'Keep each day\'s beauty direction polished, calm, and camera-ready.',
+      schedule:[
+        {date:'Jul 10',ev:'Day 1 — Interview',look:'Natural, professional'},
+        {date:'Jul 11',ev:'Day 2 — Swimsuit',look:'Glowing, beach-ready'},
+        {date:'Jul 12',ev:'Day 3 — Evening Gown',look:'Full glam updo'}
+      ]
+    },
+    trainer:{
+      quote:'"Train like an athlete. Move like an artist."',
+      focus:'Build posture, stamina, and calm confidence without burning out.',
+      phase:'Foundation'
+    }
+  };
+  var saved=lsGet('chq-role-pages',{})||{};
+  return {
+    laneea:{
+      quote:(saved.laneea&&saved.laneea.quote)||defaults.laneea.quote,
+      focus:(saved.laneea&&saved.laneea.focus)||defaults.laneea.focus
+    },
+    hmu:{
+      quote:(saved.hmu&&saved.hmu.quote)||defaults.hmu.quote,
+      focus:(saved.hmu&&saved.hmu.focus)||defaults.hmu.focus,
+      schedule:Array.isArray(saved.hmu&&saved.hmu.schedule)&&saved.hmu.schedule.length?saved.hmu.schedule:defaults.hmu.schedule.slice()
+    },
+    trainer:{
+      quote:(saved.trainer&&saved.trainer.quote)||defaults.trainer.quote,
+      focus:(saved.trainer&&saved.trainer.focus)||defaults.trainer.focus,
+      phase:(saved.trainer&&saved.trainer.phase)||defaults.trainer.phase
+    }
+  };
+}
+
+function getPageantContacts(){
+  var defaults={
+    updated:'2026-03-28',
+    people:[
+      {id:'kristie',name:'Kristie Axmaker',role:'Contestant Manager',email:'info@misscaliforniausa.com',phone:'805-262-7973',note:'Miss California USA staff'},
+      {id:'dorian',name:'Dorian Qi',role:'Official Photographer',email:'dorianqiqd@gmail.com',phone:'',note:'@droianqdphoto'},
+      {id:'lisa',name:'Lisa G. Artistry',role:'Official Photographer',email:'lisagartistry@gmail.com',phone:'',note:'@lisagartistry'}
+    ],
+    links:{
+      hotel:'https://www.hyatt.com/events/en-US/group-booking/CHAMP/G-CA26',
+      sash:'https://form.123formbuilder.com/6214578/sash-order-form'
+    }
+  };
+  var saved=lsGet('chq-contacts',null)||{};
+  var people=Array.isArray(saved.people)&&saved.people.length?saved.people:defaults.people.slice();
+  var links=Object.assign({},defaults.links,saved.links&&typeof saved.links==='object'?saved.links:{});
+  return {
+    updated:saved.updated||defaults.updated,
+    people:people.map(function(p,i){
+      return Object.assign({},defaults.people[i]||{},p||{});
+    }),
+    links:links
+  };
+}
 
 // ═══ SEED DATA ═══════════════════════════════════════════════
 function seed(){
@@ -295,17 +368,23 @@ function seed(){
   if(!S.todos||!Object.keys(S.todos).length){
     S.todos={
       amelia:[
-        {id:1,text:'Pay $500 deposit by March 31',done:false},
-        {id:2,text:'Post one YouTube Short this week',done:false},
-        {id:3,text:'Walk into Lucid Motors SD with printed deck',done:false},
-        {id:4,text:'Email Paired Power and SD Community Power',done:false},
-        {id:5,text:'Book Kristen Axmaker meeting',done:true},
+        {id:1,text:'Pay FULL entry fee by March 31 — get embroidered sash',done:false},
+        {id:2,text:'Submit official headshot by June 1 (300dpi, white bg, 3/4 length)',done:false},
+        {id:3,text:'Follow @misscausa @misscateenusa @crowndivaproductions on IG',done:false},
+        {id:4,text:'Watch for social media intro script — post next week',done:false},
+        {id:5,text:'Book room at Grand Hyatt Indian Wells — use group rate link',done:false},
+        {id:6,text:'Contact official photographers: Dorian Qi or Lisa G. Artistry',done:false},
+        {id:7,text:'Walk into Lucid Motors SD with printed deck',done:false},
+        {id:8,text:'Email Paired Power and SD Community Power',done:false},
       ],
       laneea:[
-        {id:1,text:'Confirm H2OM swimsuit sizing',done:false},
-        {id:2,text:'Research sustainable gown designers SD',done:false},
-        {id:3,text:'Book HMU trial for gown night look',done:true},
-        {id:4,text:'Prepare wardrobe one-pager for sponsors',done:false},
+        {id:1,text:'Contact Kristie Axmaker: info@misscaliforniausa.com / 805-262-7973',done:false},
+        {id:2,text:'Book Grand Hyatt Indian Wells rooms — use contestant group rate',done:false},
+        {id:3,text:'Research Dorian Qi + Lisa G. Artistry for headshot shoot',done:false},
+        {id:4,text:'Confirm H2OM swimsuit sizing',done:false},
+        {id:5,text:'Research sustainable gown designers for Miss California stage',done:false},
+        {id:6,text:'Prepare sponsor pitch deck with Miss Temecula title',done:false},
+        {id:7,text:'Book HMU trial for gown night look',done:true},
       ],
       trainer:[{id:1,text:'Send Amelia this week training plan',done:true},{id:2,text:'Book Friday stage prep session',done:false}],
       hmu:[{id:1,text:'Source vegan makeup brands',done:false},{id:2,text:'Schedule interview day makeup trial',done:false}],
@@ -380,6 +459,7 @@ var ROLES={
       {ico:'🖼',lbl:'Mood Board',id:'moodboard'},
       {ico:'👗',lbl:'Looks',id:'looks'},
       {ico:'💪',lbl:'Fitness',id:'fitness'},
+      {ico:'🕊',lbl:'Peace',id:'peace'},
       {ico:'📱',lbl:'Social Media',id:'social'},
       {ico:'📬',lbl:'Inbox',id:'inbox'},
       {ico:'🗂',lbl:'Discussion',id:'board'},
@@ -414,8 +494,7 @@ var ROLES={
   },
   trainer:{name:'Trainer',abbr:'TR',color:'var(--sg)',
     nav:[
-      {ico:'🏠',lbl:'Dashboard',id:'trainer-dash'},
-      {ico:'💪',lbl:'Workouts',id:'fitness'},
+      {ico:'💪',lbl:'Fitness',id:'fitness'},
       {ico:'📅',lbl:'Calendar',id:'calendar'},
       {ico:'🗂',lbl:'Discussion',id:'board'},
     ],
@@ -491,11 +570,11 @@ function closeSB(){if(window.innerWidth<=768)g('sidebar').classList.remove('open
 
 // ═══ PANELS ═══════════════════════════════════════════════════
 var PANELS={
-  'dashboard':bDash,'laneea-dash':bLaneaDash,'hmu-dash':bHMUDash,'trainer-dash':bTrainerDash,
+  'dashboard':bDash,'laneea-dash':bLaneaDash,'hmu-dash':bHMUDash,
   'sponsor-portal':bSponsorPortal,'sponsors':bSponsors,'calendar':bCalendar,
   'library':bLibrary,'quiz':bQuiz,'brand':bBrand,'moodboard':bMoodboard,
   'looks':bLooks,'fitness':bFitness,'messages':bMessages,'files':bFiles,
-  'deliverables':bDeliverables,'comp-progress':bCompProgress,'advocacy':bAdvocacy,'board':bBoard,'lookbook':bLookbook,'social':bSocial,'inbox':bInbox
+  'deliverables':bDeliverables,'comp-progress':bCompProgress,'advocacy':bAdvocacy,'board':bBoard,'lookbook':bLookbook,'social':bSocial,'inbox':bInbox,'peace':bPeace
 };
 
 function showPanel(id,navEl){
@@ -512,10 +591,61 @@ function showPanel(id,navEl){
 // ═══ HELPERS ══════════════════════════════════════════════════
 function g(id){return document.getElementById(id);}
 function inject(html){g('main').innerHTML=html;}
+function rerenderKeepScroll(renderFn){
+  var main=g('main');
+  var top=main?main.scrollTop:0;
+  renderFn();
+  if(main){
+    main.scrollTop=top;
+    requestAnimationFrame(function(){main.scrollTop=top;});
+  }
+}
 function openM(id){g(id).classList.add('on');}
 function closeM(id){g(id).classList.remove('on');}
 function fdate(d){if(!d)return'';var dt=new Date(d+'T12:00:00');return dt.toLocaleDateString('en-US',{month:'short',day:'numeric'});}
 function showToast(msg){var t=g('toast');if(!t)return;t.textContent=msg||'Saved';t.classList.add('on');clearTimeout(window._tt);window._tt=setTimeout(function(){t.classList.remove('on');},1800);}
+function copyQuick(text,label){
+  if(!text)return;
+  navigator.clipboard.writeText(text);
+  showToast((label||'Copied')+' copied');
+}
+function renderContactsCard(compact){
+  var data=getPageantContacts();
+  return '<div class="card'+(compact?' pc-card':'')+'"><div class="cl">Pageant Contacts</div>' +
+    '<div class="pc-list">' +
+    data.people.map(function(p){
+      return '<div class="pc-row">' +
+        '<div class="pc-main"><div class="pc-name">'+p.name+'</div><div class="pc-role">'+p.role+(p.note?' · '+p.note:'')+'</div></div>' +
+        '<div class="pc-meta">' +
+        (p.email?'<button class="pc-chip" onclick="copyQuick(\''+p.email+'\',\'Email\')">'+p.email+'</button>':'') +
+        (p.phone?'<button class="pc-chip" onclick="copyQuick(\''+p.phone+'\',\'Phone\')">'+p.phone+'</button>':'') +
+        '</div></div>';
+    }).join('') +
+    '</div>' +
+    '<div class="pc-links">' +
+    '<button class="pc-link" onclick="window.open(\''+data.links.hotel+'\',\'_blank\')">Hotel Link</button>' +
+    '<button class="pc-link" onclick="window.open(\''+data.links.sash+'\',\'_blank\')">Sash Form</button>' +
+    '<button class="pc-link" onclick="copyQuick(\''+data.links.hotel+'\',\'Hotel link\')">Copy Hotel Link</button>' +
+    '</div></div>';
+}
+function renderRegistrationCard(){
+  var contacts=getPageantContacts();
+  var hotel=contacts.links.hotel;
+  return '<div class="card reg-card"><div class="cl">Registration HQ</div>' +
+    '<div class="reg-head">Miss Temecula USA 2026 confirmed</div>' +
+    '<div class="reg-sub">Grand Hyatt Indian Wells Resort & Villas · July 10-12, 2026</div>' +
+    '<div class="reg-grid">' +
+    '<div class="reg-item"><span class="reg-k">Mar 31</span><strong>Pay in full for complimentary embroidered sash</strong></div>' +
+    '<div class="reg-item"><span class="reg-k">Jun 1</span><strong>Official headshot due in Contestant Portal</strong></div>' +
+    '<div class="reg-item"><span class="reg-k">Hotel</span><strong>Friends & Family rate available</strong></div>' +
+    '<div class="reg-item"><span class="reg-k">Social</span><strong>Official intro script coming next week</strong></div>' +
+    '</div>' +
+    '<div class="reg-actions">' +
+    '<button class="btn bp" onclick="window.open(\''+hotel+'\',\'_blank\')">Open Hotel Link</button>' +
+    '<button class="btn bg" onclick="copyQuick(\''+hotel+'\',\'Hotel link\')">Copy Hotel Link</button>' +
+    '<button class="btn bg" onclick="showPanel(\'inbox\')">Open Inbox Note</button>' +
+    '</div></div>';
+}
 
 // ═══ AMELIA DASHBOARD ════════════════════════════════════════
 function bDash(){
@@ -529,7 +659,7 @@ function bDash(){
     {dot:'var(--du)',date:'Apr 1',text:'Priority 1 sponsor outreach',idx:2},
     {dot:'var(--du)',date:'Apr 30',text:'$500 installment due',idx:3},
     {dot:'var(--du)',date:'Jun 30',text:'$1,000 final balance',idx:4},
-    {dot:'var(--du)',date:'Jul 10',text:'Miss California USA 2026',idx:5},
+    {dot:'var(--du)',date:'Jul 10',text:'Miss Temecula USA 2026',idx:5},
   ];
   var goals=S.goals;
   var gDefaults=[
@@ -569,7 +699,7 @@ function bDash(){
     '<div class="oath">' +
     '<div class="oath-glow"></div>' +
     '<div class="oath-label">The Seraphim Oath</div>' +
-    '<div class="oath-text" data-e="oath:seraphim:text">'+(goals.oath||'I swear to fall in love with all that life has to offer. To create and move as Amelia the Seraphim. I will love everyone deeply. I will be grateful for everything and entirely humble.')+'</div>' +
+    '<div class="oath-text" data-e="oath:seraphim:text">'+(goals.oath||'Miss Temecula USA 2026. Miss California USA 2026. Miss USA. Miss Universe. I am not competing. I am arriving.')+'</div>' +
     '<div class="oath-attr">Amelia Arabe · 2026</div>' +
     '</div>' +
 
@@ -586,7 +716,7 @@ function bDash(){
     '<div class="stat st-bl"><div class="sn" data-e="goal:days:text">'+days+'</div><div class="sl">Days to Crown</div><div class="prog"><div class="pf pf-s" style="width:'+Math.min(100,Math.round(((112-days)/112)*100))+'%"></div></div><div class="pl">July 10 2026</div></div>' +
     '<div class="stat st-ch"><div class="sn">$'+raised.toLocaleString()+'</div><div class="sl">Raised</div><div class="prog"><div class="pf pf-c" style="width:'+Math.min(100,Math.round((raised/2500)*100))+'%"></div></div><div class="pl">Goal: $<span data-e="goal:fundraise:text">'+(goals.fundraise||'2,500')+'</span></div></div>' +
     '<div class="stat st-tz"><div class="sn">'+closed+'</div><div class="sl">Sponsors Closed</div></div>' +
-    '<div class="stat st-sg"><div class="sn">1.4K</div><div class="sl">Social Reach</div></div>' +
+    '<div class="stat st-sg"><div class="sn">96K</div><div class="sl">Social Reach</div></div>' +
     '</div>' +
 
     // CAREER GOALS + TIMELINE
@@ -618,6 +748,11 @@ function bDash(){
     '</div>' +
     '</div>' +
 
+    '<div class="g2" style="margin-bottom:.85rem">' +
+    renderRegistrationCard() +
+    renderContactsCard(true) +
+    '</div>' +
+
     // TO-DO + MESSAGES
     '<div class="g2" style="margin-bottom:.85rem">' +
     '<div class="card"><div class="cl">My To-Do</div>' + renderTodos('amelia') + '</div>' +
@@ -645,13 +780,14 @@ function bDash(){
 
 // ═══ OTHER DASHBOARDS ════════════════════════════════════════
 function bPlaceholderDash(role,ns,first){
+  var rp=getRolePages()[role]||{quote:ns,focus:''};
   var dmb=(S.dashMood&&S.dashMood[role])||[];
   inject(
     '<div style="padding:1.35rem 1.75rem">' +
-    '<div class="ph-ns"><div class="ph-ns-q">'+ns+'</div><div class="ph-ns-sub">'+ROLES[role].name+'</div></div>' +
+    '<div class="ph-ns"><div class="ph-ns-q" data-e="rolepage:'+role+':quote">'+rp.quote+'</div><div class="ph-ns-sub">'+ROLES[role].name+'</div></div>' +
     '<div class="card" style="margin:.85rem 0">' +
     '<div class="cl">Focus for Today</div>' +
-    '<div class="edit-hint">Switch on Edit Mode to customize this section for your role.</div>' +
+    '<div class="edit-hint" data-e="rolepage:'+role+':focus">'+rp.focus+'</div>' +
     '<div style="margin-top:.75rem">'+first+'</div>' +
     '</div>' +
     '<div class="card" style="margin:.85rem 0"><div class="cl">My To-Do</div>' + renderTodos(role) + '</div>' +
@@ -705,9 +841,10 @@ function saveGoals(){
   bDash();
 }
 function bLaneaDash(){
+  var rp=getRolePages().laneea;
   var raised=S.sponsors.filter(function(s){return s.status==='closed';}).reduce(function(a,s){return a+(s.amount||0);},0);
   bPlaceholderDash('laneea',
-    '"Every room Amelia walks into, she\'s already won it."',
+    rp.quote,
     '<div class="g3">' +
     '<div class="stat st-ch"><div class="sn">$'+raised.toLocaleString()+'</div><div class="sl">Raised</div></div>' +
     '<div class="stat st-tz"><div class="sn">'+S.sponsors.filter(function(s){return s.status==='meeting';}).length+'</div><div class="sl">Meetings Set</div></div>' +
@@ -717,29 +854,15 @@ function bLaneaDash(){
 }
 
 function bHMUDash(){
+  var rp=getRolePages().hmu;
   bPlaceholderDash('hmu',
-    '"Beauty that has a story worth telling."',
+    rp.quote,
     '<div style="background:var(--tz);border-radius:11px;padding:1.25rem">' +
-    [
-      {date:'Jul 10',ev:'Day 1 — Interview',look:'Natural, professional'},
-      {date:'Jul 11',ev:'Day 2 — Swimsuit',look:'Glowing, beach-ready'},
-      {date:'Jul 12',ev:'Day 3 — Evening Gown',look:'Full glam updo'},
-    ].map(function(t){
+    rp.schedule.map(function(t,idx){
       return '<div style="display:grid;grid-template-columns:48px 1fr;gap:.75rem;padding:.55rem 0;border-bottom:1px solid rgba(240,216,152,.07)">' +
-        '<span style="font-family:var(--fm);font-size:.58rem;color:var(--ch2)">'+t.date+'</span>' +
-        '<div><div style="font-size:.82rem;font-weight:600;color:var(--wh)">'+t.ev+'</div><div style="font-size:.72rem;color:var(--ch)">'+t.look+'</div></div></div>';
+        '<span style="font-family:var(--fm);font-size:.58rem;color:var(--ch2)" data-e="rolepage:hmu:date'+idx+'">'+t.date+'</span>' +
+        '<div><div style="font-size:.82rem;font-weight:600;color:var(--wh)" data-e="rolepage:hmu:ev'+idx+'">'+t.ev+'</div><div style="font-size:.72rem;color:var(--ch)" data-e="rolepage:hmu:look'+idx+'">'+t.look+'</div></div></div>';
     }).join('') +
-    '</div>'
-  );
-}
-
-function bTrainerDash(){
-  bPlaceholderDash('trainer',
-    '"Train like an athlete. Move like an artist."',
-    '<div class="g3">' +
-    '<div class="stat st-sg"><div class="sn">'+S.workouts.length+'</div><div class="sl">Plans Set</div></div>' +
-    '<div class="stat st-ch"><div class="sn">July 10</div><div class="sl">Competition</div></div>' +
-    '<div class="stat st-tz"><div class="sn">Foundation</div><div class="sl">Phase</div></div>' +
     '</div>'
   );
 }
@@ -750,14 +873,14 @@ function bSponsorPortal(){
     '<div style="background:var(--tz);padding:2rem 1.75rem">' +
     '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:4px;color:rgba(240,216,152,.35);text-transform:uppercase;margin-bottom:.5rem">Sponsor Portal</div>' +
     '<div style="font-family:var(--fd);font-size:1.8rem;font-style:italic;color:var(--ch);margin-bottom:.65rem">You are not sponsoring a pageant.<br>You are funding a platform.</div>' +
-    '<div style="font-size:.82rem;line-height:1.8;color:rgba(254,252,247,.6)">Thank you for investing in Amelia Arabe\'s Miss California USA 2026 campaign. Your support puts clean energy and fashion accountability policy on a national stage. We are honored to have you in this room with us.</div>' +
+    '<div style="font-size:.82rem;line-height:1.8;color:rgba(254,252,247,.6)">Thank you for investing in Amelia Arabe\'s Miss Temecula USA 2026 campaign. Your support puts clean energy and fashion accountability policy on a national stage. We are honored to have you in this room with us.</div>' +
     '<div style="font-family:var(--fm);font-size:.55rem;color:rgba(240,216,152,.3);margin-top:.85rem">— Amelia Arabe & Laneea Love</div>' +
     '</div>' +
     '<div style="padding:1.35rem 1.75rem">' +
     '<div class="g2">' +
     '<div><div class="cl">Your Deliverables</div>'+buildDelivCards()+'</div>' +
     '<div class="card"><div class="cl">Competition Progress</div>' +
-    [{label:'Entry Secured',done:true,note:'Miss California USA 2026'},{label:'Coach Engaged',done:true,note:'Weekly sessions'},{label:'Wardrobe In Progress',done:false,note:'With Laneea'},{label:'YouTube Channel Launch',done:false,note:'Starting from 0'},{label:'Competition Week',done:false,note:'July 10-12, 2026'}].map(function(p){
+    [{label:'Entry Secured',done:true,note:'Miss Temecula USA 2026'},{label:'Coach Engaged',done:true,note:'Weekly sessions'},{label:'Wardrobe In Progress',done:false,note:'With Laneea'},{label:'YouTube Channel Launch',done:false,note:'Starting from 0'},{label:'Competition Week',done:false,note:'July 10-12 · Grand Hyatt Indian Wells'}].map(function(p){
       return '<div class="tl"><div class="tl-d" style="background:'+(p.done?'var(--sg2)':'var(--du)')+'"></div><div class="tl-t"><strong>'+p.label+'</strong>'+p.note+'</div></div>';
     }).join('') +
     '</div>' +
@@ -952,7 +1075,7 @@ function renderSpPitchDecks(){
 function renderSpEmails(){
   var pd=lsGet('chq-pitch',{emails:{}});
   var defaults={
-    cold:{subject:'An invitation — Amelia Arabe x [Company]',body:'Hi [Name], My name is Laneea Love — I manage Amelia Arabe, Miss California USA 2026 candidate. Her platform is clean energy and textile accountability policy. Would you be open to a 15-minute call? With gratitude, Laneea Love'},
+    cold:{subject:'An invitation — Amelia Arabe x [Company]',body:'Hi [Name], My name is Laneea Love — I manage Amelia Arabe, Miss Temecula USA 2026 candidate. Her platform is clean energy and textile accountability policy. Would you be open to a 15-minute call? With gratitude, Laneea Love'},
     followUp:{subject:'Following up — Amelia Arabe partnership',body:'Hi [Name], Just following up on my note from [DATE]. Amelia competes July 10-12. We have a few partnership spots remaining. Happy to jump on a quick call. Best, Laneea Love'},
     postMeeting:{subject:'Great connecting — next steps',body:'Hi [Name], Thank you for your time today. As discussed, here are our partnership options: [Tier 1]: [Deliverable] / [Tier 2]: [Deliverable]. I will follow up [DATE]. With gratitude, Laneea Love'}
   };
@@ -1516,7 +1639,7 @@ var DA={
   ig:{head:'ig',title:'Instagram Bio',platform:'@ameliavarabe',text:"engineer building the future\ncellist. miss california usa '26\nfounder @libraryofmorenita\ni learned to find the light. bask in it\nsan diego"},
   press:{head:'press',title:'Press Bio',platform:'Third person',text:"Amelia Arabe is a Filipina-American student engineer, classically trained cellist, and 2026 candidate for Miss California USA based in San Diego.\n\nShe is the founder of Library of Morenita — a sustainable digital archive built for the next century.\n\nA Top Model award winner at Miss Philippines USA, Amelia brings engineering precision and performance presence to every stage.\n\nShe competes not for a crown, but for a microphone.\n\nRepresented by Laneea Love."},
   sub:{head:'sub',title:'Substack',platform:'Library of Morenita',text:"Dispatches from the intersection of engineering, culture, and the planet.\n\nFor people who build things, wear things, and wonder about the systems behind both.\n\nBy Amelia Arabe — engineer, cellist, she/they. San Diego."},
-  li:{head:'li',title:'LinkedIn Headline',platform:'LinkedIn',text:"Student Engineer · Net-Zero Hardware Design · Founder, Library of Morenita · Miss California USA 2026 Candidate · San Diego"},
+  li:{head:'li',title:'LinkedIn Headline',platform:'LinkedIn',text:"Student Engineer · Net-Zero Hardware Design · Founder, Library of Morenita · Miss Temecula USA 2026 · San Diego"},
 };
 
 function bBrand(){
@@ -1609,7 +1732,7 @@ function bLooks(){
         '</label></div>') +
         '</div>' +
         '<div class="look-body">' +
-        '<div class="look-ev">'+l.event+'</div>' +
+        '<div class="look-ev" data-e="look:'+l.id+':event">'+l.event+'</div>' +
         '<div class="look-title" data-e="look:'+l.id+':title">'+l.title+'</div>' +
         '<div class="look-desc" data-e="look:'+l.id+':desc">'+l.desc+'</div>' +
         '</div></div>';
@@ -1628,27 +1751,212 @@ function removeLook(id){S.looks=S.looks.filter(function(x){return x.id!==id;});l
 
 // ═══ FITNESS ═════════════════════════════════════════════════
 function bFitness(){
-  var canEdit=S.role==='amelia'||S.role==='trainer';
+  var saved=lsGet('chq-fitness',null)||{};
+  var fd={
+    days:saved.days&&typeof saved.days==='object'?saved.days:{},
+    measurements:saved.measurements&&typeof saved.measurements==='object'?saved.measurements:{},
+    nutrition:saved.nutrition&&typeof saved.nutrition==='object'?saved.nutrition:{},
+    rituals:saved.rituals&&typeof saved.rituals==='object'?saved.rituals:{},
+    weight:saved.weight||'',
+    quit:saved.quit&&typeof saved.quit==='object'?saved.quit:{}
+  };
+  lsWriteLocal('chq-fitness',fd);
+
+  var today=new Date().toLocaleDateString('en-US',{weekday:'short'}).toLowerCase();
+  var daysClean=0;
+  if(fd.quit&&fd.quit.startDate){
+    daysClean=Math.floor((new Date()-new Date(fd.quit.startDate))/(1000*60*60*24));
+  }
+
+  var split=[
+    {day:'Mon',key:'mon',focus:'Core Circuit',color:'var(--tz3)',exercises:[
+      {name:'Dead Bugs',sets:'3x12',note:'Lower back flat. This builds the corset.'},
+      {name:'Hollow Body Hold',sets:'3x30s',note:'Ribs down. The waist wraps here.'},
+      {name:'Pallof Press',sets:'3x12 each',note:'Anti-rotation. Builds the taper.'},
+      {name:'Side Plank + Hip Dip',sets:'3x15 each',note:'Obliques. This is the curve.'},
+      {name:'Single Leg RDL',sets:'3x10 each',note:'Balance + posterior chain.'},
+      {name:'Bicycle Crunch',sets:'3x20',note:'Controlled. Elbow to knee.'},
+    ]},
+    {day:'Tue',key:'tue',focus:'Swim',color:'var(--bl2)',exercises:[
+      {name:'Freestyle Laps',sets:'20 min',note:'Long and lean. Think elongation.'},
+      {name:'Butterfly Arms',sets:'4x25m',note:'Shoulders and lats. Creates the V-taper.'},
+      {name:'Kickboard Legs',sets:'4x25m',note:'Quads and glutes activated.'},
+      {name:'Cool Down Float',sets:'5 min',note:'Breathe. Let your body reset.'},
+    ]},
+    {day:'Wed',key:'wed',focus:'Legs + Barre',color:'var(--sg2)',exercises:[
+      {name:'Bulgarian Split Squat',sets:'4x10 each',note:'Rear foot elevated. Go deep.'},
+      {name:'Glute Bridge + Hold',sets:'4x15',note:'Squeeze at top 2 seconds.'},
+      {name:'Lateral Band Walks',sets:'3x20 each way',note:'Band above knees. Burn.'},
+      {name:'Relevé Holds',sets:'3x30s',note:'Ballet. Calves and balance.'},
+      {name:'Arabesque Pulses',sets:'3x20 each',note:'Glute and hip flexor length.'},
+      {name:'Plié Squats',sets:'3x15',note:'Turnout. Inner thigh activation.'},
+    ]},
+    {day:'Thu',key:'thu',focus:'Tennis',color:'var(--ch2)',exercises:[
+      {name:'Serve Practice',sets:'20 min',note:'Shoulder rotation. Core drives power.'},
+      {name:'Footwork Drills',sets:'15 min',note:'Explosive lateral movement.'},
+      {name:'Rally Sets',sets:'3 sets',note:'Cardio base. Rotational core.'},
+      {name:'Cool Down Stretch',sets:'10 min',note:'Hip flexors and shoulders.'},
+    ]},
+    {day:'Fri',key:'fri',focus:'Arms + Core',color:'var(--lv2)',exercises:[
+      {name:'Port de Bras with Weights',sets:'3x12',note:'Ballet arms. 2-3lb. Slow and deliberate.'},
+      {name:'Swimmer Lat Pulldown',sets:'4x12',note:'V-taper. Waist looks smaller instantly.'},
+      {name:'Overhead Press',sets:'3x10',note:'Shoulders and posture.'},
+      {name:'Tricep Dip',sets:'3x12',note:'Back of arm. Lean and sculpted.'},
+      {name:'Resistance Band Row',sets:'3x15',note:'Posture muscles. Stage presence.'},
+      {name:'Plank to Downdog',sets:'3x10',note:'Core + shoulder mobility.'},
+    ]},
+    {day:'Sat',key:'sat',focus:'Swim + Ballet',color:'var(--ir2)',exercises:[
+      {name:'Freestyle Endurance',sets:'30 min',note:'Build your base. Think long.'},
+      {name:'Full Barre',sets:'45-60 min',note:'YouTube barre counts. Non-negotiable.'},
+      {name:'Stretching Flow',sets:'15 min',note:'Hips, hamstrings, shoulders.'},
+    ]},
+    {day:'Sun',key:'sun',focus:'Active Recovery',color:'var(--du)',exercises:[
+      {name:'Ocean or Beach Walk',sets:'30-45 min',note:'Clear your head. This is medicine.'},
+      {name:'Yoga Flow',sets:'20 min',note:'YouTube. Any beginner flow.'},
+      {name:'Full Body Stretch',sets:'15 min',note:'Every muscle. Breathe into it.'},
+    ]},
+  ];
+
   inject(
-    '<div class="ph"><div><div class="ph-tag">Training</div><div class="ph-title"><em>Fitness</em> Plan</div></div>' +
-    '<div class="ph-acts">'+(canEdit?'<button class="btn bp" onclick="openM(\'m-workout\')">+ Add Workout</button>':'')+' </div></div>' +
-    '<div class="pb"><div class="g3">' +
-    (S.workouts.length===0?'<div class="card" style="grid-column:1/-1;text-align:center;color:var(--wg);font-style:italic">No workouts yet</div>' :
-    S.workouts.map(function(w){
-      return '<div class="wk-card">' +
-        '<div class="wk-day" data-e="workout:'+w.id+':day">'+w.day+'</div>' +
-        '<div class="wk-focus" data-e="workout:'+w.id+':focus">'+w.focus+'</div>' +
-        '<div>' +
-        w.exercises.map(function(e,ei){
-          return '<div class="wk-row"><span data-e="workout:'+w.id+':ex'+ei+'">'+e.name+'</span><span class="wk-sets" data-e="workout:'+w.id+':sets'+ei+'">'+e.sets+'</span><div class="wk-chk" onclick="this.classList.toggle(\'done\')"></div></div>';
-        }).join('') +
-        '</div>' +
-        '<div style="margin-top:.45rem;font-size:.68rem;color:var(--wg);font-style:italic;border-top:1px solid var(--ch4);padding-top:.4rem" data-e="workout:'+w.id+':notes">'+(w.notes||'Add notes...')+'</div>' +
+    '<div class="ph"><div><div class="ph-tag">Miss Universe Campaign</div><div class="ph-title">Body by <em>Design</em></div></div>' +
+    '<div class="ph-acts"><button class="btn bc" onclick="saveFitnessLog()">Save</button></div></div>' +
+    '<div class="pb">' +
+
+    // VISION
+    '<div style="background:var(--tz);border-radius:3px;padding:1.35rem;margin-bottom:.85rem;position:relative;overflow:hidden">' +
+    '<div style="position:absolute;top:-30%;right:-10%;width:50%;height:200%;background:radial-gradient(circle,rgba(240,216,152,.05) 0%,transparent 65%);pointer-events:none"></div>' +
+    '<div style="font-family:var(--fm);font-size:.48rem;letter-spacing:4px;color:rgba(240,216,152,.3);text-transform:uppercase;margin-bottom:.3rem">The Vision</div>' +
+    '<div style="font-family:var(--fd);font-size:1.15rem;font-style:italic;color:var(--ch);line-height:1.6">Strong core. Tiny waist. Ballet arms.<br>Swimmer shoulders. Tennis legs.<br>The body that walks into Miss Universe.</div>' +
+    '</div>' +
+
+    // STATS
+    '<div class="g4" style="margin-bottom:.85rem">' +
+    '<div class="stat st-sg"><div class="sn">'+(daysClean||0)+'</div><div class="sl">Days Clear</div></div>' +
+    '<div class="stat st-tz"><div style="font-family:var(--fd);font-size:1.5rem;font-style:italic;color:var(--tz)">'+(fd.measurements.waist||'—')+'"</div><div class="sl">Waist</div></div>' +
+    '<div class="stat st-ch"><div style="font-family:var(--fd);font-size:1.5rem;font-style:italic;color:var(--tz)">'+(fd.measurements.hips||'—')+'"</div><div class="sl">Hips</div></div>' +
+    '<div class="stat st-bl"><div style="font-family:var(--fd);font-size:1.5rem;font-style:italic;color:var(--tz)">'+(fd.weight||'—')+'</div><div class="sl">Weight</div></div>' +
+    '</div>' +
+
+    // MEASUREMENTS + CLARITY
+    '<div class="g2" style="margin-bottom:.85rem">' +
+    '<div class="card"><div class="cl">Track Your Body</div>' +
+    ['waist','hips','arms','thighs'].map(function(m){
+      return '<div style="display:flex;align-items:center;gap:.5rem;padding:.3rem 0;border-bottom:1px solid var(--ch4)">' +
+        '<div style="font-family:var(--fm);font-size:.5rem;color:var(--wg);text-transform:uppercase;min-width:52px">'+m+'</div>' +
+        '<input id="m-'+m+'" value="'+(fd.measurements[m]||'')+'" placeholder="inches" style="border:none;outline:none;font-family:var(--fd);font-size:.9rem;font-style:italic;color:var(--tz);background:transparent;flex:1" onblur="saveFitnessField(\'measurements\',\''+m+'\',this.value)">' +
+        '<div style="font-family:var(--fm);font-size:.48rem;color:var(--du)">in</div>' +
         '</div>';
-    }).join('')) +
-    '</div></div>'
+    }).join('') +
+    '<div style="display:flex;align-items:center;gap:.5rem;padding:.3rem 0">' +
+    '<div style="font-family:var(--fm);font-size:.5rem;color:var(--wg);text-transform:uppercase;min-width:52px">weight</div>' +
+    '<input id="m-weight" value="'+(fd.weight||'')+'" placeholder="lbs" style="border:none;outline:none;font-family:var(--fd);font-size:.9rem;font-style:italic;color:var(--tz);background:transparent;flex:1" onblur="saveFitnessWeight(this.value)">' +
+    '<div style="font-family:var(--fm);font-size:.48rem;color:var(--du)">lbs</div>' +
+    '</div>' +
+    '</div>' +
+    '<div class="card" style="border-left:4px solid var(--sg2)">' +
+    '<div class="cl">Clarity Tracker</div>' +
+    '<div style="font-family:var(--fd);font-size:2.8rem;font-style:italic;color:var(--sg2);line-height:1;margin-bottom:.2rem">'+(daysClean||0)+'</div>' +
+    '<div style="font-family:var(--fm);font-size:.5rem;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">days clear</div>' +
+    (fd.quit&&fd.quit.startDate?'<div style="font-size:.75rem;color:var(--st);margin-bottom:.5rem">Since '+new Date(fd.quit.startDate).toLocaleDateString('en-US',{month:'long',day:'numeric'})+'</div>':'')+
+    '<div class="fg"><label>Start Date</label><input type="date" value="'+(fd.quit&&fd.quit.startDate||'')+'" style="width:100%;padding:.35rem .65rem;border:1px solid var(--du);border-radius:3px;font-family:var(--fb);font-size:.75rem;color:var(--ink);background:var(--wh);outline:none" onchange="saveFitnessQuit(this.value)"></div>' +
+    '<div style="font-size:.72rem;color:var(--wg);font-style:italic;line-height:1.5;margin-top:.35rem">Cortisol stores fat at the waist specifically. Clarity is the fastest path to the body you want.</div>' +
+    '</div>' +
+    '</div>' +
+
+    // DAILY NUTRITION
+    '<div class="card" style="margin-bottom:.85rem">' +
+    '<div class="cl">Daily Nutrition</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">' +
+    [
+      {k:'breakfast',l:'Protein breakfast within 30 min of waking',n:'Stops the cortisol spike'},
+      {k:'water',l:'Water before coffee',n:'Every single morning'},
+      {k:'snacks',l:'Smart snacks only today',n:'Almonds, fruit, hummus'},
+      {k:'dinner',l:'Cooked dinner tonight',n:'20 minutes. Non-negotiable.'},
+    ].map(function(n){
+      var done=fd.nutrition&&fd.nutrition[n.k];
+      return '<div onclick="saveFitnessNutrition(\''+n.k+'\')" style="padding:.55rem .65rem;background:'+(done?'rgba(90,138,82,.08)':'var(--ch5)')+';border-radius:3px;cursor:pointer;border:1px solid '+(done?'var(--sg2)':'transparent')+';display:flex;gap:.45rem;align-items:flex-start">' +
+        '<div style="width:16px;height:16px;border-radius:50%;border:1.5px solid '+(done?'var(--sg2)':'var(--du)')+';background:'+(done?'var(--sg2)':'transparent')+';flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center">'+(done?'<div style="width:5px;height:5px;border-radius:50%;background:white"></div>':'')+'</div>' +
+        '<div><div style="font-size:.75rem;font-weight:600;color:var(--ink)">'+n.l+'</div><div style="font-family:var(--fm);font-size:.5rem;color:var(--wg)">'+n.n+'</div></div>' +
+        '</div>';
+    }).join('') +
+    '</div>' +
+    '</div>' +
+
+    // SKIN + HAIR RITUALS
+    '<div class="g2" style="margin-bottom:.85rem">' +
+    buildSkinCard('Morning Ritual','morn',['Water before coffee','Vitamin C serum','Moisturizer + SPF 30','Omega-3 supplement','Collagen powder in drink'],fd) +
+    buildSkinCard('Night Ritual','night',['Double cleanse','Retinol or niacinamide','Heavy moisturizer','Silk pillowcase','Magnesium supplement'],fd) +
+    '</div>' +
+
+    // WEEKLY TRAINING
+    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">Weekly Training Split</div>' +
+    '<div style="display:flex;flex-direction:column;gap:.65rem;margin-bottom:.85rem">' +
+    split.map(function(s){
+      var done=fd.days&&fd.days[s.key]&&fd.days[s.key].done;
+      return '<div style="border-radius:3px;overflow:hidden;box-shadow:0 2px 8px rgba(46,37,96,.06)">' +
+        '<div style="background:'+s.color+';padding:.6rem 1rem;display:flex;align-items:center;justify-content:space-between">' +
+        '<div><div style="font-family:var(--fm);font-size:.48rem;letter-spacing:3px;color:rgba(255,255,255,.55);text-transform:uppercase">'+s.day+'</div>' +
+        '<div style="font-family:var(--fd);font-size:1.05rem;font-style:italic;color:white">'+s.focus+'</div></div>' +
+        '<div onclick="saveFitnessDay(\''+s.key+'\')" style="width:26px;height:26px;border-radius:50%;border:2px solid rgba(255,255,255,.35);background:'+(done?'rgba(255,255,255,.85)':'transparent')+';cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">' +
+        (done?'<div style="color:'+s.color+';font-size:.7rem;font-weight:700">✓</div>':'') +
+        '</div>' +
+        '</div>' +
+        '<div style="background:var(--wh);padding:.75rem 1rem">' +
+        s.exercises.map(function(e){
+          return '<div style="display:flex;gap:.65rem;padding:.3rem 0;border-bottom:1px solid var(--ch4);align-items:flex-start">' +
+            '<div style="flex:1"><div style="font-size:.78rem;font-weight:600;color:var(--ink)">'+e.name+'</div>' +
+            '<div style="font-family:var(--fm);font-size:.5rem;color:var(--wg);margin-top:.1rem">'+e.note+'</div></div>' +
+            '<div style="font-family:var(--fm);font-size:.55rem;color:'+s.color+';white-space:nowrap;flex-shrink:0">'+e.sets+'</div>' +
+            '</div>';
+        }).join('') +
+        '</div></div>';
+    }).join('') +
+    '</div>' +
+
+    // NUTRITION GUIDE
+    '<div class="card" style="margin-bottom:1.5rem">' +
+    '<div class="cl">Nutrition for the Body You Are Building</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">' +
+    [
+      {t:'Breakfast — every day',c:'var(--tz3)',i:['2-3 eggs any style','Greek yogurt + berries','Protein shake if rushed','Coffee or matcha AFTER eating']},
+      {t:'Smart Snacks',c:'var(--ch2)',i:['Almonds — handful','Apple + almond butter','Hummus + cucumber','Protein bar, low sugar']},
+      {t:'Dinner — cook every night',c:'var(--sg2)',i:['Lean protein: chicken, fish, tofu','Roasted vegetables','Rice or sweet potato','This is 20 minutes. You can.']},
+      {t:'What to cut',c:'var(--bl2)',i:['Alcohol — cortisol + bloat','Sugary drinks','Processed snacks','Skipping meals stores fat']},
+    ].map(function(g){
+      return '<div style="background:var(--ch5);border-radius:3px;padding:.75rem;border-left:3px solid '+g.c+'">' +
+        '<div style="font-family:var(--fm);font-size:.48rem;letter-spacing:2px;color:'+g.c+';text-transform:uppercase;margin-bottom:.4rem">'+g.t+'</div>' +
+        g.i.map(function(item){return '<div style="display:flex;gap:.4rem;padding:.18rem 0"><div style="width:4px;height:4px;border-radius:50%;background:'+g.c+';flex-shrink:0;margin-top:5px"></div><div style="font-size:.72rem;color:var(--st);line-height:1.5">'+item+'</div></div>';}).join('') +
+        '</div>';
+    }).join('') +
+    '</div>' +
+    '</div>' +
+
+    '</div>'
   );
 }
+
+function buildSkinCard(title,key,items,fd){
+  var r=fd.rituals&&fd.rituals[key]||{};
+  return '<div class="card"><div class="cl">'+title+'</div>' +
+    items.map(function(item,i){
+      var done=r[i];
+      return '<div onclick="saveFitnessRitual(\''+key+'\','+i+')" style="display:flex;align-items:center;gap:.45rem;padding:.3rem 0;border-bottom:1px solid var(--ch4);cursor:pointer">' +
+        '<div class="todo-cb '+(done?'done':'')+'" style="flex-shrink:0"></div>' +
+        '<div style="font-size:.75rem;color:var(--st);'+(done?'text-decoration:line-through;opacity:.5':'')+'">'+item+'</div>' +
+        '</div>';
+    }).join('') +
+    '</div>';
+}
+
+function saveFitnessField(section,key,val){var fd=lsGet('chq-fitness',{});if(!fd[section])fd[section]={};fd[section][key]=val;lsSave('chq-fitness',fd);}
+function saveFitnessWeight(val){var fd=lsGet('chq-fitness',{});fd.weight=val;lsSave('chq-fitness',fd);}
+function saveFitnessDay(key){var fd=lsGet('chq-fitness',{days:{}});if(!fd.days)fd.days={};if(!fd.days[key])fd.days[key]={done:false};fd.days[key].done=!fd.days[key].done;lsSave('chq-fitness',fd);rerenderKeepScroll(bFitness);}
+function saveFitnessNutrition(key){var fd=lsGet('chq-fitness',{nutrition:{}});if(!fd.nutrition)fd.nutrition={};fd.nutrition[key]=!fd.nutrition[key];lsSave('chq-fitness',fd);rerenderKeepScroll(bFitness);}
+function saveFitnessRitual(key,idx){var fd=lsGet('chq-fitness',{rituals:{}});if(!fd.rituals)fd.rituals={};if(!fd.rituals[key])fd.rituals[key]={};fd.rituals[key][idx]=!fd.rituals[key][idx];lsSave('chq-fitness',fd);rerenderKeepScroll(bFitness);}
+function saveFitnessQuit(val){var fd=lsGet('chq-fitness',{quit:{}});if(!fd.quit)fd.quit={};fd.quit.startDate=val;lsSave('chq-fitness',fd);rerenderKeepScroll(bFitness);}
+function saveFitnessLog(){showToast('Saved');}
+
+
 function addWorkout(){
   var exs=g('wk-exercises').value.split('\n').filter(Boolean).map(function(l){var p=l.split('·');return{name:(p[0]||'').trim(),sets:(p[1]||'').trim()};});
   var w={id:Date.now(),day:g('wk-day').value,focus:g('wk-focus').value,exercises:exs,notes:g('wk-notes').value};
@@ -1658,6 +1966,7 @@ function addWorkout(){
 
 // ═══ MESSAGES ════════════════════════════════════════════════
 function bMessages(){
+  var msgs=Array.isArray(S.messages)?S.messages:[];
   var avC={amelia:'var(--ch)',laneea:'var(--lv)',hmu:'var(--bl)',trainer:'var(--sg)',team:'var(--tz4)'};
   inject(
     '<div style="display:flex;flex-direction:column;height:100%">' +
@@ -1665,7 +1974,7 @@ function bMessages(){
     '<div class="ph-acts"><button class="btn bp" onclick="openM(\'m-msg\')">+ New</button></div></div>' +
     '<div class="pb" style="flex:1;overflow-y:auto">' +
     '<div class="msg-l">' +
-    S.messages.map(function(m){
+    msgs.map(function(m){
       return '<div class="msg '+(m.from===S.role?'me':'')+'">' +
         '<div class="msg-av" style="background:'+(avC[m.from]||'var(--du)')+'">'+m.from.slice(0,2).toUpperCase()+'</div>' +
         '<div><div class="msg-bub">'+m.text+'</div><div class="msg-meta">'+m.from+' · '+m.time+'</div></div>' +
@@ -1697,6 +2006,7 @@ function bFiles(){
     '<div class="ph"><div><div class="ph-tag">Shared</div><div class="ph-title"><em>Files</em></div></div>' +
     '<div class="ph-acts"><label class="btn bp" style="cursor:pointer">+ Upload<input type="file" multiple style="display:none" onchange="handleUpload(event)"></label></div></div>' +
     '<div class="pb">' +
+    renderContactsCard() +
     '<label class="up-zone" style="margin-bottom:1.35rem;display:block;cursor:pointer">' +
     '<input type="file" multiple style="display:none" onchange="handleUpload(event)">' +
     '<div style="font-size:1.75rem;color:var(--wg);margin-bottom:.4rem">📁</div>' +
@@ -1773,7 +2083,7 @@ function buildDelivCards(){
 function bDeliverables(){inject('<div class="ph"><div><div class="ph-tag">Sponsor</div><div class="ph-title">Your <em>Deliverables</em></div></div></div><div class="pb">'+buildDelivCards()+'</div>');}
 function bCompProgress(){
   inject('<div class="ph"><div><div class="ph-tag">Sponsor View</div><div class="ph-title">Competition <em>Progress</em></div></div></div><div class="pb"><div class="card">' +
-    [{label:'Entry Secured',done:true,note:'Miss California USA 2026'},{label:'Coach Engaged',done:true,note:'Weekly sessions'},{label:'Wardrobe In Progress',done:false,note:'With Laneea'},{label:'YouTube Channel Launch',done:false,note:'Starting from 0'},{label:'Competition Week',done:false,note:'July 10-12, 2026'}].map(function(p){
+    [{label:'Entry Secured',done:true,note:'Miss Temecula USA 2026'},{label:'Coach Engaged',done:true,note:'Weekly sessions'},{label:'Wardrobe In Progress',done:false,note:'With Laneea'},{label:'YouTube Channel Launch',done:false,note:'Starting from 0'},{label:'Competition Week',done:false,note:'July 10-12 · Grand Hyatt Indian Wells'}].map(function(p){
       return '<div class="tl"><div class="tl-d" style="background:'+(p.done?'var(--sg2)':'var(--du)')+'"></div><div class="tl-t"><strong>'+p.label+'</strong>'+p.note+'</div></div>';
     }).join('') +
     '</div></div>');
@@ -1954,7 +2264,7 @@ function bPitch(){
       local:{name:'Local San Diego',color:'var(--bl2)',notes:''},
     },
     emails:{
-      cold:{subject:'An invitation — Amelia Arabe x [Company]',body:'Hi [Name],\n\nMy name is Laneea Love — I manage Amelia Arabe, a Filipina-American student engineer and Miss California USA 2026 candidate based in San Diego.\n\nAmelia\'s platform is clean energy and textile accountability policy. She is building an audience that cares deeply about the same things [Company] stands for.\n\nWe are offering a limited number of sponsorship partnerships — visibility, alignment, and a seat at the table for something that matters.\n\nWould you be open to a 15-minute call this week?\n\nWith gratitude,\nLaneea Love\nManager, Amelia Arabe'},
+      cold:{subject:'An invitation — Amelia Arabe x [Company]',body:'Hi [Name],\n\nMy name is Laneea Love — I manage Amelia Arabe, a Filipina-American student engineer and Miss Temecula USA 2026 candidate based in San Diego.\n\nAmelia\'s platform is clean energy and textile accountability policy. She is building an audience that cares deeply about the same things [Company] stands for.\n\nWe are offering a limited number of sponsorship partnerships — visibility, alignment, and a seat at the table for something that matters.\n\nWould you be open to a 15-minute call this week?\n\nWith gratitude,\nLaneea Love\nManager, Amelia Arabe'},
       followUp:{subject:'Following up — Amelia Arabe partnership',body:'Hi [Name],\n\nJust following up on my note from [DATE]. I know inboxes get full.\n\nAmelia competes July 10-12 in Miss California USA 2026. We have a few sponsorship spots remaining and wanted to make sure [Company] had the chance to be part of it.\n\nHappy to send a one-pager or jump on a quick call — whatever works best for you.\n\nBest,\nLaneea Love'},
       postMeeting:{subject:'Great connecting — next steps',body:'Hi [Name],\n\nThank you so much for your time today. It was genuinely exciting to talk about [specific thing discussed].\n\nAs discussed, here are our partnership tiers:\n— [Tier 1]: [Deliverable]\n— [Tier 2]: [Deliverable]\n\nI\'ll follow up [DATE] unless I hear from you first.\n\nWith gratitude,\nLaneea Love'},
     },
@@ -2236,13 +2546,26 @@ function savePitch(){
 
 // ═══ BOARD (TRELLO STYLE) ════════════════════════════════════
 function bBoard(){
-  var boardData=lsGet('chq-board',{
+  var fallbackBoard={
     columns:[
       {id:'sponsors',title:'Sponsor Outreach',color:'var(--ch2)',cards:[]},
       {id:'competition',title:'Competition Prep',color:'var(--tz3)',cards:[]},
       {id:'general',title:'General / Notes',color:'var(--bl2)',cards:[]},
     ]
-  });
+  };
+  var rawBoard=lsGet('chq-board',fallbackBoard)||fallbackBoard;
+  var boardData={
+    columns:Array.isArray(rawBoard.columns)&&rawBoard.columns.length?rawBoard.columns.map(function(col,i){
+      var fb=fallbackBoard.columns[i]||{id:'col_'+i,title:'Column',color:'var(--tz4)',cards:[]};
+      return {
+        id:(col&&col.id)||fb.id,
+        title:(col&&col.title)||fb.title,
+        color:(col&&col.color)||fb.color,
+        cards:Array.isArray(col&&col.cards)?col.cards:[]
+      };
+    }):fallbackBoard.columns.slice()
+  };
+  lsWriteLocal('chq-board',boardData);
 
   inject(
     '<div class="ph"><div><div class="ph-tag">Team Workspace</div><div class="ph-title"><em>Discussion</em></div></div>' +
@@ -2425,14 +2748,17 @@ function bLookbook(){
     // BIO FOR SPONSORS
     '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">Sponsor-Facing Bio</div>' +
     '<div class="card" style="margin-bottom:1.5rem">' +
-    '<textarea id="lb-bio" style="width:100%;min-height:90px;border:none;outline:none;font-family:var(--fd);font-size:.95rem;font-style:italic;color:var(--ink);line-height:1.8;resize:vertical;background:transparent" placeholder="What sponsors read when they open the lookbook...">'+(lsGet('chq-lb-bio','')||'Amelia Arabe is a Filipina-American student engineer, cellist, and Miss California USA 2026 candidate based in San Diego. Her platform is clean energy and textile accountability policy. She competes not for a crown — but for a microphone.')+'</textarea>' +
+    '<textarea id="lb-bio" style="width:100%;min-height:90px;border:none;outline:none;font-family:var(--fd);font-size:.95rem;font-style:italic;color:var(--ink);line-height:1.8;resize:vertical;background:transparent" placeholder="What sponsors read when they open the lookbook...">'+(lsGet('chq-lb-bio','')||'Amelia Arabe is a Filipina-American student engineer, cellist, and Miss Temecula USA 2026 candidate based in San Diego. Her platform is clean energy and textile accountability policy. She competes not for a crown — but for a microphone.')+'</textarea>' +
     '</div>' +
     '<button class="btn bp" onclick="saveLookbookData()">Save Lookbook</button>' +
     '</div>'
   );
 }
 
-function getLookbookImgs(){return lsGet('chq-lb-imgs',[]);}
+function getLookbookImgs(){
+  var imgs=lsGet('chq-lb-imgs',[]);
+  return Array.isArray(imgs)?imgs:[];
+}
 
 function addLookbookImg(e){
   var imgs=getLookbookImgs();
@@ -2474,7 +2800,7 @@ function saveLookbookData(){
 function previewLookbook(){
   var imgs=getLookbookImgs();
   var links=lsGet('chq-lb-links',{ig:'https://instagram.com/ameliavarabe',yt:'https://youtube.com/@ameliavarabe'});
-  var bio=lsGet('chq-lb-bio','Amelia Arabe is a Filipina-American student engineer, cellist, and Miss California USA 2026 candidate based in San Diego.');
+  var bio=lsGet('chq-lb-bio','Amelia Arabe is a Filipina-American student engineer, cellist, and Miss Temecula USA 2026 candidate based in San Diego.');
 
   var html='<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
     '<title>Amelia Arabe — Lookbook</title>' +
@@ -2773,7 +3099,7 @@ function getBriefAlerts(){
   if(overdue>0) alerts.push('<div style="background:rgba(155,142,216,.15);border:1px solid rgba(155,142,216,.25);border-radius:3px;padding:.25rem .65rem;font-family:var(--fm);font-size:.52rem;color:var(--ch)">'+overdue+' tasks open</div>');
 
   // Today events
-  var todayEvs=S.calEvents.filter(function(e){return e.date===today;});
+  var todayEvs=(Array.isArray(S.calEvents)?S.calEvents:[]).filter(function(e){return e.date===today;});
   if(todayEvs.length>0) alerts.push('<div style="background:rgba(200,168,76,.12);border:1px solid rgba(200,168,76,.2);border-radius:3px;padding:.25rem .65rem;font-family:var(--fm);font-size:.52rem;color:var(--ch)">'+todayEvs.length+' event'+(todayEvs.length>1?'s':'')+' today</div>');
 
   // Unread inbox
@@ -3010,6 +3336,258 @@ function markInboxRead(id){
 }
 
 
+
+// ═══ PEACE PAGE ══════════════════════════════════════════════
+var _medTimer=null;
+var _medSecs=0;
+var _medRunning=false;
+var _breathPhase=0;
+var _breathTimer=null;
+
+var _quotes=[
+  {text:'Out beyond ideas of wrongdoing and rightdoing, there is a field. I will meet you there.',author:'Rumi'},
+  {text:'You are not a drop in the ocean. You are the entire ocean in a drop.',author:'Rumi'},
+  {text:'The wound is the place where the light enters you.',author:'Rumi'},
+  {text:'I am deliberate and afraid of nothing.',author:'Audre Lorde'},
+  {text:'When I dare to be powerful, to use my strength in the service of my vision, then it becomes less and less important whether I am afraid.',author:'Audre Lorde'},
+  {text:'You are enough. You have always been enough.',author:'Unknown'},
+  {text:'She remembered who she was and the game changed.',author:'Lalah Delia'},
+  {text:'The most courageous act is still to think for yourself. Aloud.',author:'Coco Chanel'},
+  {text:'I am not afraid of storms, for I am learning how to sail my ship.',author:'Louisa May Alcott'},
+  {text:'You carry so much love in your heart. Give some to yourself.',author:'Unknown'},
+];
+
+function bPeace(){
+  var defaults={
+    gratitude:{},
+    journal:{},
+    sleep:{},
+    quitDate:'',
+    copy:{
+      gratitudeTitle:'Three Things',
+      gratitudePrompt:'Name three things that softened, strengthened, or surprised you today.',
+      gratitudePlaceholder:'I am grateful for...',
+      journalTitle:'Journal',
+      journalPrompt:'Let the page hold what your body is still trying to say.',
+      journalPlaceholder:'This space is yours. No one else reads this.',
+      windDownTitle:'Wind Down',
+      windDownPrompt:'Build a softer landing into sleep.',
+      windDownItems:[
+        'No screens 30 min before bed',
+        'Magnesium supplement',
+        'Light stretch or legs up the wall',
+        'Room cool and dark',
+        'Set tomorrow intention'
+      ]
+    }
+  };
+  var saved=lsGet('chq-peace',null)||{};
+  var pd={
+    gratitude:saved.gratitude&&typeof saved.gratitude==='object'?saved.gratitude:{},
+    journal:saved.journal&&typeof saved.journal==='object'?saved.journal:{},
+    sleep:saved.sleep&&typeof saved.sleep==='object'?saved.sleep:{},
+    quitDate:saved.quitDate||'',
+    copy:Object.assign({},defaults.copy,saved.copy&&typeof saved.copy==='object'?saved.copy:{})
+  };
+  if(!Array.isArray(pd.copy.windDownItems))pd.copy.windDownItems=defaults.copy.windDownItems.slice();
+  pd.copy.windDownItems=defaults.copy.windDownItems.map(function(item,idx){
+    return pd.copy.windDownItems[idx]||item;
+  });
+  lsWriteLocal('chq-peace',pd);
+
+  var today=new Date().toISOString().split('T')[0];
+  var todayGrat=Array.isArray(pd.gratitude&&pd.gratitude[today])?pd.gratitude[today]:['','',''];
+  var todayJournal=pd.journal&&pd.journal[today]||'';
+  var todaySleep=pd.sleep&&typeof pd.sleep[today]==='object'&&pd.sleep[today]?pd.sleep[today]:{};
+  var quoteIdx=new Date().getDate()%_quotes.length;
+  var quote=_quotes[quoteIdx];
+
+  // Days clean
+  var daysClean=0;
+  var fd=lsGet('chq-fitness',{});
+  if(fd.quit&&fd.quit.startDate){
+    daysClean=Math.floor((new Date()-new Date(fd.quit.startDate))/(1000*60*60*24));
+  }
+
+  inject(
+    '<div style="background:var(--tz);min-height:100%;padding:1.5rem 1.75rem;display:flex;flex-direction:column;gap:1.25rem">' +
+
+    // QUOTE
+    '<div style="background:rgba(255,255,255,.04);border-radius:3px;padding:1.5rem;border-left:3px solid rgba(240,216,152,.3);text-align:center">' +
+    '<div style="font-family:var(--fd);font-size:1.15rem;font-style:italic;color:var(--ch);line-height:1.75;margin-bottom:.65rem">'+quote.text+'</div>' +
+    '<div style="font-family:var(--fm);font-size:.5rem;letter-spacing:3px;color:rgba(240,216,152,.3);text-transform:uppercase">— '+quote.author+'</div>' +
+    '</div>' +
+
+    // CLARITY TRACKER
+    '<div style="background:rgba(255,255,255,.04);border-radius:3px;padding:1.25rem;text-align:center">' +
+    '<div style="font-family:var(--fm);font-size:.48rem;letter-spacing:4px;color:rgba(240,216,152,.3);text-transform:uppercase;margin-bottom:.35rem">Clarity</div>' +
+    '<div style="font-family:var(--fd);font-size:3rem;font-style:italic;color:'+(daysClean>0?'var(--sg)':'rgba(240,216,152,.3)')+';line-height:1">'+daysClean+'</div>' +
+    '<div style="font-family:var(--fm);font-size:.52rem;color:rgba(240,216,152,.3);text-transform:uppercase;margin-bottom:.65rem">days of clarity</div>' +
+    '<div style="font-size:.78rem;color:rgba(216,212,236,.5);font-style:italic;line-height:1.5">The waist you want is on the other side of this number growing.</div>' +
+    '</div>' +
+
+    // MEDITATION TIMER
+    '<div style="background:rgba(255,255,255,.04);border-radius:3px;padding:1.25rem">' +
+    '<div style="font-family:var(--fm);font-size:.48rem;letter-spacing:4px;color:rgba(240,216,152,.3);text-transform:uppercase;margin-bottom:.85rem;text-align:center">Meditation</div>' +
+    '<div style="display:flex;gap:.5rem;justify-content:center;margin-bottom:.85rem">' +
+    [5,10,20].map(function(m){
+      return '<button onclick="startMed('+m+')" style="background:rgba(255,255,255,.06);border:1px solid rgba(216,212,236,.15);border-radius:3px;padding:.45rem .9rem;font-family:var(--fm);font-size:.6rem;color:rgba(216,212,236,.6);cursor:pointer;letter-spacing:2px;text-transform:uppercase">'+m+' min</button>';
+    }).join('') +
+    '</div>' +
+    '<div id="med-display" style="text-align:center">' +
+    '<div id="med-circle" style="width:100px;height:100px;border-radius:50%;border:2px solid rgba(240,216,152,.2);margin:0 auto .85rem;display:flex;align-items:center;justify-content:center;transition:all 1s">' +
+    '<div id="med-time" style="font-family:var(--fd);font-size:1.5rem;font-style:italic;color:rgba(240,216,152,.6)">—</div>' +
+    '</div>' +
+    '<button id="med-btn" onclick="toggleMed()" style="background:transparent;border:1px solid rgba(216,212,236,.2);border-radius:3px;padding:.35rem .85rem;font-family:var(--fm);font-size:.55rem;color:rgba(216,212,236,.4);cursor:pointer;letter-spacing:2px;text-transform:uppercase">Start</button>' +
+    '</div>' +
+    '</div>' +
+
+    // BOX BREATHING
+    '<div style="background:rgba(255,255,255,.04);border-radius:3px;padding:1.25rem">' +
+    '<div style="font-family:var(--fm);font-size:.48rem;letter-spacing:4px;color:rgba(240,216,152,.3);text-transform:uppercase;margin-bottom:.65rem;text-align:center">Box Breathing — 4 counts each</div>' +
+    '<div style="display:flex;align-items:center;justify-content:center;gap:1.5rem;flex-wrap:wrap">' +
+    '<div id="breath-circle" style="width:120px;height:120px;border-radius:50%;border:2px solid rgba(200,192,232,.3);display:flex;align-items:center;justify-content:center;transition:all 4s;flex-shrink:0">' +
+    '<div id="breath-label" style="font-family:var(--fd);font-size:.95rem;font-style:italic;color:rgba(216,212,236,.5);text-align:center">Breathe</div>' +
+    '</div>' +
+    '<div style="display:flex;flex-direction:column;gap:.35rem">' +
+    ['Inhale — 4 counts','Hold — 4 counts','Exhale — 4 counts','Hold — 4 counts'].map(function(s,i){
+      return '<div style="font-family:var(--fm);font-size:.52rem;color:rgba(216,212,236,.3);letter-spacing:1px">'+s+'</div>';
+    }).join('') +
+    '</div>' +
+    '</div>' +
+    '<div style="text-align:center;margin-top:.65rem">' +
+    '<button onclick="startBreath()" id="breath-btn" style="background:transparent;border:1px solid rgba(216,212,236,.2);border-radius:3px;padding:.35rem .85rem;font-family:var(--fm);font-size:.55rem;color:rgba(216,212,236,.4);cursor:pointer;letter-spacing:2px;text-transform:uppercase">Begin</button>' +
+    '</div>' +
+    '</div>' +
+
+    // GRATITUDE
+    '<div style="background:linear-gradient(180deg,rgba(133,101,184,.2),rgba(82,56,128,.18));border:1px solid rgba(180,154,230,.16);border-radius:3px;padding:1.25rem;box-shadow:inset 0 0 0 1px rgba(255,255,255,.02)">' +
+    '<div style="font-family:var(--fm);font-size:.48rem;letter-spacing:4px;color:rgba(222,202,255,.6);text-transform:uppercase;margin-bottom:.3rem"><span data-e="peace:copy:gratitudeTitle">'+pd.copy.gratitudeTitle+'</span> — '+new Date().toLocaleDateString('en-US',{month:'long',day:'numeric'})+'</div>' +
+    '<div style="font-size:.75rem;color:rgba(229,220,248,.68);font-style:italic;line-height:1.7;margin-bottom:.7rem" data-e="peace:copy:gratitudePrompt">'+pd.copy.gratitudePrompt+'</div>' +
+    [0,1,2].map(function(i){
+      return '<div style="display:flex;gap:.5rem;align-items:flex-start;margin-bottom:.45rem">' +
+        '<div style="font-family:var(--fd);font-size:1.1rem;font-style:italic;color:rgba(222,202,255,.58);flex-shrink:0;margin-top:2px">'+(i+1)+'.</div>' +
+        '<input id="grat-'+i+'" value="'+( todayGrat[i]||'')+'" placeholder="'+pd.copy.gratitudePlaceholder.replace(/"/g,'&quot;')+'" style="background:transparent;border:none;border-bottom:1px solid rgba(208,188,244,.18);outline:none;font-family:var(--fd);font-size:.9rem;font-style:italic;color:rgba(244,239,255,.9);width:100%;padding:.25rem 0" onblur="saveGratitude('+i+',this.value)">' +
+        '</div>';
+    }).join('') +
+    '<div style="margin-top:.35rem;font-size:.68rem;color:rgba(202,183,234,.55)" data-e="peace:copy:gratitudePlaceholder">'+pd.copy.gratitudePlaceholder+'</div>' +
+    '</div>' +
+
+    // JOURNAL
+    '<div style="background:linear-gradient(180deg,rgba(120,86,180,.24),rgba(70,42,112,.2));border:1px solid rgba(180,154,230,.16);border-radius:3px;padding:1.25rem;box-shadow:inset 0 0 0 1px rgba(255,255,255,.02)">' +
+    '<div style="font-family:var(--fm);font-size:.48rem;letter-spacing:4px;color:rgba(222,202,255,.6);text-transform:uppercase;margin-bottom:.3rem" data-e="peace:copy:journalTitle">'+pd.copy.journalTitle+'</div>' +
+    '<div style="font-size:.75rem;color:rgba(229,220,248,.68);font-style:italic;line-height:1.7;margin-bottom:.7rem" data-e="peace:copy:journalPrompt">'+pd.copy.journalPrompt+'</div>' +
+    '<textarea id="peace-journal" placeholder="'+pd.copy.journalPlaceholder.replace(/"/g,'&quot;')+'" style="width:100%;min-height:150px;background:rgba(255,255,255,.02);border:1px solid rgba(208,188,244,.12);outline:none;font-family:var(--fd);font-size:.9rem;font-style:italic;color:rgba(244,239,255,.82);line-height:1.85;resize:none;padding:.7rem .8rem;border-radius:3px" onblur="saveJournal(this.value)">'+todayJournal+'</textarea>' +
+    '<div style="margin-top:.45rem;font-size:.68rem;color:rgba(202,183,234,.55)" data-e="peace:copy:journalPlaceholder">'+pd.copy.journalPlaceholder+'</div>' +
+    '</div>' +
+
+    // SLEEP CHECKLIST
+    '<div style="background:linear-gradient(180deg,rgba(108,78,162,.24),rgba(61,38,104,.22));border:1px solid rgba(180,154,230,.16);border-radius:3px;padding:1.25rem;box-shadow:inset 0 0 0 1px rgba(255,255,255,.02)">' +
+    '<div style="font-family:var(--fm);font-size:.48rem;letter-spacing:4px;color:rgba(222,202,255,.6);text-transform:uppercase;margin-bottom:.3rem" data-e="peace:copy:windDownTitle">'+pd.copy.windDownTitle+'</div>' +
+    '<div style="font-size:.75rem;color:rgba(229,220,248,.68);font-style:italic;line-height:1.7;margin-bottom:.7rem" data-e="peace:copy:windDownPrompt">'+pd.copy.windDownPrompt+'</div>' +
+    pd.copy.windDownItems.map(function(item,i){
+      var done=todaySleep[i];
+      return '<div onclick="toggleSleep('+i+')" style="display:flex;align-items:center;gap:.55rem;padding:.35rem 0;border-bottom:1px solid rgba(216,212,236,.07);cursor:pointer">' +
+        '<div style="width:15px;height:15px;border-radius:50%;border:1px solid rgba(216,212,236,'+(done?'.75':'.28')+');background:'+(done?'rgba(170,130,236,.34)':'transparent')+';flex-shrink:0"></div>' +
+        '<div style="font-size:.78rem;color:rgba(236,228,250,'+(done?'.84':'.54')+')" data-e="peace:wind:'+i+':label">'+item+'</div>' +
+        '</div>';
+    }).join('') +
+    '</div>' +
+
+    '</div>'
+  );
+}
+
+function startMed(mins){
+  _medSecs=mins*60;
+  _medRunning=false;
+  var el=document.getElementById('med-time');
+  if(el){var m=Math.floor(_medSecs/60),s=_medSecs%60;el.textContent=m+':'+(s<10?'0':'')+s;}
+  var btn=document.getElementById('med-btn');
+  if(btn)btn.textContent='Start';
+}
+
+function toggleMed(){
+  if(_medSecs<=0)return;
+  _medRunning=!_medRunning;
+  var btn=document.getElementById('med-btn');
+  if(btn)btn.textContent=_medRunning?'Pause':'Resume';
+  if(_medRunning){
+    _medTimer=setInterval(function(){
+      _medSecs--;
+      var el=document.getElementById('med-time');
+      if(el){var m=Math.floor(_medSecs/60),s=_medSecs%60;el.textContent=m+':'+(s<10?'0':'')+s;}
+      var circ=document.getElementById('med-circle');
+      if(circ){var pct=Math.sin(Date.now()/3000)*15;circ.style.transform='scale('+(1+pct/100)+')';}
+      if(_medSecs<=0){
+        clearInterval(_medTimer);_medRunning=false;
+        var el2=document.getElementById('med-time');if(el2)el2.textContent='✓';
+        var btn2=document.getElementById('med-btn');if(btn2)btn2.textContent='Done';
+        showToast('Session complete');
+      }
+    },1000);
+  } else {
+    clearInterval(_medTimer);
+  }
+}
+
+var _breathPhases=['Inhale','Hold','Exhale','Hold'];
+var _breathIdx=0;
+var _breathCount=0;
+var _breathRunning=false;
+
+function startBreath(){
+  _breathRunning=!_breathRunning;
+  var btn=document.getElementById('breath-btn');
+  if(btn)btn.textContent=_breathRunning?'Stop':'Begin';
+  if(!_breathRunning){clearInterval(_breathTimer);return;}
+  _breathIdx=0;_breathCount=0;
+  runBreathPhase();
+  _breathTimer=setInterval(function(){
+    _breathCount++;
+    if(_breathCount>=4){_breathCount=0;_breathIdx=(_breathIdx+1)%4;runBreathPhase();}
+  },1000);
+}
+
+function runBreathPhase(){
+  var lbl=document.getElementById('breath-label');
+  var circ=document.getElementById('breath-circle');
+  if(!lbl||!circ)return;
+  var phase=_breathPhases[_breathIdx];
+  lbl.textContent=phase;
+  if(phase==='Inhale'){circ.style.transform='scale(1.35)';circ.style.borderColor='rgba(200,192,232,.6)';}
+  else if(phase==='Exhale'){circ.style.transform='scale(0.85)';circ.style.borderColor='rgba(200,192,232,.2)';}
+  else{circ.style.transform='scale(1.1)';circ.style.borderColor='rgba(240,216,152,.3)';}
+}
+
+function saveGratitude(idx,val){
+  var pd=lsGet('chq-peace',{gratitude:{}});
+  var today=new Date().toISOString().split('T')[0];
+  if(!pd.gratitude)pd.gratitude={};
+  if(!pd.gratitude[today])pd.gratitude[today]=['','',''];
+  pd.gratitude[today][idx]=val;
+  lsSave('chq-peace',pd);
+}
+
+function saveJournal(val){
+  var pd=lsGet('chq-peace',{journal:{}});
+  var today=new Date().toISOString().split('T')[0];
+  if(!pd.journal)pd.journal={};
+  pd.journal[today]=val;
+  lsSave('chq-peace',pd);
+}
+
+function toggleSleep(idx){
+  var pd=lsGet('chq-peace',{sleep:{}});
+  var today=new Date().toISOString().split('T')[0];
+  if(!pd.sleep)pd.sleep={};
+  if(!pd.sleep[today])pd.sleep[today]={};
+  pd.sleep[today][idx]=!pd.sleep[today][idx];
+  lsSave('chq-peace',pd);
+  rerenderKeepScroll(bPeace);
+}
+
+
 function bPlaceholder(id){
 
   inject('<div class="ph"><div><div class="ph-tag">'+id+'</div><div class="ph-title"><em>Coming Soon</em></div></div></div><div class="pb"><div class="edit-hint" style="margin-top:1rem">This section is under construction. Switch on Edit Mode to customize.</div></div>');
@@ -3017,10 +3595,10 @@ function bPlaceholder(id){
 
 // ═══ EDIT MODE ════════════════════════════════════════════════
 var EM_TYPES={
-  amelia:{'timeline':'dashboard','sponsor':'sponsors','look':'looks','brand':'brand','oath':'dashboard','ns':'dashboard','goal':'dashboard','goalcur':'dashboard','goalcur':'dashboard','goaltar':'dashboard','workout':'workouts','appt':'appointments'},
-  laneea:{'sponsor':'sponsors','look':'looks','appt':'appointments'},
-  trainer:{'workout':'workouts'},
-  hmu:{'look':'looks'},
+  amelia:{'timeline':'dashboard','sponsor':'sponsors','look':'looks','brand':'brand','oath':'dashboard','ns':'dashboard','goal':'dashboard','goalcur':'dashboard','goalcur':'dashboard','goaltar':'dashboard','workout':'workouts','appt':'appointments','peace':'peace'},
+  laneea:{'sponsor':'sponsors','look':'looks','appt':'appointments','rolepage':'dashboard'},
+  trainer:{'workout':'workouts','rolepage':'dashboard'},
+  hmu:{'look':'looks','rolepage':'dashboard'},
 };
 
 function toggleEM(){
@@ -3073,6 +3651,34 @@ function commitE(el){
   }
   else if(type==='ns'){S.goals['ns_'+id]=val;lsSave('chq-gl',S.goals);}
   else if(type==='oath'){S.goals['oath']=val;lsSave('chq-gl',S.goals);}
+  else if(type==='rolepage'){
+    var rp=lsGet('chq-role-pages',{})||{};
+    if(!rp[id])rp[id]={};
+    if(id==='hmu'&&(field.indexOf('date')===0||field.indexOf('ev')===0||field.indexOf('look')===0)){
+      if(!Array.isArray(rp[id].schedule))rp[id].schedule=getRolePages().hmu.schedule.slice();
+      var idx=parseInt(field.replace(/[^\d]/g,''),10);
+      var baseField=field.replace(/\d+/g,'');
+      if(!rp[id].schedule[idx])rp[id].schedule[idx]={date:'',ev:'',look:''};
+      rp[id].schedule[idx][baseField]=val;
+    } else {
+      rp[id][field]=val;
+    }
+    lsSave('chq-role-pages',rp);
+  }
+  else if(type==='peace'){
+    var pd=lsGet('chq-peace',{})||{};
+    if(!pd.copy||typeof pd.copy!=='object')pd.copy={};
+    if(id==='copy'){
+      pd.copy[field]=val;
+    } else if(id==='wind'){
+      if(!Array.isArray(pd.copy.windDownItems))pd.copy.windDownItems=[];
+      var windIdx=parseInt(field,10);
+      if(isNaN(windIdx))windIdx=parseInt(parts[2],10);
+      var windField=parts[3];
+      if(windField==='label')pd.copy.windDownItems[windIdx]=val;
+    }
+    lsSave('chq-peace',pd);
+  }
   else if(type==='gd'){
     var gd=lsGet('chq-gd',null)||[];
     var idx=parseInt(id);

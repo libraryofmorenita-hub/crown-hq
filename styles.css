@@ -158,6 +158,25 @@ body{font-family:var(--fb);background:var(--ch5);color:var(--ink);display:flex;f
 .goal-check.done{background:var(--sg2);border-color:var(--sg2)}
 .goal-check.done::after{content:'✓';font-size:.55rem;color:white}
 
+/* PAGEANT CONTACTS + REGISTRATION */
+.pc-card,.reg-card{margin-bottom:0}
+.pc-list{display:flex;flex-direction:column;gap:.65rem}
+.pc-row{display:flex;justify-content:space-between;align-items:flex-start;gap:.75rem;padding:.55rem 0;border-bottom:1px solid var(--ch4)}
+.pc-row:last-child{border-bottom:none}
+.pc-name{font-size:.82rem;font-weight:600;color:var(--ink)}
+.pc-role{font-size:.7rem;color:var(--wg);line-height:1.5}
+.pc-meta{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:.35rem}
+.pc-chip,.pc-link{background:transparent;border:1px solid var(--du);border-radius:3px;padding:.28rem .55rem;font-family:var(--fm);font-size:.52rem;color:var(--tz2);cursor:pointer}
+.pc-chip:hover,.pc-link:hover{border-color:var(--tz4);color:var(--tz3)}
+.pc-links{display:flex;gap:.35rem;flex-wrap:wrap;margin-top:.8rem}
+.reg-head{font-family:var(--fd);font-size:1.05rem;font-style:italic;color:var(--tz);margin-bottom:.15rem}
+.reg-sub{font-size:.76rem;color:var(--wg);line-height:1.6;margin-bottom:.8rem}
+.reg-grid{display:grid;grid-template-columns:1fr 1fr;gap:.55rem;margin-bottom:.85rem}
+.reg-item{background:var(--ch5);border-radius:3px;padding:.7rem .8rem;border:1px solid var(--ch4)}
+.reg-k{display:block;font-family:var(--fm);font-size:.48rem;letter-spacing:2px;color:var(--tz3);text-transform:uppercase;margin-bottom:.2rem}
+.reg-item strong{display:block;font-size:.75rem;color:var(--ink);line-height:1.5}
+.reg-actions{display:flex;gap:.4rem;flex-wrap:wrap}
+
 /* MESSAGES */
 .msg-l{display:flex;flex-direction:column;gap:.65rem;padding-bottom:.75rem}
 .msg{display:flex;gap:.65rem;align-items:flex-start}
