@@ -2550,6 +2550,19 @@ function bSocial(){
     calendar:Array.isArray(saved.calendar)?saved.calendar:defaults.calendar.slice(),
     videos:Array.isArray(saved.videos)&&saved.videos.length?saved.videos:defaults.videos.slice()
   };
+  var socialStrategy=sd.strategy&&typeof sd.strategy==='object'?sd.strategy:defaults.strategy;
+  var socialPillars=Array.isArray(sd.pillars)?sd.pillars:defaults.pillars.slice();
+  var socialCadence=sd.cadence&&typeof sd.cadence==='object'?sd.cadence:defaults.cadence;
+  var socialMetrics=sd.metrics&&typeof sd.metrics==='object'?sd.metrics:defaults.metrics;
+  var socialVideos=Array.isArray(sd.videos)?sd.videos:defaults.videos.slice();
+  lsWriteLocal('chq-social',{
+    strategy:socialStrategy,
+    pillars:socialPillars,
+    cadence:socialCadence,
+    metrics:socialMetrics,
+    calendar:Array.isArray(sd.calendar)?sd.calendar:[],
+    videos:socialVideos
+  });
 
   var statColors={ig:'var(--lv2)',yt:'var(--bl2)',substack:'var(--ch2)',tiktok:'var(--sg2)'};
   var platforms=['ig','yt','substack'];
@@ -2563,10 +2576,10 @@ function bSocial(){
     // METRICS
     '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">Growth Tracker</div>' +
     '<div class="g4" style="margin-bottom:1.25rem">' +
-    '<div class="stat st-lv"><div class="sn" id="sm-ig-f">'+sd.metrics.ig_followers+'</div><div class="sl">Instagram</div><div class="prog"><div class="pf" style="background:var(--lv2);width:'+Math.min(100,Math.round((parseFloat(sd.metrics.ig_followers)||0)/(parseFloat(sd.metrics.ig_goal)||100)*100))+'%"></div></div><div class="pl">Goal: '+sd.metrics.ig_goal+'</div></div>' +
-    '<div class="stat st-bl"><div class="sn" id="sm-yt-f">'+sd.metrics.yt_followers+'</div><div class="sl">YouTube</div><div class="prog"><div class="pf" style="background:var(--bl2);width:'+Math.min(100,Math.round((parseFloat(sd.metrics.yt_followers)||0)/(parseFloat(sd.metrics.yt_goal)||5000)*100))+'%"></div></div><div class="pl">Goal: '+sd.metrics.yt_goal+'</div></div>' +
-    '<div class="stat st-ch"><div class="sn" id="sm-sub-f">'+sd.metrics.substack_subs+'</div><div class="sl">Substack</div><div class="prog"><div class="pf pf-c" style="width:'+Math.min(100,Math.round((parseFloat(sd.metrics.substack_subs)||0)/(parseFloat(sd.metrics.substack_goal)||1000)*100))+'%"></div></div><div class="pl">Goal: '+sd.metrics.substack_goal+'</div></div>' +
-    '<div class="stat st-tz"><div class="sn">'+((parseFloat(sd.metrics.ig_followers)||0)+(parseFloat(sd.metrics.yt_followers)||0)+'').replace(/\B(?=(\d{3})+(?!\d))/g,',')+'</div><div class="sl">Total Reach</div></div>' +
+    '<div class="stat st-lv"><div class="sn" id="sm-ig-f">'+socialMetrics.ig_followers+'</div><div class="sl">Instagram</div><div class="prog"><div class="pf" style="background:var(--lv2);width:'+Math.min(100,Math.round((parseFloat(socialMetrics.ig_followers)||0)/(parseFloat(socialMetrics.ig_goal)||100)*100))+'%"></div></div><div class="pl">Goal: '+socialMetrics.ig_goal+'</div></div>' +
+    '<div class="stat st-bl"><div class="sn" id="sm-yt-f">'+socialMetrics.yt_followers+'</div><div class="sl">YouTube</div><div class="prog"><div class="pf" style="background:var(--bl2);width:'+Math.min(100,Math.round((parseFloat(socialMetrics.yt_followers)||0)/(parseFloat(socialMetrics.yt_goal)||5000)*100))+'%"></div></div><div class="pl">Goal: '+socialMetrics.yt_goal+'</div></div>' +
+    '<div class="stat st-ch"><div class="sn" id="sm-sub-f">'+socialMetrics.substack_subs+'</div><div class="sl">Substack</div><div class="prog"><div class="pf pf-c" style="width:'+Math.min(100,Math.round((parseFloat(socialMetrics.substack_subs)||0)/(parseFloat(socialMetrics.substack_goal)||1000)*100))+'%"></div></div><div class="pl">Goal: '+socialMetrics.substack_goal+'</div></div>' +
+    '<div class="stat st-tz"><div class="sn">'+((parseFloat(socialMetrics.ig_followers)||0)+(parseFloat(socialMetrics.yt_followers)||0)+'').replace(/\B(?=(\d{3})+(?!\d))/g,',')+'</div><div class="sl">Total Reach</div></div>' +
     '</div>' +
 
     // UPDATE METRICS
@@ -2575,7 +2588,7 @@ function bSocial(){
     '<div class="g4">' +
     ['ig_followers','yt_followers','substack_subs'].map(function(k){
       var labels={ig_followers:'IG Followers',yt_followers:'YT Subscribers',substack_subs:'Substack Subs'};
-      return '<div class="fg" style="margin-bottom:0"><label>'+labels[k]+'</label><input class="fi" id="sm-inp-'+k+'" value="'+sd.metrics[k]+'" style="font-size:.8rem" oninput="updateSocialMetric(\''+k+'\',this.value)"></div>';
+      return '<div class="fg" style="margin-bottom:0"><label>'+labels[k]+'</label><input class="fi" id="sm-inp-'+k+'" value="'+socialMetrics[k]+'" style="font-size:.8rem" oninput="updateSocialMetric(\''+k+'\',this.value)"></div>';
     }).join('') +
     '</div></div>' +
 
@@ -2583,7 +2596,7 @@ function bSocial(){
     '<div class="g2" style="margin-bottom:1.25rem">' +
     '<div class="card">' +
     '<div class="cl">Content Pillars</div>' +
-    sd.pillars.map(function(p,i){
+    socialPillars.map(function(p,i){
       return '<div style="display:flex;align-items:center;gap:.5rem;padding:.3rem 0;border-bottom:1px solid var(--ch4)">' +
         '<div style="width:6px;height:6px;border-radius:50%;background:var(--tz3);flex-shrink:0"></div>' +
         '<span style="font-size:.8rem;color:var(--ink);flex:1">'+p+'</span>' +
@@ -2593,11 +2606,11 @@ function bSocial(){
 
     '<div class="card">' +
     '<div class="cl">Posting Cadence</div>' +
-    Object.keys(sd.cadence).map(function(k){
+    Object.keys(socialCadence).map(function(k){
       var labels={ig:'Instagram',yt:'YouTube',substack:'Substack',tiktok:'TikTok'};
       return '<div style="display:flex;align-items:center;gap:.5rem;padding:.35rem 0;border-bottom:1px solid var(--ch4)">' +
         '<div style="font-family:var(--fm);font-size:.5rem;letter-spacing:1px;color:var(--wg);min-width:70px">'+labels[k]+'</div>' +
-        '<input style="border:none;outline:none;font-size:.78rem;color:var(--st);background:transparent;flex:1" value="'+sd.cadence[k]+'" onblur="updateSocialCadence(\''+k+'\',this.value)">' +
+        '<input style="border:none;outline:none;font-size:.78rem;color:var(--st);background:transparent;flex:1" value="'+socialCadence[k]+'" onblur="updateSocialCadence(\''+k+'\',this.value)">' +
         '</div>';
     }).join('') +
     '</div>' +
@@ -2611,7 +2624,7 @@ function bSocial(){
       return '<div class="card" style="border-left:3px solid '+statColors[k]+';padding:.85rem">' +
         '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:2px;color:'+statColors[k]+';text-transform:uppercase;margin-bottom:.4rem">'+platformLabels[k]+'</div>' +
         '<div style="font-family:var(--fm);font-size:.55rem;color:var(--wg);margin-bottom:.45rem;line-height:1.6">'+tips[k]+'</div>' +
-        '<textarea class="social-strategy" data-key="'+k+'" placeholder="Your specific strategy notes for '+platformLabels[k]+'..." style="width:100%;min-height:65px;border:1.5px dashed var(--du);border-radius:3px;padding:.5rem .65rem;font-family:var(--fb);font-size:.75rem;color:var(--st);line-height:1.7;resize:vertical;outline:none;background:var(--ch5)">'+( sd.strategy[k]||'')+'</textarea>' +
+        '<textarea class="social-strategy" data-key="'+k+'" placeholder="Your specific strategy notes for '+platformLabels[k]+'..." style="width:100%;min-height:65px;border:1.5px dashed var(--du);border-radius:3px;padding:.5rem .65rem;font-family:var(--fb);font-size:.75rem;color:var(--st);line-height:1.7;resize:vertical;outline:none;background:var(--ch5)">'+( socialStrategy[k]||'')+'</textarea>' +
         '</div>';
     }).join('') +
     '</div>' +
@@ -2619,7 +2632,7 @@ function bSocial(){
     // VIDEO PRODUCTION PIPELINE
     '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">YouTube Video Pipeline</div>' +
     '<div style="display:flex;flex-direction:column;gap:.45rem;margin-bottom:1.25rem" id="video-pipeline">' +
-    sd.videos.map(function(v,i){
+    socialVideos.map(function(v,i){
       var sc={planned:'var(--du)',filming:'var(--ch2)',editing:'var(--lv2)',published:'var(--sg2)'};
       return '<div class="card" style="padding:.75rem;border-left:3px solid '+(sc[v.status]||'var(--du)')+'">' +
         '<div style="display:flex;align-items:center;gap:.65rem;flex-wrap:wrap">' +
