@@ -1612,7 +1612,6 @@ function bLooks(){
         '<div class="look-ev">'+l.event+'</div>' +
         '<div class="look-title" data-e="look:'+l.id+':title">'+l.title+'</div>' +
         '<div class="look-desc" data-e="look:'+l.id+':desc">'+l.desc+'</div>' +
-        '<button class="btn bd" style="margin-top:.65rem;font-size:.6rem" onclick="removeLook('+l.id+')">Remove</button>' +
         '</div></div>';
     }).join('') +
     '</div></div>'
