@@ -269,6 +269,16 @@ body{font-family:var(--fb);background:var(--ch5);color:var(--ink);display:flex;f
 .lib-read-cover{border-radius:3px;overflow:hidden;background:var(--tz5);margin-bottom:1.35rem}
 .lib-read-cover img{display:block;width:100%;max-height:460px;object-fit:cover}
 .lib-read-body{background:var(--wh);border-radius:3px;padding:2rem 2.2rem;box-shadow:0 8px 24px rgba(46,37,96,.05)}
+.lib-portfolio-note{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1rem}
+.lib-portfolio-copy{font-size:.8rem;color:var(--st);line-height:1.7;max-width:680px}
+.portfolio-hero-card{display:grid;grid-template-columns:1fr .9fr;gap:0;background:linear-gradient(135deg,var(--tz),#241b56 58%,#4b3f8a 100%);border-radius:3px;overflow:hidden;box-shadow:0 14px 36px rgba(26,19,64,.16)}
+.portfolio-hero-copy{padding:1.6rem 1.6rem 1.8rem}
+.portfolio-hero-subtitle{font-family:var(--fm);font-size:.58rem;letter-spacing:3px;color:rgba(240,216,152,.34);text-transform:uppercase;margin:.2rem 0 .9rem}
+.portfolio-link-row{display:flex;gap:.45rem;flex-wrap:wrap;margin-top:1rem}
+.portfolio-link-row .pc-link{border-color:rgba(240,216,152,.2);color:rgba(240,216,152,.75);background:rgba(255,255,255,.03)}
+.portfolio-link-row .pc-link:hover{border-color:rgba(240,216,152,.45);color:rgba(240,216,152,.95)}
+.portfolio-hero-image{min-height:320px;background:var(--tz5)}
+.portfolio-hero-image img{display:block;width:100%;height:100%;object-fit:cover}
 
 /* EDITOR */
 .ed-top{background:var(--wh);border-bottom:1px solid var(--du);padding:.65rem 1.35rem;display:flex;gap:.65rem;align-items:center;flex-wrap:wrap}
@@ -448,6 +458,8 @@ body.em [data-e]:focus{outline:2px solid var(--ch);background:rgba(240,216,152,.
   .hb{display:flex}
   .g2,.g3,.g4,.ns-grid{grid-template-columns:1fr}.lib-grid{grid-template-columns:1fr 1fr}
   .lib-feature{grid-template-columns:1fr}
+  .portfolio-hero-card{grid-template-columns:1fr}
+  .lib-portfolio-note{flex-direction:column}
   .pb{padding:.85rem}
   .ph{padding:.85rem;flex-direction:column;gap:.5rem}
   .ph-acts{flex-wrap:wrap;gap:.35rem}

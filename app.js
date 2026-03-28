@@ -23,6 +23,7 @@ var SB_KV_MAP={
   'chq-lb-imgs':'lookbook_imgs',
   'chq-lb-links':'lookbook_links',
   'chq-lb-bio':'lookbook_bio',
+  'chq-lb-meta':'lookbook_meta',
   'chq-social':'social',
   'chq-inbox':'inbox',
   'chq-fitness':'fitness',
@@ -95,7 +96,7 @@ function sbSetKV(key,value){
   .catch(function(){finishSupabaseSave(false);});
 }
 function loadFromSupabase(){
-  var kvKeys=['goals','todos','answers','brand','adv','gd','timeline','appts','mood','dashMood','quiz','pitch','board','lookbook_imgs','lookbook_links','lookbook_bio','social','inbox','fitness','peace','role_pages','contacts'];
+  var kvKeys=['goals','todos','answers','brand','adv','gd','timeline','appts','mood','dashMood','quiz','pitch','board','lookbook_imgs','lookbook_links','lookbook_bio','lookbook_meta','social','inbox','fitness','peace','role_pages','contacts'];
   return Promise.all([sbGet('sponsors'),sbGet('calendar_events'),sbGet('posts'),sbGet('looks'),sbGet('workouts'),sbGet('messages'),sbGet('files'),sbGet('mood_board')].concat(kvKeys.map(sbGetKV)))
   .then(function(results){
     var sp=results[0],ev=results[1],po=results[2],lk=results[3],wk=results[4],ms=results[5],fi=results[6],mb=results[7];
@@ -136,6 +137,7 @@ function loadFromSupabase(){
     if(kv.lookbook_imgs)lsWriteLocal('chq-lb-imgs',kv.lookbook_imgs);
     if(kv.lookbook_links)lsWriteLocal('chq-lb-links',kv.lookbook_links);
     if(kv.lookbook_bio)lsWriteLocal('chq-lb-bio',kv.lookbook_bio);
+    if(kv.lookbook_meta)lsWriteLocal('chq-lb-meta',kv.lookbook_meta);
     if(kv.social)lsWriteLocal('chq-social',kv.social);
     if(kv.inbox)lsWriteLocal('chq-inbox',kv.inbox);
     if(kv.fitness)lsWriteLocal('chq-fitness',kv.fitness);
@@ -451,7 +453,6 @@ var ROLES={
   amelia:{name:'Amelia Arabe',abbr:'AA',color:'var(--ch)',
     nav:[
       {ico:'🏠',lbl:'Dashboard',id:'dashboard'},
-      {ico:'📚',lbl:'Library',id:'library'},
       {ico:'✍️',lbl:'Library Editor',id:'library-editor'},
       {ico:'💰',lbl:'Sponsors',id:'sponsors',badge:true},
       {ico:'📅',lbl:'Calendar',id:'calendar'},
@@ -464,7 +465,7 @@ var ROLES={
       {ico:'📱',lbl:'Social Media',id:'social'},
       {ico:'📬',lbl:'Inbox',id:'inbox'},
       {ico:'🗂',lbl:'Discussion',id:'board'},
-      {ico:'🔗',lbl:'Lookbook',id:'lookbook'},
+      {ico:'🔗',lbl:'Portfolio',id:'lookbook'},
       {ico:'📁',lbl:'Files',id:'files'},
     ],
     editable:['timeline','sponsors','looks','brand','dashboard','workouts','appointments','goals','todos','library']
@@ -478,7 +479,7 @@ var ROLES={
       {ico:'🖼',lbl:'Mood Board',id:'moodboard'},
       {ico:'📬',lbl:'Inbox',id:'inbox'},
       {ico:'🗂',lbl:'Discussion',id:'board'},
-      {ico:'🔗',lbl:'Lookbook',id:'lookbook'},
+      {ico:'🔗',lbl:'Portfolio',id:'lookbook'},
       {ico:'📁',lbl:'Files',id:'files'},
     ],
     editable:['sponsors','looks','appointments','todos']
@@ -1359,8 +1360,12 @@ var libCats={
   morenita:{lbl:'Library of Morenita',col:'var(--tz2)',bg:'var(--tz5)'},
 };
 
+function getPublishedPosts(){
+  return S.posts.filter(function(p){return p.status==='published';}).sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
+}
+
 function bLibrary(){
-  var published=S.posts.filter(function(p){return p.status==='published';}).sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
+  var published=getPublishedPosts();
   var featured=published[0]||null;
   var cats=Object.keys(libCats);
   if(window._libraryFrontPostId){
@@ -1368,12 +1373,12 @@ function bLibrary(){
   }
   inject(
     '<div class="ph"><div><div class="ph-tag">Library of Morenita</div><div class="ph-title">The <em>Library</em></div></div>' +
-    '<div class="ph-acts">'+(S.role==='amelia'?'<button class="btn bg" onclick="showPanel(\'library-editor\')">Open Editor</button>':'')+'</div></div>' +
+    '<div class="ph-acts"><button class="btn bg" onclick="showPanel(\'lookbook\')">Open Portfolio</button>' +(S.role==='amelia'?'<button class="btn bg" onclick="showPanel(\'library-editor\')">Open Editor</button>':'')+'</div></div>' +
     '<div class="pb">' +
     '<div class="card lib-front-hero">' +
-    '<div class="lib-front-kicker">Forward Facing</div>' +
-    '<div class="lib-front-title">A magazine-like archive of essays on beauty, engineering, policy, and culture.</div>' +
-    '<div class="lib-front-sub">Library of Morenita is the public collection. The editor lives separately on your internal side.</div>' +
+    '<div class="lib-front-kicker">Editorial Portfolio</div>' +
+    '<div class="lib-front-title">Essays, imagery, and advocacy gathered into one editorial world.</div>' +
+    '<div class="lib-front-sub">Library of Morenita now sits inside the same portfolio language as the Lookbook, so writing, visuals, and campaign identity read as one body of work.</div>' +
     '</div>' +
     '<div style="display:flex;gap:.3rem;margin-bottom:.85rem;flex-wrap:wrap">' +
     '<button class="cal-tab '+(libCatFilter==='all'?'on':'')+'" onclick="libCatFilter=\'all\';bLibrary()">All</button>' +
@@ -1389,6 +1394,11 @@ function bLibrary(){
     '</div>' +
     '<div class="lib-feature-visual" style="background:'+(featured.cover?'linear-gradient(transparent,rgba(26,19,64,.2)),url('+featured.cover+') center/cover':'var(--tz5)')+'"></div>' +
     '</div>':'') +
+    '<div class="card lib-portfolio-note">' +
+    '<div class="cl">Portfolio Flow</div>' +
+    '<div class="lib-portfolio-copy">Start here for essays and published writing. Open the portfolio to see these ideas alongside competition imagery, social links, and sponsor-facing presentation.</div>' +
+    '<button class="btn bg" onclick="showPanel(\'lookbook\')">Go To Portfolio</button>' +
+    '</div>' +
     '<div class="lib-grid">' +
     published.filter(function(p){return (libCatFilter==='all'||p.cat===libCatFilter)&&(!featured||libCatFilter!=='all'||p.id!==featured.id);}).map(function(p){
       var cat=libCats[p.cat]||{lbl:p.tag,col:'var(--tz3)',bg:'var(--tz5)'};
@@ -2782,13 +2792,31 @@ function deleteBoardCard(cardId,colId){
 
 // ═══ LOOKBOOK (PUBLIC) ═══════════════════════════════════════
 function bLookbook(){
+  var published=getPublishedPosts().slice(0,4);
+  var links=getLookbookLinks();
+  var meta=getLookbookMeta();
+  var heroSrc=getPortfolioHeroSrc();
   inject(
-    '<div class="ph"><div><div class="ph-tag">Public · Sponsor Facing</div><div class="ph-title"><em>Lookbook</em></div></div>' +
+    '<div class="ph"><div><div class="ph-tag">Public · Portfolio</div><div class="ph-title"><em>Editorial Portfolio</em></div></div>' +
     '<div class="ph-acts">' +
     '<button class="btn bg" onclick="previewLookbook()">Preview Public Page</button>' +
     '<label class="btn bp" style="cursor:pointer">+ Upload Look<input type="file" accept="image/*" multiple style="display:none" onchange="addLookbookImg(event)"></label>' +
     '</div></div>' +
     '<div class="pb">' +
+    '<div class="portfolio-hero-card" style="margin-bottom:1.1rem">' +
+    '<div class="portfolio-hero-copy">' +
+    '<div class="lib-front-kicker">Editorial Portfolio</div>' +
+    '<div class="lib-front-title">A more professional portfolio built around image, writing, and platform.</div>' +
+    '<div class="portfolio-hero-subtitle">'+meta.subtitle+'</div>' +
+    '<div class="lib-front-sub">This is the only forward-facing portfolio page now. It carries the visual story, your core bio, social links, and selected published essays in one cohesive presentation.</div>' +
+    '<div class="portfolio-link-row">' +
+    '<button class="pc-link" onclick="window.open(\''+links.ig+'\',\'_blank\')">Instagram</button>' +
+    '<button class="pc-link" onclick="window.open(\''+links.yt+'\',\'_blank\')">YouTube</button>' +
+    '<button class="pc-link" onclick="window.open(\''+links.gh+'\',\'_blank\')">GitHub</button>' +
+    '<button class="pc-link" onclick="window.open(\''+links.tech+'\',\'_blank\')">Technical Portfolio</button>' +
+    '</div></div>' +
+    '<div class="portfolio-hero-image">'+(heroSrc?'<img src="'+heroSrc+'" alt="Portfolio hero">':'')+'</div>' +
+    '</div>' +
 
     // CURATED LOOKS
     '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">Curated Looks — Upload Your Photos</div>' +
@@ -2808,18 +2836,35 @@ function bLookbook(){
     '</div>' +
 
     // SOCIAL LINKS
-    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">Social Media Links</div>' +
-    '<div class="g2" style="margin-bottom:1.5rem">' +
+    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">Profile And Portfolio Links</div>' +
+    '<div class="g3" style="margin-bottom:1.5rem">' +
     '<div class="card">' +
     '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:2px;color:var(--tz3);text-transform:uppercase;margin-bottom:.5rem">📸 Instagram</div>' +
-    '<input class="fi" id="lb-ig" value="'+(lsGet('chq-lb-links',{}).ig||'https://instagram.com/ameliavarabe')+'" placeholder="https://instagram.com/ameliavarabe">' +
+    '<input class="fi" id="lb-ig" value="'+links.ig+'" placeholder="https://instagram.com/ameliavarabe">' +
     '<div style="font-family:var(--fm);font-size:.5rem;color:var(--wg);margin-top:.35rem">Sponsors will see a direct link to your profile</div>' +
     '</div>' +
     '<div class="card">' +
     '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:2px;color:var(--bl2);text-transform:uppercase;margin-bottom:.5rem">▶️ YouTube</div>' +
-    '<input class="fi" id="lb-yt" value="'+(lsGet('chq-lb-links',{}).yt||'https://youtube.com/@ameliavarabe')+'" placeholder="https://youtube.com/@ameliavarabe">' +
+    '<input class="fi" id="lb-yt" value="'+links.yt+'" placeholder="https://youtube.com/@ameliavarabe">' +
     '<div style="font-family:var(--fm);font-size:.5rem;color:var(--wg);margin-top:.35rem">Sponsors will see a direct link to your channel</div>' +
     '</div>' +
+    '<div class="card">' +
+    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:2px;color:var(--sg2);text-transform:uppercase;margin-bottom:.5rem">⌘ GitHub</div>' +
+    '<input class="fi" id="lb-gh" value="'+links.gh+'" placeholder="https://github.com/ameliavarabe">' +
+    '<div style="font-family:var(--fm);font-size:.5rem;color:var(--wg);margin-top:.35rem">For the engineering side of the portfolio</div>' +
+    '</div>' +
+    '<div class="card">' +
+    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:2px;color:var(--ch3);text-transform:uppercase;margin-bottom:.5rem">⌁ Technical Portfolio</div>' +
+    '<input class="fi" id="lb-tech" value="'+links.tech+'" placeholder="https://yourdomain.com">' +
+    '<div style="font-family:var(--fm);font-size:.5rem;color:var(--wg);margin-top:.35rem">Primary link for your official engineering portfolio site</div>' +
+    '</div>' +
+    '</div>' +
+
+    // PORTFOLIO SUBTITLE
+    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">Portfolio Subtitle</div>' +
+    '<div class="card" style="margin-bottom:1.5rem">' +
+    '<input class="fi" id="lb-subtitle" value="'+meta.subtitle.replace(/"/g,'&quot;')+'" placeholder="Student Engineer · Net-Zero Hardware · Cellist · Policy Advocate">' +
+    '<div style="font-family:var(--fm);font-size:.5rem;color:var(--wg);margin-top:.35rem">Short professional line under your name in the portfolio hero</div>' +
     '</div>' +
 
     // BIO FOR SPONSORS
@@ -2827,7 +2872,21 @@ function bLookbook(){
     '<div class="card" style="margin-bottom:1.5rem">' +
     '<textarea id="lb-bio" style="width:100%;min-height:90px;border:none;outline:none;font-family:var(--fd);font-size:.95rem;font-style:italic;color:var(--ink);line-height:1.8;resize:vertical;background:transparent" placeholder="What sponsors read when they open the lookbook...">'+(lsGet('chq-lb-bio','')||'Amelia Arabe is a Filipina-American student engineer, cellist, and Miss Temecula USA 2026 candidate based in San Diego. Her platform is clean energy and textile accountability policy. She competes not for a crown — but for a microphone.')+'</textarea>' +
     '</div>' +
-    '<button class="btn bp" onclick="saveLookbookData()">Save Lookbook</button>' +
+    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">Published Essays In Portfolio</div>' +
+    '<div class="lib-grid" style="margin-bottom:1.5rem">' +
+    published.map(function(p){
+      var cat=libCats[p.cat]||{lbl:p.tag,bg:'var(--tz5)'};
+      return '<div class="lib-card" '+(S.role==='amelia'?'onclick="editPost('+p.id+')"':'')+'>' +
+        '<div class="lib-cover" style="background:'+cat.bg+'">' +
+        (p.cover?'<img src="'+p.cover+'">':'') +
+        '<div class="lib-overlay"></div>' +
+        '<div class="lib-cover-text"><div class="lib-cat">'+p.tag+'</div><div class="lib-title-sm">'+p.title+'</div></div>' +
+        '</div>' +
+        '<div class="lib-meta"><span class="lib-date">'+fdate(p.date)+'</span><span class="lib-status ls-p">Essay</span></div>' +
+        '</div>';
+    }).join('') +
+    '</div>' +
+    '<button class="btn bp" onclick="saveLookbookData()">Save Portfolio</button>' +
     '</div>'
   );
 }
@@ -2835,6 +2894,27 @@ function bLookbook(){
 function getLookbookImgs(){
   var imgs=lsGet('chq-lb-imgs',[]);
   return Array.isArray(imgs)?imgs:[];
+}
+function getLookbookLinks(){
+  var links=lsGet('chq-lb-links',{})||{};
+  return {
+    ig:links.ig||'https://instagram.com/ameliavarabe',
+    yt:links.yt||'https://youtube.com/@ameliavarabe',
+    gh:links.gh||'https://github.com/ameliavarabe',
+    tech:links.tech||'https://github.com/ameliavarabe'
+  };
+}
+function getLookbookMeta(){
+  var meta=lsGet('chq-lb-meta',{})||{};
+  return {
+    subtitle:meta.subtitle||'Student Engineer · Net-Zero Hardware · Cellist · Policy Advocate'
+  };
+}
+function getPortfolioHeroSrc(){
+  if(window.location&&window.location.origin&&window.location.origin.indexOf('http')===0){
+    return window.location.origin+'/assets/portfolio-hero.jpeg';
+  }
+  return 'assets/portfolio-hero.jpeg';
 }
 
 function addLookbookImg(e){
@@ -2868,55 +2948,128 @@ function removeLookbookImg(i){
 function saveLookbookData(){
   var igEl=document.getElementById('lb-ig');
   var ytEl=document.getElementById('lb-yt');
+  var ghEl=document.getElementById('lb-gh');
+  var techEl=document.getElementById('lb-tech');
+  var subtitleEl=document.getElementById('lb-subtitle');
   var bioEl=document.getElementById('lb-bio');
-  if(igEl&&ytEl) lsSave('chq-lb-links',{ig:igEl.value,yt:ytEl.value});
+  if(igEl&&ytEl&&ghEl&&techEl) lsSave('chq-lb-links',{ig:igEl.value,yt:ytEl.value,gh:ghEl.value,tech:techEl.value});
+  if(subtitleEl) lsSave('chq-lb-meta',{subtitle:subtitleEl.value});
   if(bioEl) lsSave('chq-lb-bio',bioEl.value);
-  showToast('Lookbook saved');
+  showToast('Portfolio saved');
 }
 
 function previewLookbook(){
   var imgs=getLookbookImgs();
-  var links=lsGet('chq-lb-links',{ig:'https://instagram.com/ameliavarabe',yt:'https://youtube.com/@ameliavarabe'});
+  var links=getLookbookLinks();
+  var meta=getLookbookMeta();
   var bio=lsGet('chq-lb-bio','Amelia Arabe is a Filipina-American student engineer, cellist, and Miss Temecula USA 2026 candidate based in San Diego.');
+  var essays=getPublishedPosts().slice(0,6);
+  var heroSrc=getPortfolioHeroSrc();
 
   var html='<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
-    '<title>Amelia Arabe — Lookbook</title>' +
+    '<title>Amelia Arabe — Editorial Portfolio</title>' +
     '<link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;1,300;1,400&family=Plus+Jakarta+Sans:wght@300;400;500&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">' +
     '<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#1A1340;color:#F0EEF8;font-family:"Plus Jakarta Sans",sans-serif;min-height:100vh}' +
-    '.hero{padding:4rem 2rem 3rem;text-align:center;background:radial-gradient(ellipse at 50% 0%,rgba(74,63,138,.8) 0%,transparent 65%)}' +
+    '.hero{padding:0;text-align:left;display:grid;grid-template-columns:1.1fr .9fr;min-height:78vh;background:linear-gradient(135deg,#140f34 0%,#1A1340 48%,#2E2560 100%)}' +
+    '.hero-copy{padding:4.2rem 2.2rem 3.2rem;display:flex;flex-direction:column;justify-content:center}' +
+    '.hero-visual{min-height:420px;position:relative;background:#2E2560}' +
+    '.hero-visual img{width:100%;height:100%;object-fit:cover;display:block}' +
     '.hero-tag{font-family:"DM Mono",monospace;font-size:.55rem;letter-spacing:6px;color:rgba(240,216,152,.4);text-transform:uppercase;margin-bottom:1rem}' +
     '.hero-name{font-family:"Cormorant",serif;font-size:clamp(3rem,8vw,5.5rem);font-style:italic;font-weight:300;color:#D8D4EC;line-height:1;margin-bottom:.5rem}' +
     '.hero-sub{font-family:"DM Mono",monospace;font-size:.6rem;letter-spacing:4px;color:rgba(240,216,152,.3);text-transform:uppercase;margin-bottom:2rem}' +
-    '.hero-bio{font-family:"Cormorant",serif;font-size:1.1rem;font-style:italic;color:rgba(216,212,236,.7);max-width:600px;margin:0 auto 2rem;line-height:1.75}' +
-    '.social-links{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}' +
+    '.hero-bio{font-family:"Cormorant",serif;font-size:1.1rem;font-style:italic;color:rgba(216,212,236,.7);max-width:600px;margin:0 0 2rem;line-height:1.75}' +
+    '.social-links{display:flex;gap:1rem;justify-content:flex-start;flex-wrap:wrap}' +
     '.slink{font-family:"DM Mono",monospace;font-size:.58rem;letter-spacing:2px;padding:.45rem 1.25rem;border-radius:3px;border:1px solid rgba(240,216,152,.2);color:rgba(240,216,152,.6);text-decoration:none;text-transform:uppercase;transition:all .2s}' +
     '.slink:hover{border-color:rgba(240,216,152,.5);color:rgba(240,216,152,.9);background:rgba(240,216,152,.05)}' +
     '.section{padding:3rem 2rem;max-width:1100px;margin:0 auto}' +
     '.section-label{font-family:"DM Mono",monospace;font-size:.52rem;letter-spacing:5px;color:rgba(216,212,236,.3);text-transform:uppercase;margin-bottom:1.5rem;text-align:center}' +
+    '.section-title{font-family:"Cormorant",serif;font-size:clamp(1.7rem,4vw,2.8rem);font-style:italic;color:#F0EEF8;text-align:center;line-height:1.1;margin-bottom:.65rem}' +
+    '.section-intro{font-size:.92rem;color:rgba(216,212,236,.62);text-align:center;max-width:760px;margin:0 auto 1.8rem;line-height:1.8}' +
     '.look-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem}' +
     '.look-item{border-radius:3px;overflow:hidden;aspect-ratio:2/3;position:relative}' +
     '.look-item img{width:100%;height:100%;object-fit:cover;transition:transform .4s}' +
     '.look-item:hover img{transform:scale(1.03)}' +
     '.look-cap{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(20,16,50,.8));padding:1rem .75rem .6rem;font-family:"DM Mono",monospace;font-size:.5rem;letter-spacing:2px;color:rgba(254,252,247,.7);text-transform:uppercase}' +
+    '.essay-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1rem}' +
+    '.essay-card{background:rgba(255,255,255,.04);border:1px solid rgba(216,212,236,.08);border-radius:3px;overflow:hidden;display:block;width:100%;text-align:left;cursor:pointer;transition:transform .25s,border-color .25s,box-shadow .25s}' +
+    '.essay-card:hover{transform:translateY(-3px);border-color:rgba(240,216,152,.22);box-shadow:0 16px 30px rgba(10,8,30,.22)}' +
+    '.essay-cover{height:160px;position:relative;background:#2E2560;display:flex;align-items:flex-end}' +
+    '.essay-cover img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}' +
+    '.essay-overlay{position:absolute;inset:0;background:linear-gradient(transparent 35%,rgba(20,16,50,.82))}' +
+    '.essay-copy{padding:1rem}' +
+    '.essay-tag{font-family:"DM Mono",monospace;font-size:.48rem;letter-spacing:3px;color:rgba(240,216,152,.48);text-transform:uppercase;margin-bottom:.45rem}' +
+    '.essay-title{font-family:"Cormorant",serif;font-size:1.35rem;font-style:italic;color:#F0EEF8;line-height:1.15;margin-bottom:.45rem}' +
+    '.essay-meta{font-family:"DM Mono",monospace;font-size:.52rem;color:rgba(216,212,236,.48);letter-spacing:2px;text-transform:uppercase}' +
+    '.essay-lightbox{position:fixed;inset:0;background:rgba(10,8,28,.82);backdrop-filter:blur(6px);display:none;align-items:flex-start;justify-content:center;padding:2rem 1.1rem;z-index:9999;overflow:auto}' +
+    '.essay-lightbox.open{display:flex}' +
+    '.essay-dialog{width:min(940px,100%);background:linear-gradient(180deg,#160f36 0%,#1C1546 100%);border:1px solid rgba(216,212,236,.08);border-radius:10px;box-shadow:0 30px 70px rgba(8,6,24,.45);overflow:hidden}' +
+    '.essay-dialog-top{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;padding:1.1rem 1.1rem 0}' +
+    '.essay-dialog-kicker{font-family:"DM Mono",monospace;font-size:.52rem;letter-spacing:4px;color:rgba(240,216,152,.48);text-transform:uppercase}' +
+    '.essay-dialog-close{border:1px solid rgba(240,216,152,.18);background:rgba(255,255,255,.03);color:rgba(240,216,152,.72);font-family:"DM Mono",monospace;font-size:.58rem;letter-spacing:2px;text-transform:uppercase;border-radius:999px;padding:.5rem .9rem;cursor:pointer}' +
+    '.essay-dialog-close:hover{border-color:rgba(240,216,152,.42);color:#F0D898}' +
+    '.essay-dialog-head{padding:1rem 1.5rem 0}' +
+    '.essay-dialog-title{font-family:"Cormorant",serif;font-size:clamp(2.2rem,5vw,4.4rem);font-style:italic;color:#F0EEF8;line-height:1.02;margin-bottom:.45rem}' +
+    '.essay-dialog-meta{font-family:"DM Mono",monospace;font-size:.54rem;color:rgba(216,212,236,.42);letter-spacing:2px;text-transform:uppercase;margin-bottom:1.2rem}' +
+    '.essay-dialog-cover{max-height:420px;overflow:hidden;background:#2E2560}' +
+    '.essay-dialog-cover img{display:block;width:100%;height:100%;object-fit:cover}' +
+    '.essay-body{background:rgba(255,255,255,.04);border-top:1px solid rgba(216,212,236,.06);padding:1.6rem 1.7rem 1.9rem}' +
+    '.essay-body .mag-hero{font-family:"Cormorant",serif;font-size:clamp(2rem,4vw,3.4rem);font-weight:300;line-height:1.02;color:#F0EEF8;margin-bottom:.45rem}' +
+    '.essay-body .mag-hero em{font-style:italic;color:#D4CEF0}' +
+    '.essay-body .mag-byline{font-family:"DM Mono",monospace;font-size:.58rem;letter-spacing:4px;color:rgba(216,212,236,.46);text-transform:uppercase;margin-bottom:1.5rem;padding-bottom:.9rem;border-bottom:1px solid rgba(216,212,236,.12)}' +
+    '.essay-body .mag-drop,.essay-body p{font-family:"Cormorant",serif;font-size:1.05rem;line-height:1.9;color:rgba(240,238,248,.88)}' +
+    '.essay-body .mag-drop::first-letter{font-size:3.5rem;float:left;line-height:.82;margin:.08rem .4rem 0 0;color:#F0EEF8}' +
+    '.essay-body .mag-pq{font-family:"Cormorant",serif;font-size:1.25rem;font-style:italic;color:#F0EEF8;border-left:3px solid rgba(212,206,240,.4);padding:.85rem 1.15rem;margin:1.5rem 0;line-height:1.55;background:rgba(212,206,240,.08)}' +
+    '.essay-body .mag-img{margin:1.25rem 0;background:rgba(255,255,255,.03);border-radius:3px;overflow:hidden}' +
+    '.essay-body .mag-img img{display:block;width:100%}' +
+    '.essay-body .mag-cap{font-family:"DM Mono",monospace;font-size:.54rem;color:rgba(216,212,236,.5);padding:.45rem .65rem;letter-spacing:1px;text-transform:uppercase}' +
+    '.essay-body .mag-2col{display:grid;grid-template-columns:1fr 1fr;gap:.65rem;margin:1.25rem 0}' +
+    '.essay-body .mag-br{text-align:center;color:rgba(212,206,240,.55);font-family:"Cormorant",serif;font-size:1.35rem;margin:1.5rem 0;letter-spacing:.45rem}' +
     '.footer{text-align:center;padding:3rem;font-family:"DM Mono",monospace;font-size:.5rem;letter-spacing:3px;color:rgba(240,216,152,.2);text-transform:uppercase}' +
-    '@media(max-width:600px){.look-grid{grid-template-columns:1fr 1fr}.hero-name{font-size:2.8rem}}' +
+    '@media(max-width:760px){.hero{grid-template-columns:1fr}.hero-copy{padding:2.5rem 1.1rem 2rem}.hero-visual{min-height:320px}.essay-body{padding:1.1rem}.essay-body .mag-2col{grid-template-columns:1fr}.essay-dialog-head{padding:1rem 1.1rem 0}}@media(max-width:600px){.look-grid,.essay-grid{grid-template-columns:1fr 1fr}.hero-name{font-size:2.8rem}.essay-lightbox{padding:0}.essay-dialog{border-radius:0;min-height:100vh}.essay-dialog-top{padding:1rem 1rem 0}}' +
     '</style></head><body>' +
     '<div class="hero">' +
-    '<div class="hero-tag">Miss California USA 2026</div>' +
+    '<div class="hero-copy">' +
+    '<div class="hero-tag">Editorial Portfolio</div>' +
     '<div class="hero-name">Amelia Arabe</div>' +
-    '<div class="hero-sub">Engineer · Cellist · Advocate · San Diego</div>' +
+    '<div class="hero-sub">'+meta.subtitle+'</div>' +
     '<div class="hero-bio">'+bio+'</div>' +
     '<div class="social-links">' +
     '<a class="slink" href="'+links.ig+'" target="_blank">📸 Instagram</a>' +
     '<a class="slink" href="'+links.yt+'" target="_blank">▶️ YouTube</a>' +
+    '<a class="slink" href="'+links.gh+'" target="_blank">⌘ GitHub</a>' +
+    '<a class="slink" href="'+links.tech+'" target="_blank">⌁ Technical Portfolio</a>' +
     '</div></div>' +
+    '<div class="hero-visual">'+(heroSrc?'<img src="'+heroSrc+'" alt="Amelia Arabe portfolio hero">':'')+'</div>' +
+    '</div>' +
     (imgs.length?
-      '<div class="section"><div class="section-label">Competition Looks</div>' +
+      '<div class="section"><div class="section-label">Visual Portfolio</div><div class="section-title">Competition Looks</div><div class="section-intro">Selected imagery from the visual side of the portfolio, designed to sit beside the essays and policy work rather than apart from them.</div>' +
       '<div class="look-grid">' +
       imgs.map(function(m){return '<div class="look-item"><img src="'+m.src+'" alt="'+m.caption+'"><div class="look-cap">'+m.caption+'</div></div>';}).join('') +
       '</div></div>':''
     ) +
+    (essays.length?
+      '<div class="section"><div class="section-label">Library of Morenita</div><div class="section-title">Published Essays</div><div class="section-intro">Writing from the public-facing Library, folded into the same editorial portfolio so sponsors and readers can understand the full world Amelia is building.</div>' +
+      '<div class="essay-grid">' +
+      essays.map(function(p){
+        return '<button class="essay-card" type="button" onclick="openEssay('+p.id+')">' +
+          '<div class="essay-cover">' +
+          (p.cover?'<img src="'+p.cover+'" alt="'+p.title+'">':'') +
+          '<div class="essay-overlay"></div>' +
+          '</div>' +
+          '<div class="essay-copy"><div class="essay-tag">'+p.tag+'</div><div class="essay-title">'+p.title+'</div><div class="essay-meta">'+(p.date||'')+'</div></div>' +
+          '</button>';
+      }).join('') +
+      '</div></div>':''
+    ) +
+    '<div class="essay-lightbox" id="essay-lightbox" onclick="if(event.target===this)closeEssay()">' +
+    '<div class="essay-dialog">' +
+    '<div class="essay-dialog-top"><div class="essay-dialog-kicker">Editorial Reader</div><button class="essay-dialog-close" type="button" onclick="closeEssay()">Close</button></div>' +
+    '<div class="essay-dialog-head"><div class="essay-dialog-title" id="essay-lightbox-title"></div><div class="essay-dialog-meta" id="essay-lightbox-meta"></div></div>' +
+    '<div class="essay-dialog-cover" id="essay-lightbox-cover" style="display:none"></div>' +
+    '<div class="essay-body" id="essay-lightbox-body"></div>' +
+    '</div></div>' +
     '<div class="footer">Amelia Arabe · Miss California USA 2026 · San Diego · Represented by Laneea Love</div>' +
+    '<script>var ESSAYS='+JSON.stringify(essays)+';function openEssay(id){var p=ESSAYS.find(function(x){return String(x.id)===String(id);});if(!p)return;var ov=document.getElementById("essay-lightbox");var title=document.getElementById("essay-lightbox-title");var meta=document.getElementById("essay-lightbox-meta");var cover=document.getElementById("essay-lightbox-cover");var body=document.getElementById("essay-lightbox-body");if(title)title.textContent=p.title||"";if(meta)meta.textContent=((p.date||"")+(p.date?" · ":"")+"Library of Morenita"+(p.tag?" · "+p.tag:""));if(cover){cover.style.display=p.cover?"block":"none";cover.innerHTML=p.cover?\'<img src="\'+p.cover+\'" alt="\'+(p.title||"Essay")+\'">\':"";}if(body)body.innerHTML=p.body||"";if(ov){ov.classList.add("open");document.body.style.overflow="hidden";window.scrollTo({top:0,behavior:"smooth"});}}function closeEssay(){var ov=document.getElementById("essay-lightbox");if(ov)ov.classList.remove("open");document.body.style.overflow="";}document.addEventListener("keydown",function(e){if(e.key==="Escape")closeEssay();});</script>' +
     '</body></html>';
 
   var blob=new Blob([html],{type:'text/html'});
@@ -3222,7 +3375,7 @@ function runSearch(q){
   // Library
   S.posts.forEach(function(p){
     if(p.title.toLowerCase().indexOf(q)>=0||(p.tag&&p.tag.toLowerCase().indexOf(q)>=0)){
-      results.push({type:'Article',icon:'📚',title:p.title,sub:p.tag+' · '+p.status,action:(S.role==='amelia'?"editPost("+p.id+")":"window._libraryFrontPostId="+p.id+";showPanel('library')")+";toggleSearch()"});
+      results.push({type:'Article',icon:'📚',title:p.title,sub:p.tag+' · '+p.status,action:(S.role==='amelia'?"editPost("+p.id+")":"showPanel('lookbook')")+";toggleSearch()"});
     }
   });
 
