@@ -452,6 +452,7 @@ var ROLES={
     nav:[
       {ico:'🏠',lbl:'Dashboard',id:'dashboard'},
       {ico:'📚',lbl:'Library',id:'library'},
+      {ico:'✍️',lbl:'Library Editor',id:'library-editor'},
       {ico:'💰',lbl:'Sponsors',id:'sponsors',badge:true},
       {ico:'📅',lbl:'Calendar',id:'calendar'},
       {ico:'🎤',lbl:'Interview Prep',id:'quiz'},
@@ -573,6 +574,7 @@ var PANELS={
   'dashboard':bDash,'laneea-dash':bLaneaDash,'hmu-dash':bHMUDash,
   'sponsor-portal':bSponsorPortal,'sponsors':bSponsors,'calendar':bCalendar,
   'library':bLibrary,'quiz':bQuiz,'brand':bBrand,'moodboard':bMoodboard,
+  'library-editor':bLibraryEditor,
   'looks':bLooks,'fitness':bFitness,'messages':bMessages,'files':bFiles,
   'deliverables':bDeliverables,'comp-progress':bCompProgress,'advocacy':bAdvocacy,'board':bBoard,'lookbook':bLookbook,'social':bSocial,'inbox':bInbox,'peace':bPeace
 };
@@ -1358,14 +1360,89 @@ var libCats={
 };
 
 function bLibrary(){
+  var published=S.posts.filter(function(p){return p.status==='published';}).sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
+  var featured=published[0]||null;
   var cats=Object.keys(libCats);
+  if(window._libraryFrontPostId){
+    return openLibraryPost(window._libraryFrontPostId);
+  }
   inject(
     '<div class="ph"><div><div class="ph-tag">Library of Morenita</div><div class="ph-title">The <em>Library</em></div></div>' +
-    '<div class="ph-acts"><button class="btn bp" onclick="newPost()">+ New Article</button></div></div>' +
+    '<div class="ph-acts">'+(S.role==='amelia'?'<button class="btn bg" onclick="showPanel(\'library-editor\')">Open Editor</button>':'')+'</div></div>' +
     '<div class="pb">' +
+    '<div class="card lib-front-hero">' +
+    '<div class="lib-front-kicker">Forward Facing</div>' +
+    '<div class="lib-front-title">A magazine-like archive of essays on beauty, engineering, policy, and culture.</div>' +
+    '<div class="lib-front-sub">Library of Morenita is the public collection. The editor lives separately on your internal side.</div>' +
+    '</div>' +
     '<div style="display:flex;gap:.3rem;margin-bottom:.85rem;flex-wrap:wrap">' +
     '<button class="cal-tab '+(libCatFilter==='all'?'on':'')+'" onclick="libCatFilter=\'all\';bLibrary()">All</button>' +
     cats.map(function(c){return '<button class="cal-tab '+(libCatFilter===c?'on':'')+'" onclick="libCatFilter=\''+c+'\';bLibrary()">'+libCats[c].lbl+'</button>';}).join('') +
+    '</div>' +
+    (featured&&libCatFilter==='all'?
+    '<div class="lib-feature" onclick="openLibraryPost('+featured.id+')">' +
+    '<div class="lib-feature-copy">' +
+    '<div class="lib-feature-kicker">Featured Essay</div>' +
+    '<div class="lib-feature-title">'+featured.title+'</div>' +
+    '<div class="lib-feature-meta">'+featured.tag+' · '+fdate(featured.date)+'</div>' +
+    '<div class="lib-feature-cta">Read article</div>' +
+    '</div>' +
+    '<div class="lib-feature-visual" style="background:'+(featured.cover?'linear-gradient(transparent,rgba(26,19,64,.2)),url('+featured.cover+') center/cover':'var(--tz5)')+'"></div>' +
+    '</div>':'') +
+    '<div class="lib-grid">' +
+    published.filter(function(p){return (libCatFilter==='all'||p.cat===libCatFilter)&&(!featured||libCatFilter!=='all'||p.id!==featured.id);}).map(function(p){
+      var cat=libCats[p.cat]||{lbl:p.tag,col:'var(--tz3)',bg:'var(--tz5)'};
+      return '<div class="lib-card" onclick="openLibraryPost('+p.id+')">' +
+        '<div class="lib-cover" style="background:'+cat.bg+'">' +
+        (p.cover?'<img src="'+p.cover+'">':'')+
+        '<div class="lib-overlay"></div>' +
+        '<div class="lib-cover-text"><div class="lib-cat">'+p.tag+'</div><div class="lib-title-sm">'+p.title+'</div></div>' +
+        '</div>' +
+        '<div class="lib-meta"><span class="lib-date">'+fdate(p.date)+'</span>' +
+        '<span class="lib-status ls-p">Read</span></div>' +
+        '</div>';
+    }).join('') +
+    '</div></div>'
+  );
+}
+
+function openLibraryPost(id){
+  var p=S.posts.find(function(x){return x.id===id&&x.status==='published';});
+  if(!p){window._libraryFrontPostId=null;return bLibrary();}
+  window._libraryFrontPostId=id;
+  inject(
+    '<div style="display:flex;flex-direction:column;height:100%">' +
+    '<div class="ed-top">' +
+    '<button class="btn bg" onclick="closeLibraryPost()" style="flex-shrink:0">← Back to Library</button>' +
+    (S.role==='amelia'?'<button class="btn bg" onclick="editPost('+p.id+')">Open In Editor</button>':'') +
+    '</div>' +
+    '<div class="lib-read-wrap">' +
+    '<div class="lib-read-head">' +
+    '<div class="lib-read-tag">'+p.tag+'</div>' +
+    '<div class="lib-read-title">'+p.title+'</div>' +
+    '<div class="lib-read-meta">'+fdate(p.date)+' · Published in Library of Morenita</div>' +
+    '</div>' +
+    (p.cover?'<div class="lib-read-cover"><img src="'+p.cover+'" alt="'+p.title+'"></div>':'') +
+    '<article class="lib-read-body">'+(p.body||'')+'</article>' +
+    '</div>' +
+    '</div>'
+  );
+}
+
+function closeLibraryPost(){
+  window._libraryFrontPostId=null;
+  bLibrary();
+}
+
+function bLibraryEditor(){
+  var cats=Object.keys(libCats);
+  inject(
+    '<div class="ph"><div><div class="ph-tag">Internal</div><div class="ph-title">Library <em>Editor</em></div></div>' +
+    '<div class="ph-acts"><button class="btn bg" onclick="showPanel(\'library\')">View Public Library</button><button class="btn bp" onclick="newPost()">+ New Article</button></div></div>' +
+    '<div class="pb">' +
+    '<div style="display:flex;gap:.3rem;margin-bottom:.85rem;flex-wrap:wrap">' +
+    '<button class="cal-tab '+(libCatFilter==='all'?'on':'')+'" onclick="libCatFilter=\'all\';bLibraryEditor()">All</button>' +
+    cats.map(function(c){return '<button class="cal-tab '+(libCatFilter===c?'on':'')+'" onclick="libCatFilter=\''+c+'\';bLibraryEditor()">'+libCats[c].lbl+'</button>';}).join('') +
     '</div>' +
     '<div class="lib-grid">' +
     S.posts.filter(function(p){return libCatFilter==='all'||p.cat===libCatFilter;}).map(function(p,pi){
@@ -1401,7 +1478,7 @@ function editPost(id){
   inject(
     '<div style="display:flex;flex-direction:column;height:100%">' +
     '<div class="ed-top">' +
-    '<button class="btn bg" onclick="bLibrary()" style="flex-shrink:0">← Library</button>' +
+    '<button class="btn bg" onclick="showPanel(\'library-editor\')" style="flex-shrink:0">← Editor</button>' +
     '<input class="ed-title-inp" id="post-title" value="'+p.title.replace(/"/g,'&quot;')+'" placeholder="Article title..." oninput="updatePostTitle(this.value)">' +
     '<div style="display:flex;gap:.35rem;flex-shrink:0">' +
     '<select class="fs" id="post-cat" style="font-size:.72rem;padding:.3rem .6rem" onchange="updatePostCat(this.value)">' +
@@ -3145,7 +3222,7 @@ function runSearch(q){
   // Library
   S.posts.forEach(function(p){
     if(p.title.toLowerCase().indexOf(q)>=0||(p.tag&&p.tag.toLowerCase().indexOf(q)>=0)){
-      results.push({type:'Article',icon:'📚',title:p.title,sub:p.tag+' · '+p.status,action:"editPost("+p.id+");toggleSearch()"});
+      results.push({type:'Article',icon:'📚',title:p.title,sub:p.tag+' · '+p.status,action:(S.role==='amelia'?"editPost("+p.id+")":"window._libraryFrontPostId="+p.id+";showPanel('library')")+";toggleSearch()"});
     }
   });
 
