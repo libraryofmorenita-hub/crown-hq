@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Amelia Arabe · Miss California USA 2026</title>
+<meta name="description" content="Amelia Arabe is running for Miss California USA 2026. Senior software engineer, artist, and cellist — building solar energy and green infrastructure in underserved communities.">
+<meta property="og:title" content="Amelia Arabe · Miss California USA 2026">
+<meta property="og:description" content="Engineer. Artist. Cellist. Platform: green energy access, community infrastructure, and fashion sustainability policy.">
+<meta property="og:image" content="portfolio-hero.jpeg">
+<style>
+/* ── FONTS ── */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500;1,600&family=Figtree:wght@300;400;500;600&display=swap');
+
+:root {
+  --ink:#1C1714; --charcoal:#2E2520; --muted:#7A6F68; --faint:#B0A89F;
+  --ivory:#FAF7F2; --iv2:#F0EBE3; --iv3:#E5DDD2;
+  --si:#8B4A2F; --sil:#C47A5A; --sip:#F5EDE8;
+  --sa:#4A5E48; --sal:#8FA68D; --sap:#EBF0EA;
+  --gold:#C9A84C; --gold-p:#FBF5E6; --gold-d:#8B6E1E;
+  --bd:rgba(28,23,20,0.10); --bdm:rgba(28,23,20,0.18);
+  --fd:'Cormorant Garamond',Georgia,serif;
+  --fb:'Figtree',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:var(--fb);background:var(--ivory);color:var(--ink);font-size:13px;line-height:1.5;overflow-x:hidden;}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--iv3);border-radius:2px}
+
+/* ── NAV ── */
+.nav{
+  position:fixed;top:0;left:0;right:0;z-index:200;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 2.5rem;height:54px;
+  background:rgba(250,247,242,0.92);backdrop-filter:blur(16px);
+  border-bottom:0.5px solid var(--bd);transition:background .3s;
+}
+.nav-logo{
+  font-family:var(--fd);font-size:17px;font-weight:400;
+  color:var(--ink);text-decoration:none;
+  display:flex;align-items:center;gap:7px;
+}
+.nav-logo em{font-style:italic;color:var(--si);}
+.nav-dot{width:5px;height:5px;border-radius:50%;background:var(--gold);}
+.nav-links{display:flex;gap:2px;}
+.nav-link{font-size:12px;color:var(--muted);padding:5px 12px;border-radius:20px;text-decoration:none;transition:all .15s;}
+.nav-link:hover{color:var(--ink);background:var(--iv2);}
+.nav-actions{display:flex;gap:8px;align-items:center;}
+.nav-btn{font-size:11px;letter-spacing:.07em;text-transform:uppercase;padding:7px 16px;border-radius:5px;text-decoration:none;transition:all .15s;cursor:pointer;border:none;}
+.nb-secondary{background:transparent;color:var(--muted);border:0.5px solid var(--bd);}
+.nb-secondary:hover{border-color:var(--sil);color:var(--si);background:var(--sip);}
+.nb-primary{background:var(--ink);color:var(--ivory);}
+.nb-primary:hover{background:var(--charcoal);}
+
+/* ── HERO ── */
+.hero{
+  min-height:100vh;position:relative;display:flex;align-items:flex-end;
+  overflow:hidden;
+}
+.hero-img{
+  position:absolute;inset:0;
+  background:url('portfolio-hero.jpeg') center 20%/cover no-repeat;
+}
+.hero-overlay{
+  position:absolute;inset:0;
+  background:linear-gradient(
+    to bottom,
+    rgba(28,23,20,0.15) 0%,
+    rgba(28,23,20,0.05) 30%,
+    rgba(28,23,20,0.65) 70%,
+    rgba(28,23,20,0.92) 100%
+  );
+}
+.hero-content{
+  position:relative;z-index:1;
+  padding:0 2.5rem 5rem;
+  max-width:1100px;margin:0 auto;width:100%;
+  display:grid;grid-template-columns:1fr auto;gap:3rem;align-items:flex-end;
+}
+.hero-eyebrow{
+  font-size:10px;letter-spacing:.28em;text-transform:uppercase;
+  color:var(--gold);margin-bottom:1rem;
+  display:flex;align-items:center;gap:10px;
+  animation:fadeUp .7s ease both;
+}
+.hero-eyebrow::before{content:'';width:28px;height:0.5px;background:var(--gold);}
+.hero-name{
+  font-family:var(--fd);font-size:76px;font-weight:300;
+  line-height:.92;color:white;margin-bottom:.5rem;
+  animation:fadeUp .7s .1s ease both;
+}
+.hero-name em{font-style:italic;color:var(--gold);}
+.hero-title{
+  font-family:var(--fd);font-size:20px;font-weight:300;
+  font-style:italic;color:rgba(255,255,255,.7);
+  margin-bottom:1.6rem;animation:fadeUp .7s .2s ease both;
+}
+.hero-bio{
+  font-size:14px;font-weight:300;line-height:1.85;
+  color:rgba(255,255,255,.75);max-width:520px;
+  margin-bottom:2rem;animation:fadeUp .7s .3s ease both;
+}
+.hero-bio strong{font-weight:500;color:white;}
+.hero-tags{
+  display:flex;gap:6px;flex-wrap:wrap;
+  margin-bottom:2.2rem;animation:fadeUp .7s .35s ease both;
+}
+.htag{
+  font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+  padding:4px 12px;border-radius:20px;
+  border:0.5px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);
+}
+.htag.gold{border-color:rgba(201,168,76,.5);color:var(--gold);background:rgba(201,168,76,.08);}
+.htag.sage{border-color:rgba(143,166,141,.4);color:#B8D4B5;background:rgba(74,94,72,.1);}
+.htag.si{border-color:rgba(196,122,90,.4);color:#D4997A;background:rgba(139,74,47,.08);}
+.hero-actions{
+  display:flex;gap:10px;flex-wrap:wrap;
+  animation:fadeUp .7s .4s ease both;
+}
+.btn{
+  font-size:12px;letter-spacing:.06em;text-transform:uppercase;
+  padding:11px 24px;border-radius:6px;text-decoration:none;
+  border:none;cursor:pointer;transition:all .18s;display:inline-block;
+}
+.btn-dark{background:white;color:var(--ink);}
+.btn-dark:hover{background:var(--iv2);}
+.btn-outline-light{background:transparent;color:white;border:0.5px solid rgba(255,255,255,.35);}
+.btn-outline-light:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.6);}
+.btn-gold{background:var(--gold);color:var(--ink);}
+.btn-gold:hover{opacity:.88;}
+
+/* Countdown card */
+.cd-card{
+  background:rgba(250,247,242,.06);backdrop-filter:blur(12px);
+  border:0.5px solid rgba(255,255,255,.12);border-radius:14px;
+  padding:1.6rem;min-width:260px;
+  animation:fadeUp .7s .5s ease both;
+}
+.cd-label{font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:.3rem;}
+.cd-event{font-family:var(--fd);font-size:15px;font-style:italic;color:rgba(255,255,255,.85);margin-bottom:1.2rem;}
+.cd-nums{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:1.2rem;}
+.cd-unit{text-align:center;background:rgba(255,255,255,.07);border-radius:8px;padding:10px 4px;}
+.cd-n{font-family:var(--fd);font-size:28px;font-weight:500;color:white;line-height:1;display:block;}
+.cd-u{font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-top:3px;display:block;}
+.cd-prog-wrap{margin-bottom:4px;}
+.cd-prog-lbl{display:flex;justify-content:space-between;margin-bottom:4px;}
+.cd-prog-title{font-size:10px;color:rgba(255,255,255,.4);letter-spacing:.05em;text-transform:uppercase;}
+.cd-prog-pct{font-size:10px;color:rgba(255,255,255,.55);}
+.cd-bar{height:2px;background:rgba(255,255,255,.1);border-radius:1px;overflow:hidden;margin-bottom:8px;}
+.cd-fill{height:100%;border-radius:1px;}
+.cf-gold{background:var(--gold);}
+.cf-sage{background:var(--sal);}
+.cf-si{background:var(--sil);}
+
+/* ── SECTION COMMON ── */
+.section{padding:6rem 2.5rem;}
+.section-inner{max-width:1100px;margin:0 auto;}
+.s-eyebrow{
+  font-size:10px;letter-spacing:.28em;text-transform:uppercase;
+  margin-bottom:.7rem;display:flex;align-items:center;gap:10px;
+}
+.s-eyebrow::before{content:'';width:20px;height:0.5px;}
+.ey-gold{color:var(--gold);}
+.ey-gold::before{background:var(--gold);}
+.ey-si{color:var(--si);}
+.ey-si::before{background:var(--sil);}
+.ey-sa{color:var(--sa);}
+.ey-sa::before{background:var(--sal);}
+.s-title{font-family:var(--fd);font-size:52px;font-weight:300;line-height:1.0;color:var(--ink);}
+.s-title em{font-style:italic;color:var(--si);}
+.s-title-light{font-family:var(--fd);font-size:52px;font-weight:300;line-height:1.0;color:white;}
+.s-title-light em{font-style:italic;color:var(--gold);}
+.s-sub{font-size:14px;font-weight:300;line-height:1.8;color:var(--muted);max-width:560px;margin-top:.8rem;}
+.reveal{opacity:0;transform:translateY(22px);transition:opacity .65s ease,transform .65s ease;}
+.reveal.visible{opacity:1;transform:translateY(0);}
+
+/* ── PLATFORM ── */
+.platform-section{background:var(--ink);}
+.platform-bg{
+  position:absolute;inset:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse at 80% 20%,rgba(201,168,76,.06) 0%,transparent 50%),
+    radial-gradient(ellipse at 10% 90%,rgba(139,74,47,.08) 0%,transparent 40%);
+}
+.platform-wrap{position:relative;}
+.platform-intro{font-size:15px;font-weight:300;line-height:1.85;color:rgba(250,247,242,.6);max-width:580px;margin:.8rem 0 3rem;}
+.pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;margin-bottom:3rem;}
+.pillar{
+  border:0.5px solid rgba(250,247,242,.08);border-radius:14px;
+  padding:2rem;transition:border-color .2s,transform .2s;
+}
+.pillar:hover{border-color:rgba(201,168,76,.25);transform:translateY(-3px);}
+.pillar-num{
+  font-family:var(--fd);font-size:42px;font-weight:300;
+  font-style:italic;margin-bottom:1.2rem;line-height:1;
+}
+.pn-gold{color:rgba(201,168,76,.35);}
+.pn-sage{color:rgba(143,166,141,.3);}
+.pn-si{color:rgba(196,122,90,.25);}
+.pillar-icon{font-size:22px;margin-bottom:.8rem;display:block;}
+.pillar-title{font-family:var(--fd);font-size:22px;font-weight:400;color:white;margin-bottom:.6rem;font-style:italic;}
+.pillar-text{font-size:13px;font-weight:300;line-height:1.75;color:rgba(250,247,242,.55);}
+.platform-quote{
+  padding:2.5rem;
+  border:0.5px solid rgba(201,168,76,.18);border-radius:12px;
+  background:rgba(201,168,76,.03);
+}
+.pq-mark{font-family:var(--fd);font-size:60px;color:rgba(201,168,76,.2);line-height:.7;margin-bottom:.5rem;}
+.pq-text{font-family:var(--fd);font-size:24px;font-weight:300;font-style:italic;color:white;line-height:1.5;margin-bottom:1rem;}
+.pq-attr{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:rgba(201,168,76,.5);}
+
+/* ── ABOUT ── */
+.about-grid{display:grid;grid-template-columns:1fr 1fr;gap:5rem;align-items:center;}
+.about-photo-wrap{position:relative;}
+.about-photo{
+  width:100%;aspect-ratio:3/4;border-radius:12px;overflow:hidden;
+  border:0.5px solid var(--bd);
+  background:url('portfolio-hero.jpeg') center top/cover no-repeat;
+}
+.about-badge{
+  position:absolute;bottom:-1.5rem;right:-1.5rem;
+  background:white;border:0.5px solid var(--bd);border-radius:10px;
+  padding:14px 16px;box-shadow:0 4px 20px rgba(28,23,20,.08);
+}
+.ab-label{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:3px;}
+.ab-val{font-family:var(--fd);font-size:20px;font-weight:500;color:var(--ink);}
+.ab-sub{font-size:10px;color:var(--muted);margin-top:2px;}
+.about-text{font-size:14px;font-weight:300;line-height:1.85;color:var(--charcoal);margin-bottom:1rem;}
+.creds{display:flex;flex-direction:column;gap:7px;margin-top:1.5rem;}
+.cred{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--charcoal);}
+.cred-dot{width:5px;height:5px;border-radius:50%;background:var(--si);flex-shrink:0;}
+
+/* ── TEAM ── */
+.team-section{background:var(--iv2);}
+.team-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin:2.5rem 0 1.5rem;}
+.tc{
+  background:white;border:0.5px solid var(--bd);border-radius:12px;
+  padding:1.5rem;text-align:center;transition:border-color .2s,transform .2s;
+}
+.tc:hover{border-color:var(--sil);transform:translateY(-2px);}
+.tc.open{border-style:dashed;opacity:.65;cursor:pointer;}
+.tc.open:hover{border-color:var(--sal);opacity:.85;transform:translateY(-2px);}
+.tc-av{
+  width:60px;height:60px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--fd);font-size:20px;font-style:italic;
+  margin:0 auto .9rem;border:0.5px solid var(--bd);
+}
+.tc-av.si{background:var(--sip);border-color:var(--sil);color:var(--si);}
+.tc-av.sa{background:var(--sap);border-color:var(--sal);color:var(--sa);}
+.tc-av.go{background:var(--gold-p);border-color:var(--gold);color:var(--gold-d);}
+.tc-av.ink{background:var(--ink);color:var(--ivory);}
+.tc-av.open-av{background:var(--iv2);color:var(--faint);font-size:18px;}
+.tc-name{font-family:var(--fd);font-size:16px;font-weight:500;color:var(--ink);margin-bottom:2px;}
+.tc-role{font-size:11px;color:var(--si);letter-spacing:.04em;margin-bottom:5px;}
+.tc-bio{font-size:11px;color:var(--muted);line-height:1.55;}
+.tc-open{font-size:10px;color:var(--sa);letter-spacing:.06em;text-transform:uppercase;margin-top:6px;}
+.join-bar{
+  background:white;border:0.5px solid var(--bd);border-radius:12px;
+  padding:1.8rem 2rem;
+  display:flex;align-items:center;justify-content:space-between;gap:2rem;
+}
+.jb-title{font-family:var(--fd);font-size:22px;font-style:italic;color:var(--ink);margin-bottom:.3rem;}
+.jb-sub{font-size:13px;color:var(--muted);}
+
+/* ── JOIN FORM ── */
+.join-section{background:var(--ivory);}
+.join-card{
+  background:white;border:0.5px solid var(--bd);
+  border-radius:16px;overflow:hidden;max-width:680px;margin:0 auto;
+}
+.jf-head{
+  padding:2rem 2.5rem 1.5rem;border-bottom:0.5px solid var(--bd);
+  background:var(--iv2);
+}
+.jf-title{font-family:var(--fd);font-size:30px;font-weight:300;font-style:italic;color:var(--ink);}
+.jf-sub{font-size:13px;color:var(--muted);margin-top:.3rem;}
+.jf-body{padding:2rem 2.5rem;}
+.frow{margin-bottom:1rem;}
+.flbl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;}
+.finp,.fsel,.fta{
+  width:100%;padding:9px 11px;font-size:13px;
+  border:0.5px solid var(--bd);border-radius:7px;
+  background:var(--ivory);color:var(--ink);font-family:var(--fb);
+  outline:none;transition:border-color .15s;
+}
+.finp:focus,.fsel:focus,.fta:focus{border-color:var(--sil);}
+.fta{resize:vertical;min-height:85px;}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+.f-submit{
+  width:100%;padding:12px;background:var(--ink);color:var(--ivory);
+  border:none;border-radius:7px;font-size:13px;cursor:pointer;
+  margin-top:.5rem;letter-spacing:.03em;transition:background .15s;
+}
+.f-submit:hover{background:var(--charcoal);}
+.f-note{font-size:11px;color:var(--faint);text-align:center;margin-top:.7rem;}
+.jf-success{display:none;text-align:center;padding:3.5rem 2rem;}
+.jfs-icon{font-size:36px;margin-bottom:1rem;}
+.jfs-title{font-family:var(--fd);font-size:26px;font-style:italic;color:var(--ink);margin-bottom:.4rem;}
+.jfs-text{font-size:13px;color:var(--muted);}
+
+/* ── SPONSOR ── */
+.sponsor-section{background:var(--ink);position:relative;overflow:hidden;}
+.sp-grid{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:start;}
+.sp-why-title{font-family:var(--fd);font-size:20px;font-style:italic;color:white;margin-bottom:.6rem;margin-top:2rem;}
+.sp-why-text{font-size:13px;font-weight:300;line-height:1.75;color:rgba(250,247,242,.55);}
+.sp-stats{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-top:1.8rem;}
+.stat{background:rgba(250,247,242,.04);border:0.5px solid rgba(250,247,242,.07);border-radius:10px;padding:1rem 1.2rem;}
+.stat-n{font-family:var(--fd);font-size:28px;font-weight:500;color:var(--gold);}
+.stat-l{font-size:11px;color:rgba(250,247,242,.4);margin-top:2px;}
+.sp-tiers{margin-top:2rem;display:flex;flex-direction:column;gap:.6rem;}
+.tier{
+  display:flex;align-items:center;gap:1rem;
+  padding:1rem 1.2rem;border-radius:8px;
+  border:0.5px solid rgba(250,247,242,.06);
+}
+.tier-name{font-size:12px;font-weight:500;color:white;flex:1;}
+.tier-amt{font-family:var(--fd);font-size:16px;color:var(--gold);}
+.tier-benefit{font-size:11px;color:rgba(250,247,242,.4);flex:2;}
+.sp-form{
+  background:rgba(250,247,242,.04);
+  border:0.5px solid rgba(250,247,242,.09);
+  border-radius:16px;padding:2rem;
+}
+.sf-title{font-family:var(--fd);font-size:24px;font-style:italic;color:white;margin-bottom:.3rem;}
+.sf-sub{font-size:12px;color:rgba(250,247,242,.4);margin-bottom:1.4rem;}
+.sf-inp,.sf-sel,.sf-ta{
+  width:100%;padding:9px 11px;font-size:13px;
+  border:0.5px solid rgba(250,247,242,.1);border-radius:7px;
+  background:rgba(250,247,242,.05);color:white;font-family:var(--fb);
+  outline:none;margin-bottom:.75rem;
+}
+.sf-inp::placeholder,.sf-ta::placeholder{color:rgba(250,247,242,.25);}
+.sf-inp:focus,.sf-sel:focus,.sf-ta:focus{border-color:rgba(201,168,76,.4);}
+.sf-sel{background:rgba(30,22,18,.8);color:rgba(250,247,242,.7);}
+.sf-ta{resize:vertical;min-height:75px;}
+.sf-submit{
+  width:100%;padding:11px;background:var(--gold);color:var(--ink);
+  border:none;border-radius:7px;font-size:13px;cursor:pointer;
+  font-weight:500;letter-spacing:.03em;transition:opacity .15s;
+}
+.sf-submit:hover{opacity:.85;}
+.sf-note{font-size:10px;color:rgba(250,247,242,.25);text-align:center;margin-top:.5rem;}
+
+/* ── PRESS ── */
+.press-section{background:var(--iv2);}
+.press-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin:2.5rem 0 2rem;}
+.press-card{
+  background:white;border:0.5px solid var(--bd);border-radius:10px;
+  padding:1.4rem;transition:border-color .15s;
+}
+.press-card:hover{border-color:var(--sil);}
+.press-card.placeholder{border-style:dashed;opacity:.5;}
+.press-outlet{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--si);margin-bottom:.4rem;}
+.press-hed{font-family:var(--fd);font-size:15px;color:var(--ink);line-height:1.4;margin-bottom:.4rem;}
+.press-date{font-size:10px;color:var(--faint);}
+.press-contact-bar{
+  background:white;border:0.5px solid var(--bd);border-radius:10px;
+  padding:1.6rem 2rem;
+  display:flex;align-items:center;justify-content:space-between;gap:2rem;
+}
+.pcb-title{font-family:var(--fd);font-size:20px;font-style:italic;color:var(--ink);}
+.pcb-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+
+/* ── FOOTER ── */
+.footer{
+  padding:2.5rem 2.5rem;border-top:0.5px solid var(--bd);
+  background:var(--ivory);
+}
+.footer-inner{
+  max-width:1100px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:1rem;
+}
+.footer-logo{font-family:var(--fd);font-size:15px;font-weight:300;color:var(--ink);}
+.footer-logo em{font-style:italic;color:var(--si);}
+.footer-links{display:flex;gap:1.5rem;}
+.footer-link{font-size:11px;color:var(--muted);text-decoration:none;}
+.footer-link:hover{color:var(--ink);}
+.footer-note{font-size:11px;color:var(--faint);}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── RESPONSIVE ── */
+@media(max-width:960px){
+  .hero-content{grid-template-columns:1fr;}
+  .cd-card{display:none;}
+  .hero-name{font-size:52px;}
+  .about-grid{grid-template-columns:1fr;}
+  .about-photo-wrap{display:none;}
+  .pillars{grid-template-columns:1fr;}
+  .team-grid{grid-template-columns:1fr 1fr;}
+  .sp-grid{grid-template-columns:1fr;}
+  .press-grid{grid-template-columns:1fr;}
+  .s-title,.s-title-light{font-size:38px;}
+  .nav-links{display:none;}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ NAV ══ -->
+<nav class="nav">
+  <a href="#" class="nav-logo"><div class="nav-dot"></div>Amelia <em>Arabe</em></a>
+  <div class="nav-links">
+    <a href="#platform" class="nav-link">Platform</a>
+    <a href="#about" class="nav-link">About</a>
+    <a href="#team" class="nav-link">Team</a>
+    <a href="#sponsor" class="nav-link">Sponsor</a>
+    <a href="#press" class="nav-link">Press</a>
+  </div>
+  <div class="nav-actions">
+    <a href="#join" class="nav-btn nb-secondary">Join the team</a>
+    <a href="index.html" class="nav-btn nb-primary">Team login &#8599;</a>
+  </div>
+</nav>
+
+<!-- ══ HERO ══ -->
+<section class="hero">
+  <div class="hero-img"></div>
+  <div class="hero-overlay"></div>
+  <div class="hero-content">
+    <div>
+      <div class="hero-eyebrow">Miss California USA 2026 &middot; Candidate</div>
+      <h1 class="hero-name">Amelia <em>Arabe</em></h1>
+      <p class="hero-title">Engineer &middot; Artist &middot; Cellist &middot; Builder</p>
+      <p class="hero-bio">
+        I believe the crown is a <strong>tool</strong> &mdash; a platform to do real work in the world.
+        I&rsquo;m running to bring solar energy and green infrastructure to communities that have been left behind,
+        to engineer solutions that actually serve people, and to push fashion sustainability from runway aspiration to federal policy.
+      </p>
+      <div class="hero-tags">
+        <span class="htag gold">Green Energy Access</span>
+        <span class="htag sage">Community Infrastructure</span>
+        <span class="htag si">Fashion Sustainability Policy</span>
+        <span class="htag">Riverside, CA</span>
+        <span class="htag">Software Engineer</span>
+      </div>
+      <div class="hero-actions">
+        <a href="#join" class="btn btn-dark">Join the team &rarr;</a>
+        <a href="#platform" class="btn btn-outline-light">See the platform</a>
+        <a href="#sponsor" class="btn btn-gold">Become a sponsor</a>
+      </div>
+    </div>
+    <!-- Countdown -->
+    <div class="cd-card">
+      <div class="cd-label">Competition Day</div>
+      <div class="cd-event">Miss California USA 2026 &middot; July 10</div>
+      <div class="cd-nums">
+        <div class="cd-unit"><span class="cd-n" id="cd-d">--</span><span class="cd-u">Days</span></div>
+        <div class="cd-unit"><span class="cd-n" id="cd-h">--</span><span class="cd-u">Hours</span></div>
+        <div class="cd-unit"><span class="cd-n" id="cd-m">--</span><span class="cd-u">Min</span></div>
+        <div class="cd-unit"><span class="cd-n" id="cd-s">--</span><span class="cd-u">Sec</span></div>
+      </div>
+      <div class="cd-prog-wrap">
+        <div class="cd-prog-lbl"><span class="cd-prog-title">Training</span><span class="cd-prog-pct">40%</span></div>
+        <div class="cd-bar"><div class="cd-fill cf-sage" style="width:40%"></div></div>
+        <div class="cd-prog-lbl"><span class="cd-prog-title">Sponsorships</span><span class="cd-prog-pct">15%</span></div>
+        <div class="cd-bar"><div class="cd-fill cf-gold" style="width:15%"></div></div>
+        <div class="cd-prog-lbl"><span class="cd-prog-title">Team Assembly</span><span class="cd-prog-pct">60%</span></div>
+        <div class="cd-bar" style="margin-bottom:0"><div class="cd-fill cf-si" style="width:60%"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ PLATFORM ══ -->
+<section class="section platform-section" id="platform">
+  <div style="position:relative">
+    <div class="platform-bg"></div>
+    <div class="section-inner platform-wrap">
+      <div class="s-eyebrow ey-gold reveal">The Platform</div>
+      <h2 class="s-title-light reveal">Building a <em>greener,</em><br>more equitable world</h2>
+      <p class="platform-intro reveal">The crown is a microphone. I intend to use it to amplify the communities who have been engineered out of prosperity &mdash; and to build real solutions alongside them.</p>
+
+      <div class="pillars">
+        <div class="pillar reveal">
+          <div class="pillar-num pn-gold">01</div>
+          <span class="pillar-icon">&#9728;</span>
+          <h3 class="pillar-title">Green Energy Access</h3>
+          <p class="pillar-text">Solar panels, microgrids, and renewable infrastructure built in and for underserved communities. Not charity &mdash; engineering. Real partnerships with municipalities, nonprofits, and clean energy companies to bring power to the people who need it most.</p>
+        </div>
+        <div class="pillar reveal">
+          <div class="pillar-num pn-sage">02</div>
+          <span class="pillar-icon">&#9906;</span>
+          <h3 class="pillar-title">Community Infrastructure</h3>
+          <p class="pillar-text">Where energy alone isn&rsquo;t the answer, we engineer the solution that is. Clean water systems, connectivity infrastructure, sustainable housing materials &mdash; the platform adapts to what the community actually needs, built with their voices at the table.</p>
+        </div>
+        <div class="pillar reveal">
+          <div class="pillar-num pn-si">03</div>
+          <span class="pillar-icon">&#9920;</span>
+          <h3 class="pillar-title">Fashion Sustainability Policy</h3>
+          <p class="pillar-text">Fashion is the second most polluting industry on earth. It doesn&rsquo;t have to be. I&rsquo;m pushing for transparency legislation, recycled textile requirements, and supply chain accountability &mdash; from runway to regulation.</p>
+        </div>
+      </div>
+
+      <div class="platform-quote reveal">
+        <div class="pq-mark">&ldquo;</div>
+        <p class="pq-text">I am not running to be beautiful on a stage. I am running to build something that lasts after the crown comes off.</p>
+        <div class="pq-attr">&mdash; Amelia Arabe</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ ABOUT ══ -->
+<section class="section" id="about">
+  <div class="section-inner">
+    <div class="about-grid">
+      <div class="about-photo-wrap reveal">
+        <div class="about-photo"></div>
+        <div class="about-badge">
+          <div class="ab-label">Competition</div>
+          <div class="ab-val">&#x23; 16</div>
+          <div class="ab-sub">Miss California USA 2026</div>
+        </div>
+      </div>
+      <div>
+        <div class="s-eyebrow ey-si reveal">About Amelia</div>
+        <h2 class="s-title reveal">Engineer. <em>Artist.</em><br>Cellist. Builder.</h2>
+        <p class="about-text reveal" style="margin-top:1.2rem">I grew up believing that the pursuit of knowledge and the pursuit of happiness are the same pursuit. I&rsquo;m a senior software engineer, co-founder, oil painter, and cellist &mdash; and I move through the world convinced that human creations are most beautiful when the process behind them cultivates healthy human connections.</p>
+        <p class="about-text reveal">I build systems that breathe. At Ballmecca and across the teams I&rsquo;ve led, I&rsquo;ve learned that the best infrastructure &mdash; technical or human &mdash; is the kind that holds space for people to fully show up. That&rsquo;s the leadership I bring to Miss California USA.</p>
+        <div class="creds reveal">
+          <div class="cred"><div class="cred-dot"></div>Senior Software Engineer &amp; Co-founder, Ballmecca</div>
+          <div class="cred"><div class="cred-dot"></div>Computer Engineering, Loyola University Maryland</div>
+          <div class="cred"><div class="cred-dot"></div>Co-President, Society of Women Engineers</div>
+          <div class="cred"><div class="cred-dot"></div>Cellist &middot; Oil painter &middot; Riverside, California</div>
+          <div class="cred"><div class="cred-dot"></div>Building tools for a greener, more human-centered world</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ TEAM ══ -->
+<section class="section team-section" id="team">
+  <div class="section-inner">
+    <div class="s-eyebrow ey-si reveal">The Team</div>
+    <h2 class="s-title reveal">Every crown starts<br>with <em>people who believe.</em></h2>
+    <p class="s-sub reveal">This campaign runs like the operation it is. Each team member owns their domain and brings the same level of excellence to this that they bring to everything they do.</p>
+
+    <div class="team-grid">
+      <!-- Amelia -->
+      <div class="tc reveal">
+        <div class="tc-av si">A</div>
+        <div class="tc-name">Amelia Arabe</div>
+        <div class="tc-role">Candidate</div>
+        <div class="tc-bio">Engineer, artist, cellist, and the force behind this entire operation. Competes July 10.</div>
+      </div>
+      <!-- Laneea -->
+      <div class="tc reveal">
+        <div class="tc-av sa">L</div>
+        <div class="tc-name">Laneea</div>
+        <div class="tc-role">Campaign Manager &middot; Stylist</div>
+        <div class="tc-bio">Directing the campaign strategy and curating every look from competition gown to interview day.</div>
+      </div>
+      <!-- Donovan -->
+      <div class="tc reveal">
+        <div class="tc-av ink">D</div>
+        <div class="tc-name">Donovan</div>
+        <div class="tc-role">Fitness Coach</div>
+        <div class="tc-bio">Training program designed for competition day performance &mdash; strength, posture, and stage presence.</div>
+      </div>
+      <!-- Kathy -->
+      <div class="tc reveal">
+        <div class="tc-av go">K</div>
+        <div class="tc-name">Kathy</div>
+        <div class="tc-role">Financial Manager</div>
+        <div class="tc-bio">Managing campaign budget, sponsor accounting, and financial strategy through competition day.</div>
+      </div>
+      <!-- Photographer -->
+      <div class="tc open reveal" onclick="document.getElementById('join').scrollIntoView({behavior:'smooth'})">
+        <div class="tc-av open-av">&#43;</div>
+        <div class="tc-name">Photographer</div>
+        <div class="tc-role">Official Campaign Photography</div>
+        <div class="tc-bio">Headshots, stage coverage, and campaign content.</div>
+        <div class="tc-open">Open &rarr; Join</div>
+      </div>
+      <!-- Videographer -->
+      <div class="tc open reveal" onclick="document.getElementById('join').scrollIntoView({behavior:'smooth'})">
+        <div class="tc-av open-av">&#43;</div>
+        <div class="tc-name">Videographer</div>
+        <div class="tc-role">Campaign Video &amp; Reels</div>
+        <div class="tc-bio">Documenting the journey for social media, press, and the archive.</div>
+        <div class="tc-open">Open &rarr; Join</div>
+      </div>
+      <!-- Makeup Artist -->
+      <div class="tc open reveal" onclick="document.getElementById('join').scrollIntoView({behavior:'smooth'})">
+        <div class="tc-av open-av">&#43;</div>
+        <div class="tc-name">Makeup Artist</div>
+        <div class="tc-role">Competition Glam</div>
+        <div class="tc-bio">Interview day, swimsuit, evening gown &mdash; every round gets its look.</div>
+        <div class="tc-open">Open &rarr; Join</div>
+      </div>
+      <!-- Hair Stylist -->
+      <div class="tc open reveal" onclick="document.getElementById('join').scrollIntoView({behavior:'smooth'})">
+        <div class="tc-av open-av">&#43;</div>
+        <div class="tc-name">Hair Stylist</div>
+        <div class="tc-role">Competition Hair Direction</div>
+        <div class="tc-bio">Crafting the complete look for every competition round.</div>
+        <div class="tc-open">Open &rarr; Join</div>
+      </div>
+    </div>
+
+    <div class="join-bar reveal">
+      <div>
+        <div class="jb-title">Want to be part of this?</div>
+        <div class="jb-sub">We&rsquo;re building a team that operates at the highest level. If you have skills and you believe in the mission &mdash; let&rsquo;s talk.</div>
+      </div>
+      <a href="#join" class="btn btn-dark" style="white-space:nowrap">Apply to join &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<!-- ══ JOIN FORM ══ -->
+<section class="section join-section" id="join">
+  <div class="section-inner">
+    <div style="text-align:center;margin-bottom:2.5rem">
+      <div class="s-eyebrow ey-sa reveal" style="justify-content:center">&#10022; Get Involved</div>
+      <h2 class="s-title reveal">Join the <em>campaign</em></h2>
+      <p class="s-sub reveal" style="margin:0 auto">Whether you&rsquo;re a creative, a strategist, a sponsor, or just someone who believes in the platform &mdash; there&rsquo;s a place for you here.</p>
+    </div>
+    <div class="join-card reveal">
+      <div class="jf-head">
+        <div class="jf-title">Team Application</div>
+        <div class="jf-sub">Tell us who you are and how you want to contribute. We read every submission.</div>
+      </div>
+      <div class="jf-body" id="join-form">
+        <div class="f2">
+          <div class="frow"><label class="flbl">First name</label><input class="finp" id="jf-fn" placeholder="Your first name"></div>
+          <div class="frow"><label class="flbl">Last name</label><input class="finp" id="jf-ln" placeholder="Your last name"></div>
+        </div>
+        <div class="f2">
+          <div class="frow"><label class="flbl">Email</label><input class="finp" id="jf-email" type="email" placeholder="you@example.com"></div>
+          <div class="frow"><label class="flbl">Phone (optional)</label><input class="finp" id="jf-phone" placeholder="+1 (555) 000-0000"></div>
+        </div>
+        <div class="frow">
+          <label class="flbl">Role you&rsquo;re interested in</label>
+          <select class="fsel" id="jf-role">
+            <option value="">Select a role&hellip;</option>
+            <option>Photographer</option>
+            <option>Videographer</option>
+            <option>Makeup Artist</option>
+            <option>Hair Stylist</option>
+            <option>Social Media / Content</option>
+            <option>Press / PR</option>
+            <option>Sponsor Liaison</option>
+            <option>Volunteer / General Support</option>
+            <option>Other &mdash; I&rsquo;ll explain below</option>
+          </select>
+        </div>
+        <div class="frow"><label class="flbl">Your background &amp; why you want to be part of this</label><textarea class="fta" id="jf-msg" placeholder="Tell us about your work, your values, and why this campaign resonates with you&hellip;"></textarea></div>
+        <div class="frow"><label class="flbl">Portfolio / Instagram / LinkedIn (optional)</label><input class="finp" id="jf-link" placeholder="https://..."></div>
+        <button class="f-submit" onclick="submitJoin()">Submit application &rarr;</button>
+        <p class="f-note">We&rsquo;ll be in touch within a few days. Thank you for believing in this.</p>
+      </div>
+      <div class="jf-success" id="join-success">
+        <div class="jfs-icon">&#10022;</div>
+        <div class="jfs-title">Application received.</div>
+        <div class="jfs-text">Thank you &mdash; we&rsquo;ll be in touch soon. We&rsquo;re building something real and we&rsquo;re glad you want to be part of it.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ SPONSOR ══ -->
+<section class="section sponsor-section" id="sponsor">
+  <div style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 15% 50%,rgba(201,168,76,.06) 0%,transparent 50%)"></div>
+  <div class="section-inner" style="position:relative;z-index:1">
+    <div class="sp-grid">
+      <div>
+        <div class="s-eyebrow ey-gold reveal">Sponsorship</div>
+        <h2 class="s-title-light reveal">You&rsquo;re not sponsoring<br>a pageant. You&rsquo;re funding<br><em>a platform.</em></h2>
+        <p class="sp-why-text reveal" style="margin-top:1rem">When Amelia competes, your brand stands alongside a platform rooted in clean energy, community engineering, and fashion sustainability. That&rsquo;s not just pageant exposure &mdash; it&rsquo;s alignment with the values your customers already hold.</p>
+
+        <div class="sp-why-title reveal">Who we&rsquo;re looking for</div>
+        <p class="sp-why-text reveal">Clean energy companies. Sustainable fashion brands. Tech companies with a social mission. Local San Diego and Riverside businesses. Anyone who wants their name on the right side of a story that&rsquo;s about to be told on a statewide stage.</p>
+
+        <div class="sp-stats reveal">
+          <div class="stat"><div class="stat-n">Miss CA</div><div class="stat-l">Platform &middot; Statewide reach</div></div>
+          <div class="stat"><div class="stat-n">July 10</div><div class="stat-l">Competition day &middot; 2026</div></div>
+          <div class="stat"><div class="stat-n">3</div><div class="stat-l">Platform pillars</div></div>
+          <div class="stat"><div class="stat-n">Real</div><div class="stat-l">Engineering work, not just talk</div></div>
+        </div>
+
+        <div class="sp-tiers reveal">
+          <div class="tier"><div class="tier-name">&#127775; Title Sponsor</div><div class="tier-amt">$5,000+</div><div class="tier-benefit">Primary brand placement, press mentions, social features</div></div>
+          <div class="tier"><div class="tier-name">&#11088; Gold Sponsor</div><div class="tier-amt">$2,500</div><div class="tier-benefit">Logo on all materials, website feature, content collaboration</div></div>
+          <div class="tier"><div class="tier-name">&#10024; Silver Sponsor</div><div class="tier-amt">$1,000</div><div class="tier-benefit">Website listing, social acknowledgment, campaign presence</div></div>
+          <div class="tier"><div class="tier-name">&#9733; Community Partner</div><div class="tier-amt">Custom</div><div class="tier-benefit">In-kind or service sponsorship &mdash; let&rsquo;s talk</div></div>
+        </div>
+      </div>
+
+      <div class="sp-form reveal">
+        <div class="sf-title">Sponsor inquiry</div>
+        <div class="sf-sub">Tell us who you are and how you want to show up. We&rsquo;ll follow up within 48 hours.</div>
+        <div id="sp-form-inner">
+          <input class="sf-inp" id="sf-name" placeholder="Your name">
+          <input class="sf-inp" id="sf-company" placeholder="Company / organization">
+          <input class="sf-inp" id="sf-email" type="email" placeholder="Email address">
+          <select class="sf-sel" id="sf-tier">
+            <option value="">Interested in&hellip;</option>
+            <option>Title Sponsor ($5,000+)</option>
+            <option>Gold Sponsor ($2,500)</option>
+            <option>Silver Sponsor ($1,000)</option>
+            <option>Community Partner (custom)</option>
+            <option>Just want to learn more</option>
+          </select>
+          <textarea class="sf-ta" id="sf-msg" placeholder="Tell us about your company and what drew you to this campaign&hellip;"></textarea>
+          <button class="sf-submit" onclick="submitSponsor()">Send inquiry &rarr;</button>
+          <p class="sf-note">All inquiries go directly to Amelia&rsquo;s campaign team. We&rsquo;ll be in touch quickly.</p>
+        </div>
+        <div id="sp-success" style="display:none;text-align:center;padding:2rem 0">
+          <div style="font-size:28px;margin-bottom:.8rem">&#10022;</div>
+          <div style="font-family:var(--fd);font-size:20px;font-style:italic;color:white;margin-bottom:.4rem">Inquiry received.</div>
+          <div style="font-size:12px;color:rgba(250,247,242,.45)">We&rsquo;ll be in touch within 48 hours. Thank you for believing in this campaign.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ PRESS ══ -->
+<section class="section press-section" id="press">
+  <div class="section-inner">
+    <div class="s-eyebrow ey-si reveal">Press &amp; Media</div>
+    <h2 class="s-title reveal">Following the <em>journey</em></h2>
+    <p class="s-sub reveal">Media coverage, features, and press mentions. More coming as the campaign builds.</p>
+
+    <div class="press-grid">
+      <div class="press-card placeholder reveal">
+        <div class="press-outlet">Feature &middot; Coming Soon</div>
+        <div class="press-hed">Engineer runs for Miss California USA with a platform rooted in green energy and community infrastructure</div>
+        <div class="press-date">2026</div>
+      </div>
+      <div class="press-card placeholder reveal">
+        <div class="press-outlet">Profile &middot; Coming Soon</div>
+        <div class="press-hed">Meet the candidate pushing fashion sustainability from runway to policy</div>
+        <div class="press-date">2026</div>
+      </div>
+      <div class="press-card placeholder reveal">
+        <div class="press-outlet">Interview &middot; Coming Soon</div>
+        <div class="press-hed">&ldquo;The crown is a tool&rdquo; &mdash; Amelia Arabe on building something that lasts</div>
+        <div class="press-date">2026</div>
+      </div>
+    </div>
+
+    <div class="press-contact-bar reveal">
+      <div>
+        <div class="pcb-title">Press &amp; media inquiries</div>
+        <div class="pcb-sub">For interviews, features, and press kit requests &mdash; reach out directly.</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <a href="mailto:missameliava@gmail.com?subject=[Press] Miss California USA 2026" class="btn btn-dark" style="white-space:nowrap">Contact press team &rarr;</a>
+        <a href="https://libraryofmorenita-hub.github.io/muses-of-morenita" target="_blank" class="btn" style="background:var(--iv2);color:var(--ink);white-space:nowrap">View portfolio &rarr;</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ FOOTER ══ -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-logo">Amelia <em>Arabe</em> &middot; Miss California USA 2026</div>
+    <div class="footer-links">
+      <a href="https://linkedin.com/in/ameliaarabe" target="_blank" class="footer-link">LinkedIn</a>
+      <a href="https://libraryofmorenita-hub.github.io/muses-of-morenita" target="_blank" class="footer-link">Portfolio</a>
+      <a href="mailto:missameliava@gmail.com" class="footer-link">Contact</a>
+      <a href="index.html" class="footer-link">Team Login</a>
+    </div>
+    <div class="footer-note">Riverside, CA &middot; Campaign 2026</div>
+  </div>
+</footer>
+
+<script>
+// ── COUNTDOWN ──────────────────────────────────────
+function tick(){
+  var target=new Date('2026-07-10T09:00:00');
+  var now=new Date();
+  var diff=target-now;
+  if(diff<=0){
+    ['cd-d','cd-h','cd-m','cd-s'].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent='0';});
+    return;
+  }
+  var d=Math.floor(diff/86400000);
+  var h=Math.floor((diff%86400000)/3600000);
+  var m=Math.floor((diff%3600000)/60000);
+  var s=Math.floor((diff%60000)/1000);
+  var el;
+  el=document.getElementById('cd-d');if(el)el.textContent=d;
+  el=document.getElementById('cd-h');if(el)el.textContent=h;
+  el=document.getElementById('cd-m');if(el)el.textContent=m;
+  el=document.getElementById('cd-s');if(el)el.textContent=s;
+}
+tick();
+setInterval(tick,1000);
+
+// ── SCROLL REVEAL ──────────────────────────────────
+var obs=new IntersectionObserver(function(entries){
+  entries.forEach(function(e){if(e.isIntersecting)e.target.classList.add('visible');});
+},{threshold:0.12});
+document.querySelectorAll('.reveal').forEach(function(el){obs.observe(el);});
+
+// ── JOIN FORM ──────────────────────────────────────
+// Replace with your Formspree ID once set up
+var FORMSPREE = 'YOUR_FORMSPREE_ID';
+
+function submitJoin(){
+  var fn=document.getElementById('jf-fn').value.trim();
+  var email=document.getElementById('jf-email').value.trim();
+  var role=document.getElementById('jf-role').value;
+  var msg=document.getElementById('jf-msg').value.trim();
+  if(!fn||!email||!role||!msg){alert('Please fill in all required fields.');return;}
+
+  if(FORMSPREE==='YOUR_FORMSPREE_ID'){
+    // Fallback: open mailto
+    var body=encodeURIComponent(
+      'Name: '+fn+' '+document.getElementById('jf-ln').value+
+      '\nEmail: '+email+
+      '\nPhone: '+(document.getElementById('jf-phone').value||'—')+
+      '\nRole: '+role+
+      '\nLink: '+(document.getElementById('jf-link').value||'—')+
+      '\n\n'+msg
+    );
+    window.location='mailto:missameliava@gmail.com?subject=[Team Application] '+encodeURIComponent(role)+'&body='+body;
+    document.getElementById('join-form').style.display='none';
+    document.getElementById('join-success').style.display='block';
+    return;
+  }
+
+  fetch('https://formspree.io/f/'+FORMSPREE,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Accept':'application/json'},
+    body:JSON.stringify({
+      name:fn+' '+document.getElementById('jf-ln').value,
+      email:email,phone:document.getElementById('jf-phone').value,
+      role:role,message:msg,link:document.getElementById('jf-link').value,
+      _subject:'[Team Application] '+role
+    })
+  }).then(function(r){
+    if(r.ok){
+      document.getElementById('join-form').style.display='none';
+      document.getElementById('join-success').style.display='block';
+    }else{alert('Something went wrong. Please email missameliava@gmail.com directly.');}
+  }).catch(function(){alert('Network error. Please email missameliava@gmail.com directly.');});
+}
+
+// ── SPONSOR FORM ──────────────────────────────────
+function submitSponsor(){
+  var name=document.getElementById('sf-name').value.trim();
+  var email=document.getElementById('sf-email').value.trim();
+  var company=document.getElementById('sf-company').value.trim();
+  var tier=document.getElementById('sf-tier').value;
+  var msg=document.getElementById('sf-msg').value.trim();
+  if(!name||!email){alert('Please enter your name and email.');return;}
+
+  if(FORMSPREE==='YOUR_FORMSPREE_ID'){
+    var body=encodeURIComponent(
+      'Name: '+name+'\nCompany: '+company+'\nEmail: '+email+
+      '\nTier: '+tier+'\n\n'+msg
+    );
+    window.location='mailto:missameliava@gmail.com?subject=[Sponsor Inquiry] '+encodeURIComponent(company||name)+'&body='+body;
+    document.getElementById('sp-form-inner').style.display='none';
+    document.getElementById('sp-success').style.display='block';
+    return;
+  }
+
+  fetch('https://formspree.io/f/'+FORMSPREE,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Accept':'application/json'},
+    body:JSON.stringify({name:name,company:company,email:email,tier:tier,message:msg,_subject:'[Sponsor Inquiry] '+(company||name)})
+  }).then(function(r){
+    if(r.ok){
+      document.getElementById('sp-form-inner').style.display='none';
+      document.getElementById('sp-success').style.display='block';
+    }else{alert('Something went wrong. Please email missameliava@gmail.com directly.');}
+  }).catch(function(){alert('Network error. Please email missameliava@gmail.com directly.');});
+}
+
+// ── NAV ACTIVE SECTION ────────────────────────────
+var sections=['platform','about','team','join','sponsor','press'];
+var navLinks=document.querySelectorAll('.nav-link');
+window.addEventListener('scroll',function(){
+  var pos=window.scrollY+80;
+  sections.forEach(function(id){
+    var el=document.getElementById(id);
+    if(!el)return;
+    if(el.offsetTop<=pos&&el.offsetTop+el.offsetHeight>pos){
+      navLinks.forEach(function(l){l.classList.toggle('on',l.getAttribute('href')==='#'+id);});
+    }
+  });
+},{ passive:true });
+</script>
+</body>
+</html>

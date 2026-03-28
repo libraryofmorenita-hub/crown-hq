@@ -18,6 +18,7 @@
   <div class="login-bg"></div>
   <div class="login-logo">STARDOM <span id="login-logo-slot" style="display:inline-block;vertical-align:middle;margin-left:.35rem"><!-- LOGO --></span><small>Miss California USA 2026 · Command Center</small></div>
   <div class="login-tagline" style="font-family:var(--fd);font-size:1.1rem;font-style:italic;color:rgba(240,216,152,.45);text-align:center;position:relative;z-index:2;max-width:400px;line-height:1.65">Every crown starts with a team that believes.<br>Welcome back — let's build something beautiful.</div>
+  <a href="public.html" style="position:relative;z-index:2;font-family:var(--fm);font-size:.58rem;letter-spacing:2px;text-transform:uppercase;color:rgba(240,216,152,.3);text-decoration:none;margin-bottom:.5rem;display:inline-block;transition:color .2s" onmouseover="this.style.color='rgba(240,216,152,.7)'" onmouseout="this.style.color='rgba(240,216,152,.3)'">&#8592; View Campaign Site</a>
   <div class="login-roles" id="login-roles">
     <div class="role-btn" id="rb-amelia" onclick="tryLogin('amelia',this)">
       <div class="role-icon">👑</div><div class="role-name">Amelia</div><div class="role-desc">Full Access</div>
@@ -37,10 +38,10 @@
         <div class="pw-cancel" onclick="cancelPw('laneea',event)">cancel</div>
       </div>
     </div>
-    <div class="role-btn" onclick="doLogin('hmu')"><div class="role-icon">💄</div><div class="role-name">Hair & Makeup</div><div class="role-desc">Looks · Schedule</div></div>
-    <div class="role-btn" onclick="doLogin('trainer')"><div class="role-icon">💪</div><div class="role-name">Trainer</div><div class="role-desc">Fitness · Check-ins</div></div>
-    <div class="role-btn" onclick="doLogin('sponsor')"><div class="role-icon">🤝</div><div class="role-name">Sponsor</div><div class="role-desc">Portal · Deliverables</div></div>
-    <div class="role-btn" onclick="doLogin('contributor')"><div class="role-icon">📸</div><div class="role-name">Contributor</div><div class="role-desc">Content · Library</div></div>
+    <div class="role-btn" onclick="openPortalLogin('hmu')"><div class="role-icon">💄</div><div class="role-name">Hair & Makeup</div><div class="role-desc">Sign In · Create Account</div></div>
+    <div class="role-btn" onclick="doLogin('trainer')"><div class="role-icon">💪</div><div class="role-name">Donovan</div><div class="role-desc">Fitness Coach · Check-ins</div></div>
+    <div class="role-btn" onclick="openPortalLogin('sponsor')"><div class="role-icon">🤝</div><div class="role-name">Sponsor</div><div class="role-desc">Sign In · Create Account</div></div>
+    <div class="role-btn" onclick="openPortalLogin('contributor')"><div class="role-icon">📸</div><div class="role-name">Contributor</div><div class="role-desc">Sign In · Create Account</div></div>
   </div>
 </div>
 
@@ -111,9 +112,25 @@
 
 <div class="ov" id="m-msg"><div class="modal">
   <h3>Send Message</h3>
-  <div class="fg"><label>To</label><select class="fs" id="msg-to"><option value="amelia">Amelia</option><option value="laneea">Laneea</option><option value="hmu">Hair & Makeup</option><option value="trainer">Trainer</option><option value="team">Whole Team</option></select></div>
+  <div class="fg"><label>To</label><select class="fs" id="msg-to"><option value="amelia">Amelia</option><option value="laneea">Laneea</option><option value="hmu">Hair & Makeup</option><option value="trainer">Donovan</option><option value="team">Whole Team</option></select></div>
   <div class="fg"><label>Message</label><textarea class="ft" id="msg-body" placeholder="Type your message..." style="min-height:90px"></textarea></div>
   <div class="m-acts"><button class="btn bg" onclick="closeM('m-msg')">Cancel</button><button class="btn bp" onclick="sendMsg()">Send</button></div>
+</div></div>
+
+<div class="ov" id="m-portal-login"><div class="modal">
+  <h3 id="portal-login-title">Portal Access</h3>
+  <div style="display:flex;gap:.45rem;margin-bottom:.9rem;flex-wrap:wrap">
+    <button class="btn bg" onclick="setPortalAuthMode('login')">Sign In</button>
+    <button class="btn bg" onclick="setPortalAuthMode('create')">Create Account</button>
+    <div id="portal-login-mode-label" style="font-family:var(--fm);font-size:.58rem;color:var(--wg);letter-spacing:2px;text-transform:uppercase;display:flex;align-items:center">Sign In</div>
+  </div>
+  <div class="fg" id="portal-signup-name-wrap" style="display:none"><label>Name</label><input class="fi" id="portal-login-name" placeholder="Your name"></div>
+  <div class="fg" id="portal-signup-company-wrap" style="display:none"><label>Company / Studio</label><input class="fi" id="portal-login-company" placeholder="Company or studio"></div>
+  <div class="fg" style="display:none"><label>Email</label><input class="fi" id="portal-login-email" type="email" placeholder="name@company.com"></div>
+  <div class="fg"><label>Username</label><input class="fi" id="portal-login-username" placeholder="username"></div>
+  <div class="fg"><label>Password</label><input class="fi" id="portal-login-password" type="password" placeholder="password" onkeydown="if(event.key==='Enter')submitPortalLogin()"></div>
+  <div id="portal-login-hint" style="font-family:var(--fm);font-size:.55rem;color:var(--wg);line-height:1.6"></div>
+  <div class="m-acts"><button class="btn bg" onclick="closeM('m-portal-login')">Cancel</button><button class="btn bp" id="portal-login-submit" onclick="submitPortalLogin()">Sign In</button></div>
 </div></div>
 
 <div class="ov" id="m-workout"><div class="modal">

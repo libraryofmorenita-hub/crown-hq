@@ -29,7 +29,8 @@ var SB_KV_MAP={
   'chq-fitness':'fitness',
   'chq-peace':'peace',
   'chq-role-pages':'role_pages',
-  'chq-contacts':'contacts'
+  'chq-contacts':'contacts',
+  'chq-portal-profiles':'portal_profiles'
 };
 function setSupabaseStatus(state,text,sticky){
   var el=document.getElementById('tb-sync');
@@ -96,7 +97,7 @@ function sbSetKV(key,value){
   .catch(function(){finishSupabaseSave(false);});
 }
 function loadFromSupabase(){
-  var kvKeys=['goals','todos','answers','brand','adv','gd','timeline','appts','mood','dashMood','quiz','pitch','board','lookbook_imgs','lookbook_links','lookbook_bio','lookbook_meta','social','inbox','fitness','peace','role_pages','contacts'];
+  var kvKeys=['goals','todos','answers','brand','adv','gd','timeline','appts','mood','dashMood','quiz','pitch','board','lookbook_imgs','lookbook_links','lookbook_bio','lookbook_meta','social','inbox','fitness','peace','role_pages','contacts','portal_profiles'];
   return Promise.all([sbGet('sponsors'),sbGet('calendar_events'),sbGet('posts'),sbGet('looks'),sbGet('workouts'),sbGet('messages'),sbGet('files'),sbGet('mood_board')].concat(kvKeys.map(sbGetKV)))
   .then(function(results){
     var sp=results[0],ev=results[1],po=results[2],lk=results[3],wk=results[4],ms=results[5],fi=results[6],mb=results[7];
@@ -144,6 +145,7 @@ function loadFromSupabase(){
     if(kv.peace)lsWriteLocal('chq-peace',kv.peace);
     if(kv.role_pages)lsWriteLocal('chq-role-pages',kv.role_pages);
     if(kv.contacts)lsWriteLocal('chq-contacts',kv.contacts);
+    if(kv.portal_profiles)lsWriteLocal('chq-portal-profiles',kv.portal_profiles);
     SB_SYNC_SUSPENDED=false;
   }).catch(function(e){SB_SYNC_SUSPENDED=false;console.log('Supabase load failed',e);});
 }
@@ -159,6 +161,7 @@ function sbSaveKV(key,value){sbSetKV(key,value);}
 // ═══ STATE ═══════════════════════════════════════════════════
 var S={
   role:null,
+  portalProfile:null,
   sponsors:lsGet('chq-sp',[]),
   appts:lsGet('chq-ap',[]),
   messages:lsGet('chq-ms',[]),
@@ -273,8 +276,127 @@ function getPageantContacts(){
   };
 }
 
+function getPortalProfiles(){
+  var defaults={
+    sponsor:[
+      {id:'paired-power',name:'Paired Power Team',company:'Paired Power',email:'partner@pairedpower.com',username:'pairedpower',password:'paired2026',status:'actual',active:true,sponsorId:1,notes:'Primary partner login'},
+      {id:'cleantech-sd',name:'Cleantech SD',company:'Cleantech San Diego',email:'partners@cleantechsandiego.org',username:'cleantechsd',password:'cleantech2026',status:'actual',active:true,sponsorId:4,notes:'Community partner login'},
+      {id:'econyl-prospect',name:'ECONYL Prospect',company:'ECONYL / Aquafil',email:'prospect@econyl.com',username:'econyl',password:'econyl2026',status:'possible',active:false,sponsorId:14,notes:'Prospect profile ready if they convert'},
+      {id:'keel-labs-prospect',name:'Keel Labs Prospect',company:'Keel Labs',email:'prospect@keel-labs.com',username:'keellabs',password:'keel2026',status:'possible',active:false,sponsorId:23,notes:'Engineer-to-engineer outreach target'}
+    ],
+    hmu:[
+      {id:'lisa-g-artistry',name:'Lisa G. Artistry',company:'Lisa G. Artistry',email:'lisagartistry@gmail.com',username:'lisag',password:'lisa2026',status:'active',active:true,specialty:'Pageant glam and polish',notes:'Official artistry profile'},
+      {id:'studio-hmu',name:'Studio HMU',company:'Studio HMU',email:'hmu@stardom.team',username:'beautyteam',password:'beauty2026',status:'active',active:true,specialty:'Shared team access',notes:'Default HMU team profile'},
+      {id:'trial-artist-1',name:'Trial Artist One',company:'Freelance Artist',email:'trialartist1@example.com',username:'trialartist1',password:'trial2026',status:'possible',active:false,specialty:'Interview day natural glam',notes:'Potential artist profile'},
+      {id:'trial-artist-2',name:'Trial Artist Two',company:'Freelance Artist',email:'trialartist2@example.com',username:'glowartist',password:'glow2026',status:'possible',active:false,specialty:'Swimsuit and stage glow',notes:'Potential artist profile'}
+    ],
+    contributor:[
+      {id:'dorian-qi',name:'Dorian Qi',company:'Dorian QD Photo',email:'dorianqiqd@gmail.com',username:'dorianqi',password:'photo2026',status:'active',active:true,specialty:'Official headshots and stage photography',notes:'Photo drop portal for official stills',goals:[{text:'Upload official headshot selects',done:false},{text:'Send vertical stage images for portfolio',done:false}]},
+      {id:'media-team',name:'Media Team',company:'Contributor Team',email:'contributor@example.com',username:'contributor',password:'contrib2026',status:'active',active:true,specialty:'Photo and media uploads',notes:'Shared contributor access',goals:[{text:'Upload event photos',done:false}]}
+    ]
+  };
+  var saved=lsGet('chq-portal-profiles',null)||{};
+  function merge(kind){
+    var arr=Array.isArray(saved[kind])&&saved[kind].length?saved[kind]:(defaults[kind]||[]);
+    return arr.map(function(item,i){
+      var merged=Object.assign({},(defaults[kind]&&defaults[kind][i])||{},item||{});
+      if(!Array.isArray(merged.goals))merged.goals=Array.isArray(((defaults[kind]&&defaults[kind][i])||{}).goals)?((defaults[kind][i].goals||[]).slice()):[];
+      return merged;
+    });
+  }
+  return {sponsor:merge('sponsor'),hmu:merge('hmu'),contributor:merge('contributor')};
+}
+
+function getPortalProfile(role,id){
+  var list=(getPortalProfiles()[role]||[]);
+  return list.find(function(p){return String(p.id)===String(id);})||null;
+}
+
+function findPortalProfileByUsername(role,username){
+  var uname=String(username||'').trim().toLowerCase();
+  return (getPortalProfiles()[role]||[]).find(function(p){
+    return String(p.username||'').trim().toLowerCase()===uname;
+  })||null;
+}
+
+function syncActivePortalProfile(){
+  if(!S.portalProfile||!S.role)return;
+  var fresh=getPortalProfile(S.role,S.portalProfile.id);
+  if(fresh)S.portalProfile=fresh;
+}
+
+function savePortalProfiles(data){
+  lsSave('chq-portal-profiles',data);
+}
+
+function addPortalProfile(role){
+  var name=prompt(role==='sponsor'?'Sponsor contact name:':role==='contributor'?'Contributor name:':'Artist name:');
+  if(!name)return;
+  var company=prompt(role==='sponsor'?'Company / sponsor name:':role==='contributor'?'Studio / publication / company:':'Studio / brand name:', '');
+  var email=prompt('Login email:', '');
+  var username=prompt('Username:', '');
+  var password=prompt('Password:', '');
+  var profiles=getPortalProfiles();
+  var item={
+    id:(name.toLowerCase().replace(/[^a-z0-9]+/g,'-')+'-'+Date.now()).replace(/^-+|-+$/g,''),
+    name:name,
+    company:company||'',
+    email:email||'',
+    username:username||'',
+    password:password||'',
+    status:role==='sponsor'?'possible':'possible',
+    active:false,
+    notes:'',
+    sponsorId:null,
+    goals:[]
+  };
+  if(role==='hmu'||role==='contributor')item.specialty=prompt('Specialty:', '')||'';
+  profiles[role].unshift(item);
+  savePortalProfiles(profiles);
+  showToast('Profile added');
+  if(window._spTab==='accounts')bSponsors();
+}
+
+function editPortalProfile(role,id){
+  var profiles=getPortalProfiles();
+  var list=profiles[role]||[];
+  var item=list.find(function(x){return String(x.id)===String(id);});
+  if(!item)return;
+  var name=prompt('Display name:',item.name||'');
+  if(name===null)return;
+  item.name=name;
+  item.company=prompt('Company / studio:',item.company||'')||'';
+  item.email=prompt('Login email:',item.email||'')||'';
+  item.username=prompt('Username:',item.username||'')||'';
+  item.password=prompt('Password:',item.password||'')||'';
+  if(role==='sponsor'){
+    item.status=prompt('Status: actual or possible',item.status||'possible')||item.status;
+  } else {
+    item.specialty=prompt('Specialty:',item.specialty||'')||'';
+    item.status=prompt('Status: active or possible',item.status||'possible')||item.status;
+  }
+  if(!Array.isArray(item.goals))item.goals=[];
+  item.active=confirm('Should this profile be able to log in right now?');
+  savePortalProfiles(profiles);
+  showToast('Profile updated');
+  if(window._spTab==='accounts')bSponsors();
+}
+
+function removePortalProfile(role,id){
+  if(!confirm('Remove this profile?'))return;
+  var profiles=getPortalProfiles();
+  profiles[role]=(profiles[role]||[]).filter(function(x){return String(x.id)!==String(id);});
+  savePortalProfiles(profiles);
+  showToast('Profile removed');
+  if(window._spTab==='accounts')bSponsors();
+}
+
 // ═══ SEED DATA ═══════════════════════════════════════════════
 function seed(){
+  var portalProfiles=lsGet('chq-portal-profiles',null);
+  if(!portalProfiles||!portalProfiles.sponsor||!portalProfiles.hmu||!portalProfiles.contributor){
+    lsSave('chq-portal-profiles',getPortalProfiles());
+  }
   if(!S.sponsors.length){
     S.sponsors=[
       // CLEAN ENERGY / EV
@@ -332,7 +454,7 @@ function seed(){
   if(!S.appts.length){
     S.appts=[
       {id:1,date:'2026-03-25',time:'10:00',title:'Runway Walk + Turns',who:'Pageant Coach',type:'coach',notes:'Heel placement and posture at turn'},
-      {id:2,date:'2026-03-26',time:'07:00',title:'Strength + Posture',who:'Fitness Trainer',type:'fitness',notes:'Glutes, core, back. 75 min.'},
+      {id:2,date:'2026-03-26',time:'07:00',title:'Strength + Posture',who:'Donovan',type:'fitness',notes:'Glutes, core, back. 75 min.'},
       {id:3,date:'2026-03-28',time:'14:00',title:'Wardrobe Consult',who:'Laneea Love',type:'styling',notes:'Review gown options'},
       {id:4,date:'2026-03-29',time:'09:00',title:'Competition Hair Test',who:'HMU Team',type:'hair',notes:'Test two updos'},
     ];
@@ -448,6 +570,218 @@ function cancelPw(role,e){
   PENDING_ROLE=null;
 }
 
+function openPortalLogin(role){
+  var modal=g('m-portal-login');
+  if(!modal)return;
+  var title=g('portal-login-title');
+  var modeLbl=g('portal-login-mode-label');
+  var nameWrap=g('portal-signup-name-wrap');
+  var companyWrap=g('portal-signup-company-wrap');
+  var nameEl=g('portal-login-name');
+  var companyEl=g('portal-login-company');
+  var email=g('portal-login-email');
+  var username=g('portal-login-username');
+  var password=g('portal-login-password');
+  var submit=g('portal-login-submit');
+  var hint=g('portal-login-hint');
+  if(title)title.textContent=role==='sponsor'?'Sponsor Portal Access':role==='contributor'?'Contributor Portal Access':'Hair & Makeup Portal Access';
+  if(nameEl)nameEl.value='';
+  if(companyEl)companyEl.value='';
+  if(email)email.value='';
+  if(username)username.value='';
+  if(password)password.value='';
+  modal.dataset.role=role;
+  modal.dataset.mode='login';
+  if(modeLbl)modeLbl.textContent='Sign In';
+  if(nameWrap)nameWrap.style.display='none';
+  if(companyWrap)companyWrap.style.display='none';
+  if(email)email.parentElement.style.display='none';
+  if(submit)submit.textContent='Sign In';
+  if(hint)hint.textContent=role==='sponsor'?'First time here? Create an account with your email, then sign back in anytime with your username and password.':role==='contributor'?'First-time contributors can create an account with email, then sign back in anytime with a username and password.':'First-time artists can create an account with email, then return anytime with a username and password.';
+  openM('m-portal-login');
+  setTimeout(function(){if(username)username.focus();},60);
+}
+
+function setPortalAuthMode(mode){
+  var modal=g('m-portal-login');
+  if(!modal)return;
+  var role=modal.dataset.role;
+  modal.dataset.mode=mode;
+  var modeLbl=g('portal-login-mode-label');
+  var nameWrap=g('portal-signup-name-wrap');
+  var companyWrap=g('portal-signup-company-wrap');
+  var email=g('portal-login-email');
+  var submit=g('portal-login-submit');
+  var hint=g('portal-login-hint');
+  if(modeLbl)modeLbl.textContent=mode==='create'?'Create Account':'Sign In';
+  if(nameWrap)nameWrap.style.display=mode==='create'?'block':'none';
+  if(companyWrap)companyWrap.style.display=mode==='create'?'block':'none';
+  if(email)email.parentElement.style.display=mode==='create'?'block':'none';
+  if(submit)submit.textContent=mode==='create'?'Create Account':'Sign In';
+  if(hint){
+    hint.textContent=mode==='create'
+      ? (role==='sponsor'?'Create your sponsor portal with email first, then come back with your username and password.':role==='contributor'?'Create your contributor account with email first, then come back with your username and password.':'Create your artist account with email first, then come back with your username and password.')
+      : (role==='sponsor'?'Sign in with the username and password tied to your sponsor portal.':role==='contributor'?'Sign in with the username and password tied to your contributor account.':'Sign in with the username and password tied to your artist account.');
+  }
+}
+
+function submitPortalLogin(){
+  var modal=g('m-portal-login');
+  if(!modal)return;
+  var role=modal.dataset.role;
+  var mode=modal.dataset.mode||'login';
+  var profiles=getPortalProfiles();
+  var list=profiles[role]||[];
+  var name=(g('portal-login-name')?g('portal-login-name').value:'').trim();
+  var company=(g('portal-login-company')?g('portal-login-company').value:'').trim();
+  var email=(g('portal-login-email')?g('portal-login-email').value:'').trim().toLowerCase();
+  var username=(g('portal-login-username')?g('portal-login-username').value:'').trim();
+  var password=(g('portal-login-password')?g('portal-login-password').value:'').trim();
+  if(mode==='create'){
+    if(!email||!username||!password){
+      showToast('Email, username, and password required');
+      return;
+    }
+    if(findPortalProfileByUsername(role,username)){
+      showToast('Username already taken');
+      return;
+    }
+    if(list.some(function(p){return String(p.email||'').toLowerCase()===email;})){
+      showToast('Email already has an account');
+      return;
+    }
+    var item={
+      id:(username.toLowerCase().replace(/[^a-z0-9]+/g,'-')+'-'+Date.now()).replace(/^-+|-+$/g,''),
+      name:name||(role==='sponsor'?'New Sponsor':role==='contributor'?'New Contributor':'New Artist'),
+      company:company||'',
+      email:email,
+      username:username,
+      password:password,
+      status:role==='sponsor'?'possible':'active',
+      active:true,
+      notes:'Created from login screen',
+      goals:[]
+    };
+    if(role==='hmu'||role==='contributor')item.specialty='';
+    profiles[role].unshift(item);
+    savePortalProfiles(profiles);
+    closeM('m-portal-login');
+    doLogin(role,item.id);
+    return;
+  }
+  var profile=findPortalProfileByUsername(role,username);
+  if(!profile||String(profile.password||'')!==password){
+    var passEl=g('portal-login-password');
+    if(passEl){
+      passEl.classList.add('shake');
+      passEl.value='';
+      setTimeout(function(){passEl.classList.remove('shake');},400);
+    }
+    return;
+  }
+  if(!profile.active){
+    showToast('Account not active yet');
+    return;
+  }
+  closeM('m-portal-login');
+  doLogin(role,profile.id);
+}
+
+function changePortalUsername(){
+  if(!S.portalProfile||!S.role)return;
+  var next=(prompt('Choose a new username:',S.portalProfile.username||'')||'').trim();
+  if(!next)return;
+  var dupe=findPortalProfileByUsername(S.role,next);
+  if(dupe&&String(dupe.id)!==String(S.portalProfile.id)){
+    showToast('Username already taken');
+    return;
+  }
+  var profiles=getPortalProfiles();
+  var item=(profiles[S.role]||[]).find(function(p){return String(p.id)===String(S.portalProfile.id);});
+  if(!item)return;
+  item.username=next;
+  savePortalProfiles(profiles);
+  syncActivePortalProfile();
+  showToast('Username updated');
+  showPanel(S.panel||'dashboard');
+}
+
+function changePortalPassword(){
+  if(!S.portalProfile||!S.role)return;
+  var next=(prompt('Choose a new password:', '')||'').trim();
+  if(!next)return;
+  var profiles=getPortalProfiles();
+  var item=(profiles[S.role]||[]).find(function(p){return String(p.id)===String(S.portalProfile.id);});
+  if(!item)return;
+  item.password=next;
+  savePortalProfiles(profiles);
+  syncActivePortalProfile();
+  showToast('Password updated');
+}
+
+function getPortalWorkspaceKey(){
+  if(!S.portalProfile||!S.role)return '';
+  return 'portal:'+S.role+':'+S.portalProfile.id;
+}
+
+function getPortalWorkspaceLabel(){
+  if(!S.portalProfile||!S.role)return '';
+  var base=S.portalProfile.company||S.portalProfile.name||ROLES[S.role].name;
+  return base+' Workspace';
+}
+
+function getPortalGoals(){
+  return Array.isArray(S.portalProfile&&S.portalProfile.goals)?S.portalProfile.goals:[];
+}
+
+function savePortalProfilePatch(patch){
+  if(!S.portalProfile||!S.role)return;
+  var profiles=getPortalProfiles();
+  var item=(profiles[S.role]||[]).find(function(p){return String(p.id)===String(S.portalProfile.id);});
+  if(!item)return;
+  Object.keys(patch||{}).forEach(function(k){item[k]=patch[k];});
+  savePortalProfiles(profiles);
+  syncActivePortalProfile();
+}
+
+function togglePortalGoal(idx){
+  var goals=getPortalGoals().slice();
+  if(!goals[idx])return;
+  goals[idx].done=!goals[idx].done;
+  savePortalProfilePatch({goals:goals});
+  if(S.panel==='hmu-dash'||S.panel==='sponsor-portal'||S.panel==='contributor-dash')showPanel(S.panel);
+}
+
+function addPortalGoal(){
+  if(!S.portalProfile)return;
+  var text=(prompt('Add a goal:', '')||'').trim();
+  if(!text)return;
+  var goals=getPortalGoals().slice();
+  goals.push({text:text,done:false});
+  savePortalProfilePatch({goals:goals});
+  if(S.panel==='hmu-dash'||S.panel==='sponsor-portal'||S.panel==='contributor-dash')showPanel(S.panel);
+}
+
+function removePortalGoal(idx){
+  var goals=getPortalGoals().slice();
+  goals.splice(idx,1);
+  savePortalProfilePatch({goals:goals});
+  if(S.panel==='hmu-dash'||S.panel==='sponsor-portal'||S.panel==='contributor-dash')showPanel(S.panel);
+}
+
+function renderPortalGoalsCard(title){
+  var goals=getPortalGoals();
+  return '<div class="card"><div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:.55rem"><div class="cl">'+title+'</div><button class="btn bg" style="font-size:.58rem;padding:.25rem .65rem" onclick="addPortalGoal()">+ Add</button></div>' +
+    (goals.length?goals.map(function(goal,idx){
+      return '<div class="todo-item">' +
+        '<div class="todo-cb '+(goal.done?'done':'')+'" onclick="togglePortalGoal('+idx+')"></div>' +
+        '<span class="todo-txt '+(goal.done?'done':'')+'">'+goal.text+'</span>' +
+        '<button class="todo-rm" onclick="removePortalGoal('+idx+')">×</button>' +
+        '</div>';
+    }).join(''):'<div style="font-size:.76rem;color:var(--wg);line-height:1.7">No goals yet. Add the first one for this workspace.</div>') +
+    '</div>';
+}
+
 // ═══ ROLES ═══════════════════════════════════════════════════
 var ROLES={
   amelia:{name:'Amelia Arabe',abbr:'AA',color:'var(--ch)',
@@ -487,14 +821,12 @@ var ROLES={
   hmu:{name:'Hair & Makeup',abbr:'HM',color:'var(--bl)',
     nav:[
       {ico:'🏠',lbl:'Dashboard',id:'hmu-dash'},
-      {ico:'👗',lbl:'Event Looks',id:'looks'},
-      {ico:'📅',lbl:'Calendar',id:'calendar'},
-      {ico:'🖼',lbl:'Inspiration',id:'moodboard'},
-      {ico:'🗂',lbl:'Discussion',id:'board'},
+      {ico:'💬',lbl:'Chat',id:'messages'},
+      {ico:'📁',lbl:'Files',id:'files'},
     ],
-    editable:['looks','todos']
+    editable:[]
   },
-  trainer:{name:'Trainer',abbr:'TR',color:'var(--sg)',
+  trainer:{name:'Donovan',abbr:'LL',color:'var(--sg)',
     nav:[
       {ico:'💪',lbl:'Fitness',id:'fitness'},
       {ico:'📅',lbl:'Calendar',id:'calendar'},
@@ -504,35 +836,41 @@ var ROLES={
   },
   sponsor:{name:'Sponsor',abbr:'SP',color:'var(--ch3)',
     nav:[
-      {ico:'🏠',lbl:'My Portal',id:'sponsor-portal'},
-      {ico:'📋',lbl:'Deliverables',id:'deliverables'},
-      {ico:'📊',lbl:'Progress',id:'comp-progress'},
+      {ico:'🏠',lbl:'Dashboard',id:'sponsor-portal'},
+      {ico:'💬',lbl:'Chat',id:'messages'},
+      {ico:'📁',lbl:'Files',id:'files'},
     ],
     editable:[]
   },
   contributor:{name:'Contributor',abbr:'CO',color:'var(--tz4)',
     nav:[
-      {ico:'📚',lbl:'Library',id:'library'},
-      {ico:'🖼',lbl:'Mood Board',id:'moodboard'},
+      {ico:'🏠',lbl:'Dashboard',id:'contributor-dash'},
+      {ico:'💬',lbl:'Chat',id:'messages'},
       {ico:'📁',lbl:'Files',id:'files'},
     ],
-    editable:['library','todos']
+    editable:[]
   }
 };
 
 // ═══ LOGIN/LOGOUT ═════════════════════════════════════════════
-function doLogin(role){
+function doLogin(role,portalProfileId){
   S.role=role;
+  S.portalProfile=portalProfileId?getPortalProfile(role,portalProfileId):null;
   seed();
   document.getElementById('login').style.display='none';
   document.getElementById('app').classList.add('on');
   var r=ROLES[role];
-  g('tb-av').textContent=r.abbr;
+  var displayName=S.portalProfile?S.portalProfile.name:r.name;
+  var displayAbbr=S.portalProfile?String(S.portalProfile.name||r.name).split(' ').map(function(x){return x.charAt(0);}).join('').slice(0,2).toUpperCase():r.abbr;
+  g('tb-av').textContent=displayAbbr;
   g('tb-av').style.background=r.color;
-  g('tb-un').textContent=r.name;
+  g('tb-un').textContent=displayName;
   g('tb-date').textContent=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}).toUpperCase();
   buildSB(r.nav);
-  loadFromSupabase().then(function(){showPanel(r.nav[0].id);});
+  loadFromSupabase().then(function(){
+    if(portalProfileId)S.portalProfile=getPortalProfile(role,portalProfileId);
+    showPanel(r.nav[0].id);
+  });
   // show edit btn if editable
   var eb=g('em-btn');
   if(eb) eb.style.display=(r.editable&&r.editable.length)?'block':'none';
@@ -541,11 +879,11 @@ function doLogin(role){
   else document.body.classList.remove('countdown-urgent');
   var cd=g('sb-countdown');if(cd)cd.textContent=days;
   var pg=g('sb-prog');if(pg)pg.style.width=Math.min(100,Math.round(((112-days)/112)*100))+'%';
-  var rn=g('sb-role-name');if(rn)rn.textContent=r.name;
+  var rn=g('sb-role-name');if(rn)rn.textContent=displayName;
 }
 
 function doSwitch(){
-  S.role=null; S.emActive=false;
+  S.role=null; S.portalProfile=null; S.emActive=false;
   document.body.classList.remove('em');
   var eb=g('em-btn'); if(eb){eb.classList.remove('on');eb.textContent='Edit Mode';}
   document.getElementById('login').style.display='flex';
@@ -577,10 +915,11 @@ var PANELS={
   'library':bLibrary,'quiz':bQuiz,'brand':bBrand,'moodboard':bMoodboard,
   'library-editor':bLibraryEditor,
   'looks':bLooks,'fitness':bFitness,'messages':bMessages,'files':bFiles,
-  'deliverables':bDeliverables,'comp-progress':bCompProgress,'advocacy':bAdvocacy,'board':bBoard,'lookbook':bLookbook,'social':bSocial,'inbox':bInbox,'peace':bPeace
+  'deliverables':bDeliverables,'comp-progress':bCompProgress,'advocacy':bAdvocacy,'board':bBoard,'lookbook':bLookbook,'social':bSocial,'inbox':bInbox,'peace':bPeace,'contributor-dash':bContributorDash
 };
 
 function showPanel(id,navEl){
+  S.panel=id;
   document.querySelectorAll('.nav-i').forEach(function(n){n.classList.remove('on');});
   if(navEl) navEl.classList.add('on');
   else{var n=g('ni-'+id);if(n)n.classList.add('on');}
@@ -858,30 +1197,50 @@ function bLaneaDash(){
 
 function bHMUDash(){
   var rp=getRolePages().hmu;
-  bPlaceholderDash('hmu',
-    rp.quote,
-    '<div style="background:var(--tz);border-radius:11px;padding:1.25rem">' +
+  var profile=S.portalProfile;
+  inject(
+    '<div style="padding:1.35rem 1.75rem">' +
+    '<div class="ph-ns"><div class="ph-ns-q">'+(profile?'"'+profile.name+' is on beauty direction for Amelia."':rp.quote)+'</div><div class="ph-ns-sub">'+(profile?(profile.company||'Hair & Makeup Portal'):ROLES.hmu.name)+'</div></div>' +
+    '<div class="g2">' +
+    '<div class="card" style="border-left:4px solid var(--bl2)">' +
+    '<div class="cl">Profile</div>' +
+    '<div style="font-family:var(--fd);font-size:1.15rem;font-style:italic;color:var(--tz);margin-bottom:.2rem">'+(profile?profile.name:'Hair & Makeup Team')+'</div>' +
+    '<div style="font-size:.78rem;color:var(--st);line-height:1.7">'+(profile&&profile.specialty?profile.specialty+' · ':'')+(profile&&profile.company?profile.company+' · ':'')+(profile&&profile.email?profile.email:'Shared beauty direction access')+'</div>' +
+    '<div style="display:flex;gap:.45rem;flex-wrap:wrap;margin-top:.75rem"><button class="btn bg" style="font-size:.58rem;padding:.28rem .7rem" onclick="changePortalUsername()">Change Username</button><button class="btn bg" style="font-size:.58rem;padding:.28rem .7rem" onclick="changePortalPassword()">Change Password</button></div>' +
+    '<div style="margin-top:.9rem;font-size:.74rem;color:var(--wg);line-height:1.7">Use Chat to message Amelia directly and Files to drop trial photos, inspiration boards, or run-of-show documents.</div>' +
+    '</div>' +
+    renderPortalGoalsCard('Beauty Goals') +
+    '</div>' +
+    '<div class="card" style="margin-top:.85rem;background:var(--tz);color:var(--wh)">' +
+    '<div class="cl" style="color:var(--ch)">Upcoming Direction</div>' +
     rp.schedule.map(function(t,idx){
-      return '<div style="display:grid;grid-template-columns:48px 1fr;gap:.75rem;padding:.55rem 0;border-bottom:1px solid rgba(240,216,152,.07)">' +
+      return '<div style="display:grid;grid-template-columns:56px 1fr;gap:.75rem;padding:.6rem 0;border-bottom:1px solid rgba(240,216,152,.07)">' +
         '<span style="font-family:var(--fm);font-size:.58rem;color:var(--ch2)" data-e="rolepage:hmu:date'+idx+'">'+t.date+'</span>' +
         '<div><div style="font-size:.82rem;font-weight:600;color:var(--wh)" data-e="rolepage:hmu:ev'+idx+'">'+t.ev+'</div><div style="font-size:.72rem;color:var(--ch)" data-e="rolepage:hmu:look'+idx+'">'+t.look+'</div></div></div>';
     }).join('') +
+    '</div>' +
     '</div>'
   );
 }
 
 function bSponsorPortal(){
+  var profile=S.portalProfile;
+  var partnerName=profile?(profile.company||profile.name):'Sponsor Partner';
   inject(
     '<div style="padding:0">' +
     '<div style="background:var(--tz);padding:2rem 1.75rem">' +
     '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:4px;color:rgba(240,216,152,.35);text-transform:uppercase;margin-bottom:.5rem">Sponsor Portal</div>' +
-    '<div style="font-family:var(--fd);font-size:1.8rem;font-style:italic;color:var(--ch);margin-bottom:.65rem">You are not sponsoring a pageant.<br>You are funding a platform.</div>' +
-    '<div style="font-size:.82rem;line-height:1.8;color:rgba(254,252,247,.6)">Thank you for investing in Amelia Arabe\'s Miss Temecula USA 2026 campaign. Your support puts clean energy and fashion accountability policy on a national stage. We are honored to have you in this room with us.</div>' +
+    '<div style="font-family:var(--fd);font-size:1.8rem;font-style:italic;color:var(--ch);margin-bottom:.65rem">'+partnerName+' is not sponsoring a pageant.<br>'+partnerName+' is funding a platform.</div>' +
+    '<div style="font-size:.82rem;line-height:1.8;color:rgba(254,252,247,.6)">Thank you for investing in Amelia Arabe\'s Miss Temecula USA 2026 campaign. Your support puts clean energy and fashion accountability policy on a national stage. We are honored to have '+partnerName+' in this room with us.</div>' +
     '<div style="font-family:var(--fm);font-size:.55rem;color:rgba(240,216,152,.3);margin-top:.85rem">— Amelia Arabe & Laneea Love</div>' +
     '</div>' +
     '<div style="padding:1.35rem 1.75rem">' +
     '<div class="g2">' +
-    '<div><div class="cl">Your Deliverables</div>'+buildDelivCards()+'</div>' +
+    '<div><div class="card" style="margin-bottom:.85rem;border-left:4px solid var(--ch2)"><div class="cl">Account</div><div style="font-size:.82rem;font-weight:600;color:var(--ink)">'+(profile?profile.name:'Sponsor Account')+'</div><div style="font-size:.74rem;color:var(--wg);line-height:1.7">'+(profile&&profile.email?profile.email+' · ':'')+(profile&&profile.notes?profile.notes:'Portal access for sponsor deliverables and competition updates')+'</div>' +
+    (profile?'<div style="display:flex;gap:.45rem;flex-wrap:wrap;margin-top:.75rem"><button class="btn bg" style="font-size:.58rem;padding:.28rem .7rem" onclick="changePortalUsername()">Change Username</button><button class="btn bg" style="font-size:.58rem;padding:.28rem .7rem" onclick="changePortalPassword()">Change Password</button></div>':'') +
+    '<div style="margin-top:.9rem;font-size:.74rem;color:var(--wg);line-height:1.7">Use Chat to message Amelia directly and Files to exchange logo files, invoices, decks, and deliverables.</div>' +
+    '</div><div class="cl">Your Deliverables</div>'+buildDelivCards()+'</div>' +
+    renderPortalGoalsCard('Sponsor Goals') +
     '<div class="card"><div class="cl">Competition Progress</div>' +
     [{label:'Entry Secured',done:true,note:'Miss Temecula USA 2026'},{label:'Coach Engaged',done:true,note:'Weekly sessions'},{label:'Wardrobe In Progress',done:false,note:'With Laneea'},{label:'YouTube Channel Launch',done:false,note:'Starting from 0'},{label:'Competition Week',done:false,note:'July 10-12 · Grand Hyatt Indian Wells'}].map(function(p){
       return '<div class="tl"><div class="tl-d" style="background:'+(p.done?'var(--sg2)':'var(--du)')+'"></div><div class="tl-t"><strong>'+p.label+'</strong>'+p.note+'</div></div>';
@@ -889,6 +1248,31 @@ function bSponsorPortal(){
     '</div>' +
     '</div>' +
     '</div></div>'
+  );
+}
+
+function bContributorDash(){
+  var profile=S.portalProfile;
+  inject(
+    '<div style="padding:1.35rem 1.75rem">' +
+    '<div class="ph-ns"><div class="ph-ns-q">"This workspace is for sending Amelia photography, selects, and media assets quickly."</div><div class="ph-ns-sub">'+(profile?(profile.company||profile.name):ROLES.contributor.name)+'</div></div>' +
+    '<div class="g2">' +
+    '<div class="card" style="border-left:4px solid var(--tz4)">' +
+    '<div class="cl">Contributor Profile</div>' +
+    '<div style="font-family:var(--fd);font-size:1.15rem;font-style:italic;color:var(--tz);margin-bottom:.2rem">'+(profile?profile.name:'Contributor')+'</div>' +
+    '<div style="font-size:.78rem;color:var(--st);line-height:1.7">'+(profile&&profile.specialty?profile.specialty+' · ':'')+(profile&&profile.company?profile.company+' · ':'')+(profile&&profile.email?profile.email:'Upload photos and media here')+'</div>' +
+    '<div style="display:flex;gap:.45rem;flex-wrap:wrap;margin-top:.75rem"><button class="btn bg" style="font-size:.58rem;padding:.28rem .7rem" onclick="changePortalUsername()">Change Username</button><button class="btn bg" style="font-size:.58rem;padding:.28rem .7rem" onclick="changePortalPassword()">Change Password</button></div>' +
+    '<div style="margin-top:.9rem;font-size:.74rem;color:var(--wg);line-height:1.7">Use Files to upload galleries, selects, headshots, and stage photos. Use Chat for shot lists, delivery notes, and quick approvals.</div>' +
+    '</div>' +
+    renderPortalGoalsCard('Contributor Goals') +
+    '</div>' +
+    '<div class="card" style="margin-top:.85rem"><div class="cl">What To Send Here</div>' +
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.65rem;margin-top:.3rem">' +
+    '<div style="padding:.85rem;border:1px solid var(--ch4);border-radius:3px"><strong style="display:block;margin-bottom:.25rem">Headshots</strong><span style="font-size:.74rem;color:var(--wg);line-height:1.6">Official selects, retouched finals, and vertical crops.</span></div>' +
+    '<div style="padding:.85rem;border:1px solid var(--ch4);border-radius:3px"><strong style="display:block;margin-bottom:.25rem">Stage Photos</strong><span style="font-size:.74rem;color:var(--wg);line-height:1.6">Swimsuit, gown, interview, and behind-the-scenes coverage.</span></div>' +
+    '<div style="padding:.85rem;border:1px solid var(--ch4);border-radius:3px"><strong style="display:block;margin-bottom:.25rem">Media Notes</strong><span style="font-size:.74rem;color:var(--wg);line-height:1.6">Caption ideas, file descriptions, and delivery timing.</span></div>' +
+    '</div></div>' +
+    '</div>'
   );
 }
 
@@ -1002,6 +1386,7 @@ function removeDashMood(role,i){
 var spFilter='all';
 function setSpFilter(f){spFilter=f;bSponsors();}
 function getSpTabContent(spTab, raised){
+  if(spTab==='accounts') return renderPortalAccounts();
   if(spTab==='pitch') return renderSpPitchDecks();
   if(spTab==='emails') return renderSpEmails();
   if(spTab==='objections') return renderSpObjections();
@@ -1029,7 +1414,7 @@ function bSponsors(){
   var spTab=window._spTab||'tracker';
   var raised=S.sponsors.filter(function(s){return s.status==='closed';}).reduce(function(a,s){return a+(s.amount||0);},0);
   var tabBar='<div class="sp-tabbar">';
-  var spTabs=[{t:'tracker',l:'Pipeline'},{t:'pitch',l:'Pitch Decks'},{t:'emails',l:'Email Templates'},{t:'objections',l:'Objections'}];
+  var spTabs=[{t:'tracker',l:'Pipeline'},{t:'accounts',l:'Accounts'},{t:'pitch',l:'Pitch Decks'},{t:'emails',l:'Email Templates'},{t:'objections',l:'Objections'}];
   for(var ti=0;ti<spTabs.length;ti++){
     var xt=spTabs[ti];
     var isActive=spTab===xt.t;
@@ -1159,6 +1544,38 @@ function renderSpRows(){
 }
 function renderSponsorsTable(){
   return '<div class="sp-table-wrap"><table class="sp-tbl"><thead><tr><th>Company</th><th>Ask</th><th>Status</th><th>Notes</th><th></th></tr></thead><tbody>'+renderSpRows()+'</tbody></table></div>';
+}
+function renderPortalAccounts(){
+  var profiles=getPortalProfiles();
+  function renderList(role,label){
+    var items=(profiles[role]||[]);
+    return '<div class="card" style="margin-top:.85rem">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;margin-bottom:.65rem">' +
+      '<div><div class="cl">'+label+'</div><div style="font-size:.76rem;color:var(--wg);line-height:1.6">Manage sign-in details, contact info, and access status for each portal user.</div></div>' +
+      '<button class="btn bp" onclick="addPortalProfile(\''+role+'\')">+ Add</button>' +
+      '</div>' +
+      items.map(function(p){
+        var stage=role==='sponsor'
+          ? (p.status==='actual'?'Actual Sponsor':'Possible Sponsor')
+          : role==='contributor'
+            ? (p.status==='active'?'Active Contributor':'Possible Contributor')
+            : (p.status==='active'?'Active Artist':'Possible Artist');
+        return '<div class="pc-row">' +
+          '<div><div class="pc-name">'+p.name+'</div><div class="pc-role">'+(p.company||'')+(p.specialty?' · '+p.specialty:'')+'<br>'+p.email+'<br>username: '+(p.username||'')+'</div></div>' +
+          '<div class="pc-meta">' +
+          '<span class="pc-chip">'+stage+'</span>' +
+          '<span class="pc-chip">'+(p.active?'Login Active':'Login Off')+'</span>' +
+          '<button class="pc-link" onclick="editPortalProfile(\''+role+'\',\''+p.id+'\')">Edit</button>' +
+          '<button class="pc-link" onclick="removePortalProfile(\''+role+'\',\''+p.id+'\')">Remove</button>' +
+          '</div></div>';
+      }).join('') +
+      '</div>';
+  }
+  return '<div class="g2">' +
+    renderList('sponsor','Sponsor Accounts') +
+    renderList('hmu','Hair & Makeup Accounts') +
+    renderList('contributor','Contributor Accounts') +
+    '</div>';
 }
 function openSponsorLink(id){
   var s=S.sponsors.find(function(x){return x.id===id;});
@@ -2056,29 +2473,42 @@ function addWorkout(){
 // ═══ MESSAGES ════════════════════════════════════════════════
 function bMessages(){
   var msgs=Array.isArray(S.messages)?S.messages:[];
+  var isPortal=!!S.portalProfile;
+  var channel=isPortal?getPortalWorkspaceKey():'';
+  if(isPortal){
+    msgs=msgs.filter(function(m){
+      return m.from===channel||m.to===channel||m.from===S.role||m.to===S.role||m.to==='team'||m.from==='team';
+    });
+  }
   var avC={amelia:'var(--ch)',laneea:'var(--lv)',hmu:'var(--bl)',trainer:'var(--sg)',team:'var(--tz4)'};
+  if(isPortal)avC[channel]=ROLES[S.role].color;
   inject(
     '<div style="display:flex;flex-direction:column;height:100%">' +
-    '<div class="ph"><div><div class="ph-tag">Team</div><div class="ph-title"><em>Messages</em></div></div>' +
-    '<div class="ph-acts"><button class="btn bp" onclick="openM(\'m-msg\')">+ New</button></div></div>' +
+    '<div class="ph"><div><div class="ph-tag">'+(isPortal?'Direct':'Team')+'</div><div class="ph-title"><em>'+(isPortal?'Workspace Chat':'Messages')+'</em></div></div>' +
+    (isPortal?'':'<div class="ph-acts"><button class="btn bp" onclick="openM(\'m-msg\')">+ New</button></div>') +
+    '</div>' +
     '<div class="pb" style="flex:1;overflow-y:auto">' +
     '<div class="msg-l">' +
     msgs.map(function(m){
-      return '<div class="msg '+(m.from===S.role?'me':'')+'">' +
-        '<div class="msg-av" style="background:'+(avC[m.from]||'var(--du)')+'">'+m.from.slice(0,2).toUpperCase()+'</div>' +
-        '<div><div class="msg-bub">'+m.text+'</div><div class="msg-meta">'+m.from+' · '+m.time+'</div></div>' +
+      var fromKey=m.from===channel?(S.portalProfile.name||ROLES[S.role].name):m.from;
+      var fromAbbr=m.from===channel?String(S.portalProfile.name||ROLES[S.role].name).split(' ').map(function(x){return x.charAt(0);}).join('').slice(0,2).toUpperCase():m.from.slice(0,2).toUpperCase();
+      return '<div class="msg '+((m.from===S.role||m.from===channel)?'me':'')+'">' +
+        '<div class="msg-av" style="background:'+(avC[m.from]||'var(--du)')+'">'+fromAbbr+'</div>' +
+        '<div><div class="msg-bub">'+m.text+'</div><div class="msg-meta">'+fromKey+' · '+m.time+'</div></div>' +
         '</div>';
     }).join('') +
     '</div></div>' +
     '<div class="msg-compose">' +
-    '<input class="msg-input" id="quick-msg" placeholder="Message the team..." onkeydown="if(event.key===\'Enter\')quickSend()">' +
+    '<input class="msg-input" id="quick-msg" placeholder="'+(isPortal?'Message Amelia...':'Message the team...')+'" onkeydown="if(event.key===\'Enter\')quickSend()">' +
     '<button class="msg-send" onclick="quickSend()">Send</button>' +
     '</div></div>'
   );
 }
 function quickSend(){
   var inp=g('quick-msg');if(!inp||!inp.value.trim())return;
-  var m={id:Date.now(),from:S.role,to:'team',text:inp.value.trim(),time:new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})};
+  var from=S.portalProfile?getPortalWorkspaceKey():S.role;
+  var to=S.portalProfile?'amelia':'team';
+  var m={id:Date.now(),from:from,to:to,text:inp.value.trim(),time:new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})};
   S.messages.push(m);lsSave('chq-ms',S.messages);inp.value='';bMessages();
 }
 function sendMsg(){
@@ -2091,11 +2521,16 @@ function sendMsg(){
 // FILES WITH INLINE VIEWER
 var FILE_STORE=[];
 function bFiles(){
+  var isPortal=!!S.portalProfile;
+  var workspaceFolder=isPortal?getPortalWorkspaceLabel():'';
+  window._fileFolder=isPortal?workspaceFolder:(window._fileFolder||'All');
   inject(
-    '<div class="ph"><div><div class="ph-tag">Shared</div><div class="ph-title"><em>Files</em></div></div>' +
+    '<div class="ph"><div><div class="ph-tag">'+(isPortal?'Workspace':'Shared')+'</div><div class="ph-title"><em>'+(isPortal?'File Sharing':'Files')+'</em></div></div>' +
     '<div class="ph-acts"><label class="btn bp" style="cursor:pointer">+ Upload<input type="file" multiple style="display:none" onchange="handleUpload(event)"></label></div></div>' +
     '<div class="pb">' +
-    renderContactsCard() +
+    (isPortal?
+      '<div class="card" style="margin-bottom:1rem"><div class="cl">Shared Folder</div><div style="font-family:var(--fd);font-size:1.05rem;font-style:italic;color:var(--tz);margin-bottom:.25rem">'+workspaceFolder+'</div><div style="font-size:.76rem;color:var(--wg);line-height:1.7">Upload photos, PDFs, invoices, sponsor assets, call sheets, or selects for this workspace only.</div></div>'
+      :renderContactsCard()) +
     '<label class="up-zone" style="margin-bottom:1.35rem;display:block;cursor:pointer">' +
     '<input type="file" multiple style="display:none" onchange="handleUpload(event)">' +
     '<div style="font-size:1.75rem;color:var(--wg);margin-bottom:.4rem">📁</div>' +
@@ -2109,11 +2544,11 @@ function bFiles(){
     '</div>' +
     '<div id="fv-content" style="padding:.85rem;max-height:65vh;overflow:auto"></div>' +
     '</div>' +
-    '<div style="display:flex;gap:.35rem;margin-bottom:.85rem;flex-wrap:wrap" id="folder-tabs">' +
+    (isPortal?'':'<div style="display:flex;gap:.35rem;margin-bottom:.85rem;flex-wrap:wrap" id="folder-tabs">' +
     ['All','Competition','Sponsors','Press','Looks','Personal'].map(function(f){
       return '<button class="cal-tab '+(( window._fileFolder||'All')===f?'on':'')+'" onclick="window._fileFolder=\''+f+'\';renderFileList()">'+f+'</button>';
     }).join('') +
-    '</div>' +
+    '</div>') +
     '<div id="uploaded-files"></div>' +
     '</div>'
   );
@@ -2121,7 +2556,8 @@ function bFiles(){
 }
 function renderFileList(){
   var c=g('uploaded-files');if(!c)return;
-  var folder=window._fileFolder||'All';
+  var isPortal=!!S.portalProfile;
+  var folder=isPortal?getPortalWorkspaceLabel():(window._fileFolder||'All');
   var filtered=folder==='All'?FILE_STORE:FILE_STORE.filter(function(f){return (f.folder||'Personal')===folder;});
   if(!filtered.length){c.innerHTML='<div style="text-align:center;padding:2rem;font-family:var(--fd);font-style:italic;color:var(--wg)">No files in '+folder+' yet</div>';return;}
   c.innerHTML=filtered.map(function(f,i){var realIdx=FILE_STORE.indexOf(f);
@@ -2136,10 +2572,11 @@ function renderFileList(){
   }).join('');
 }
 function handleUpload(e){
+  var isPortal=!!S.portalProfile;
   Array.from(e.target.files).forEach(function(file){
     var r=new FileReader();
     r.onload=function(ev){
-      FILE_STORE.push({id:Date.now()+Math.floor(Math.random()*1000000),name:file.name,size:file.size,type:file.type,data:ev.target.result,folder:window._fileFolder&&window._fileFolder!=='All'?window._fileFolder:'Personal'});
+      FILE_STORE.push({id:Date.now()+Math.floor(Math.random()*1000000),name:file.name,size:file.size,type:file.type,data:ev.target.result,folder:isPortal?getPortalWorkspaceLabel():(window._fileFolder&&window._fileFolder!=='All'?window._fileFolder:'Personal')});
       renderFileList();
       sbSaveFiles();
     };
@@ -2732,7 +3169,7 @@ function editBoardCard(cardId,colId){
 
   // Inline modal
   var tags=['sponsor','event','content','urgent','idea',''];
-  var assignees=['Amelia','Laneea','Hair & MU','Trainer',''];
+  var assignees=['Amelia','Laneea','Hair & MU','Donovan',''];
   var cols=bd.columns.map(function(c){return '<option value="'+c.id+'" '+(c.id===colId?'selected':'')+'>'+c.title+'</option>';}).join('');
   var ov=document.createElement('div');
   ov.className='ov on';ov.id='board-card-ov';
