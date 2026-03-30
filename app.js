@@ -520,12 +520,12 @@ function seed(){
 
 function seedLibrary(){
   S.posts=[
-    {id:1,title:'The Morning That Changes Everything',tag:'Beauty & Wellness',cat:'wellness',date:'2026-03-21',status:'published',cover:'',body:'<div class="mag-hero">The Morning That<br>Changes <em>Everything</em></div><div class="mag-byline">By Amelia Arabe · Beauty & Wellness · March 2026</div><p class="mag-drop">I used to think my mornings were the problem. Too scattered, too ambitious, too many tabs open in my head before I even made coffee. I have ADHD, which means my brain moves fast and my hands sometimes forget to follow. But I have learned something important: structure is not the enemy of freedom. Structure is what makes freedom possible.</p><div class="mag-pq">"A beautiful day starts with a beautiful morning. Non-negotiable."</div><p>My morning does not begin with my phone. It begins with water — a full glass before anything else. Then I make something beautiful to eat. Not elaborate. Beautiful. There is a difference. A sliced mango arranged on a white plate. Eggs cooked slowly with herbs. Matcha in my favorite cup. I am a breakfast girl. I take it seriously.</p><p>After breakfast, I rotate through my hobbies. Not all of them every day — that would be chaos. But I have learned to anchor my mornings with at least one creative practice. Monday is cello. Tuesday is drawing. Wednesday is voice warm-ups. Thursday is painting. Friday is photography. The weekends are ocean days when possible — freediving, snorkeling, just being near the water that inspires everything I make.</p><p>Then movement. Pilates or yoga for posture and core. Tennis for joy and stamina. Walking always. The body is the instrument. I treat it like one.</p>'},
-    {id:2,title:'SB 707 and What It Actually Means for Fashion',tag:'Fashion Accountability',cat:'fashion',date:'2026-03-19',status:'published',cover:'',body:'<div class="mag-hero">SB 707 and What<br>It Actually <em>Means</em></div><div class="mag-byline">By Amelia Arabe · Fashion Accountability · March 2026</div><p class="mag-drop">Fashion is the second most polluting industry on Earth. I say this not to be dramatic but because it is a fact I cite constantly and I believe in citing facts correctly. Ten percent of global carbon emissions. Eighty-five percent of textiles end up in landfills. The fashion industry uses 93 billion cubic meters of water annually. These numbers are not abstractions. They are the cost of what we wear.</p><div class="mag-pq">"Every garment has a carbon cost. I advocate for the policy that makes brands pay it — not the planet."</div><p>SB 707 — the Responsible Textile Producer Program — is California\'s answer to this. It is an Extended Producer Responsibility law. What that means in plain language: the brands that make the clothes become financially responsible for what happens when those clothes are no longer worn. The cost of textile waste management shifts from California taxpayers to the companies creating the waste.</p><p>This is not a punishment for fashion. It is an incentive to design differently. When waste becomes expensive, longevity becomes profitable. When disposal costs money, circularity makes sense. SB 707 does not tell brands what to design. It changes what makes good business sense to design.</p><p>As an engineer, I find this elegant. You do not have to convince every designer to care about the planet. You change the economic structure so that caring about the planet is the rational choice.</p>'},
-    {id:3,title:'SB 100 and the Bridge to Lived Reality',tag:'Clean Energy & EV Policy',cat:'energy',date:'2026-03-17',status:'published',cover:'',body:'<div class="mag-hero">SB 100 and the<br>Bridge to <em>Lived Reality</em></div><div class="mag-byline">By Amelia Arabe · Clean Energy Policy · March 2026</div><p class="mag-drop">California passed SB 100 in 2018. It mandated 100 percent clean energy by 2045. This is law. Not aspiration — law. And yet the gap between what the law requires and what people experience in their daily lives remains enormous. That gap is where I work. That gap is my platform.</p><div class="mag-pq">"SB 100 is law. Net-zero is the target. My platform is the bridge between legislation and lived reality."</div><p>Polyester makes up 65 percent of all clothing manufactured globally. It is derived from crude oil. The textile mills that produce it are among the most energy-intensive manufacturing facilities in existence. A transition to renewable energy in those mills is not a fashion story. It is an energy story. It is a climate story. It is the story of what SB 100 actually means when you follow it downstream into the supply chains that shape what we wear.</p><p>Green-collar jobs are the economic argument. California positioning itself as the clean fashion capital of North America is the industry argument. And the moral argument is simple: we already have the technology. Solar-powered mills exist. Bio-based fibers exist. ECONYL regeneration exists. The problem is not technical. It is political will, investment, and the courage to connect the dots.</p>'},
-    {id:4,title:'A Solarpunk Glossary for the Uninitiated',tag:'Solarpunk & Sustainable Tech',cat:'solarpunk',date:'2026-03-15',status:'published',cover:'',body:'<div class="mag-hero">A Solarpunk Glossary<br>for the <em>Uninitiated</em></div><div class="mag-byline">By Amelia Arabe · Library of Morenita · March 2026</div><p class="mag-drop">Solarpunk is an aesthetic and a political project. It imagines futures that are not dystopian. This seems simple. It is not. Most science fiction about the future imagines collapse, hierarchy, scarcity. Solarpunk imagines abundance, community, beauty. It asks: what if the future was actually good? And then it tries to build it.</p><div class="mag-pq">"I am not describing a utopia. I am describing a building permit."</div><p><strong>Circular economy</strong> — a system where waste from one process becomes input for another. Nothing discarded; everything cycled. The opposite of our current linear model of take, make, dispose.</p><p><strong>ECONYL</strong> — a regenerated nylon fiber made from ocean plastic waste, fishing nets, fabric scraps. My swimsuit of choice for competition. It is beautiful and it has a story.</p><p><strong>Bio-based fiber</strong> — textiles derived from plant sources rather than petroleum. Linen, hemp, organic cotton, Tencel from eucalyptus wood pulp. Each with different properties, different tradeoffs, different futures.</p><p><strong>Extended Producer Responsibility (EPR)</strong> — a policy framework that makes manufacturers responsible for the end-of-life management of their products. SB 707 is an EPR law. It is the policy mechanism that makes circular economy possible at scale.</p>'},
-    {id:5,title:'The Athlete Body as an Art Form',tag:'Fitness & Movement',cat:'fitness',date:'2026-03-13',status:'published',cover:'',body:'<div class="mag-hero">The Athlete Body<br>as an <em>Art Form</em></div><div class="mag-byline">By Amelia Arabe · Fitness & Movement · March 2026</div><p class="mag-drop">I want an athlete body. I say this without apology. I want to be strong. I want stamina. I want the kind of physical ease that comes from consistent training over time — the ease that lets you walk across a stage in heels after a full day of competition without your posture collapsing. I want to swim in the ocean without tiring. I want to serve an ace.</p><div class="mag-pq">"Train like an athlete. Move like an artist. The body is the instrument."</div><p>My movement practice has five pillars. Pilates for core, posture, and the long lean strength that photographs beautifully. Tennis for joy, stamina, and the competitive edge that transfers to everything. Yoga for flexibility, breath, and the stillness that makes presence possible. Swimming for full-body conditioning and the connection to water that feeds my soul. And walking — always walking — because it is the practice that clears my head and gives me my best ideas.</p><p>I do not train to punish my body. I train to know what it can do. There is a difference, and it took me a long time to learn it. The athlete body I want is not an aesthetic project alone. It is a capacity project. I want to be capable. Capable of competing. Capable of performing. Capable of carrying myself through whatever the next stage of my life requires.</p>'},
-    {id:6,title:'The Library of Alexandria Rebuilt',tag:'Library of Morenita',cat:'morenita',date:'2026-03-10',status:'published',cover:'',body:'<div class="mag-hero">The Library of<br>Alexandria <em>Rebuilt</em></div><div class="mag-byline">By Amelia Arabe · Library of Morenita · March 2026</div><p class="mag-drop">The Library of Alexandria was the most important knowledge repository of the ancient world. Scholars traveled from across the Mediterranean to read there. It held works by Euclid, Archimedes, Sophocles, hundreds of thousands of scrolls. Then it burned. Not once but several times over centuries, each fire taking something irreplaceable.</p><div class="mag-pq">"Cultural infrastructure for the next century. The kind that does not burn."</div><p>Library of Morenita is my answer to that problem. It is a sustainable digital archive — sustainable meaning it is designed to last, to be maintained, to survive the fires that consume most creative work. Most of what artists and thinkers produce disappears. It goes unpublished, unshared, unseen. It exists on hard drives that fail and in notebooks that get lost and in conversations that no one recorded.</p><p>I am building something that does not burn. A place for ideas, for research, for the writing and music and visual work of people whose names the world does not know yet. I am the founding editor and curator. I am also, inevitably, one of the first subjects — building the infrastructure by becoming an example of what the infrastructure can hold.</p><p>The Morenita Prototype, my journal calls it. Amelia Arabe is building the infrastructure for the next generation of renaissance leaders — she is proving it works by becoming one.</p>'},
+    {id:1,title:'The Morning That Changes Everything',tag:'Beauty & Wellness',cat:'wellness',date:'2026-03-21',status:'draft',cover:'',body:'<div class="mag-hero">The Morning That<br>Changes <em>Everything</em></div><div class="mag-byline">By Amelia Arabe · Beauty & Wellness · March 2026</div><p class="mag-drop">I used to think my mornings were the problem. Too scattered, too ambitious, too many tabs open in my head before I even made coffee. I have ADHD, which means my brain moves fast and my hands sometimes forget to follow. But I have learned something important: structure is not the enemy of freedom. Structure is what makes freedom possible.</p><div class="mag-pq">"A beautiful day starts with a beautiful morning. Non-negotiable."</div><p>My morning does not begin with my phone. It begins with water — a full glass before anything else. Then I make something beautiful to eat. Not elaborate. Beautiful. There is a difference. A sliced mango arranged on a white plate. Eggs cooked slowly with herbs. Matcha in my favorite cup. I am a breakfast girl. I take it seriously.</p><p>After breakfast, I rotate through my hobbies. Not all of them every day — that would be chaos. But I have learned to anchor my mornings with at least one creative practice. Monday is cello. Tuesday is drawing. Wednesday is voice warm-ups. Thursday is painting. Friday is photography. The weekends are ocean days when possible — freediving, snorkeling, just being near the water that inspires everything I make.</p><p>Then movement. Pilates or yoga for posture and core. Tennis for joy and stamina. Walking always. The body is the instrument. I treat it like one.</p>'},
+    {id:2,title:'SB 707 and What It Actually Means for Fashion',tag:'Fashion Accountability',cat:'fashion',date:'2026-03-19',status:'draft',cover:'',body:'<div class="mag-hero">SB 707 and What<br>It Actually <em>Means</em></div><div class="mag-byline">By Amelia Arabe · Fashion Accountability · March 2026</div><p class="mag-drop">Fashion is the second most polluting industry on Earth. I say this not to be dramatic but because it is a fact I cite constantly and I believe in citing facts correctly. Ten percent of global carbon emissions. Eighty-five percent of textiles end up in landfills. The fashion industry uses 93 billion cubic meters of water annually. These numbers are not abstractions. They are the cost of what we wear.</p><div class="mag-pq">"Every garment has a carbon cost. I advocate for the policy that makes brands pay it — not the planet."</div><p>SB 707 — the Responsible Textile Producer Program — is California\'s answer to this. It is an Extended Producer Responsibility law. What that means in plain language: the brands that make the clothes become financially responsible for what happens when those clothes are no longer worn. The cost of textile waste management shifts from California taxpayers to the companies creating the waste.</p><p>This is not a punishment for fashion. It is an incentive to design differently. When waste becomes expensive, longevity becomes profitable. When disposal costs money, circularity makes sense. SB 707 does not tell brands what to design. It changes what makes good business sense to design.</p><p>As an engineer, I find this elegant. You do not have to convince every designer to care about the planet. You change the economic structure so that caring about the planet is the rational choice.</p>'},
+    {id:3,title:'SB 100 and the Bridge to Lived Reality',tag:'Clean Energy & EV Policy',cat:'energy',date:'2026-03-17',status:'draft',cover:'',body:'<div class="mag-hero">SB 100 and the<br>Bridge to <em>Lived Reality</em></div><div class="mag-byline">By Amelia Arabe · Clean Energy Policy · March 2026</div><p class="mag-drop">California passed SB 100 in 2018. It mandated 100 percent clean energy by 2045. This is law. Not aspiration — law. And yet the gap between what the law requires and what people experience in their daily lives remains enormous. That gap is where I work. That gap is my platform.</p><div class="mag-pq">"SB 100 is law. Net-zero is the target. My platform is the bridge between legislation and lived reality."</div><p>Polyester makes up 65 percent of all clothing manufactured globally. It is derived from crude oil. The textile mills that produce it are among the most energy-intensive manufacturing facilities in existence. A transition to renewable energy in those mills is not a fashion story. It is an energy story. It is a climate story. It is the story of what SB 100 actually means when you follow it downstream into the supply chains that shape what we wear.</p><p>Green-collar jobs are the economic argument. California positioning itself as the clean fashion capital of North America is the industry argument. And the moral argument is simple: we already have the technology. Solar-powered mills exist. Bio-based fibers exist. ECONYL regeneration exists. The problem is not technical. It is political will, investment, and the courage to connect the dots.</p>'},
+    {id:4,title:'A Solarpunk Glossary for the Uninitiated',tag:'Solarpunk & Sustainable Tech',cat:'solarpunk',date:'2026-03-15',status:'draft',cover:'',body:'<div class="mag-hero">A Solarpunk Glossary<br>for the <em>Uninitiated</em></div><div class="mag-byline">By Amelia Arabe · Library of Morenita · March 2026</div><p class="mag-drop">Solarpunk is an aesthetic and a political project. It imagines futures that are not dystopian. This seems simple. It is not. Most science fiction about the future imagines collapse, hierarchy, scarcity. Solarpunk imagines abundance, community, beauty. It asks: what if the future was actually good? And then it tries to build it.</p><div class="mag-pq">"I am not describing a utopia. I am describing a building permit."</div><p><strong>Circular economy</strong> — a system where waste from one process becomes input for another. Nothing discarded; everything cycled. The opposite of our current linear model of take, make, dispose.</p><p><strong>ECONYL</strong> — a regenerated nylon fiber made from ocean plastic waste, fishing nets, fabric scraps. My swimsuit of choice for competition. It is beautiful and it has a story.</p><p><strong>Bio-based fiber</strong> — textiles derived from plant sources rather than petroleum. Linen, hemp, organic cotton, Tencel from eucalyptus wood pulp. Each with different properties, different tradeoffs, different futures.</p><p><strong>Extended Producer Responsibility (EPR)</strong> — a policy framework that makes manufacturers responsible for the end-of-life management of their products. SB 707 is an EPR law. It is the policy mechanism that makes circular economy possible at scale.</p>'},
+    {id:5,title:'The Athlete Body as an Art Form',tag:'Fitness & Movement',cat:'fitness',date:'2026-03-13',status:'draft',cover:'',body:'<div class="mag-hero">The Athlete Body<br>as an <em>Art Form</em></div><div class="mag-byline">By Amelia Arabe · Fitness & Movement · March 2026</div><p class="mag-drop">I want an athlete body. I say this without apology. I want to be strong. I want stamina. I want the kind of physical ease that comes from consistent training over time — the ease that lets you walk across a stage in heels after a full day of competition without your posture collapsing. I want to swim in the ocean without tiring. I want to serve an ace.</p><div class="mag-pq">"Train like an athlete. Move like an artist. The body is the instrument."</div><p>My movement practice has five pillars. Pilates for core, posture, and the long lean strength that photographs beautifully. Tennis for joy, stamina, and the competitive edge that transfers to everything. Yoga for flexibility, breath, and the stillness that makes presence possible. Swimming for full-body conditioning and the connection to water that feeds my soul. And walking — always walking — because it is the practice that clears my head and gives me my best ideas.</p><p>I do not train to punish my body. I train to know what it can do. There is a difference, and it took me a long time to learn it. The athlete body I want is not an aesthetic project alone. It is a capacity project. I want to be capable. Capable of competing. Capable of performing. Capable of carrying myself through whatever the next stage of my life requires.</p>'},
+    {id:6,title:'The Library of Alexandria Rebuilt',tag:'Library of Morenita',cat:'morenita',date:'2026-03-10',status:'draft',cover:'',body:'<div class="mag-hero">The Library of<br>Alexandria <em>Rebuilt</em></div><div class="mag-byline">By Amelia Arabe · Library of Morenita · March 2026</div><p class="mag-drop">The Library of Alexandria was the most important knowledge repository of the ancient world. Scholars traveled from across the Mediterranean to read there. It held works by Euclid, Archimedes, Sophocles, hundreds of thousands of scrolls. Then it burned. Not once but several times over centuries, each fire taking something irreplaceable.</p><div class="mag-pq">"Cultural infrastructure for the next century. The kind that does not burn."</div><p>Library of Morenita is my answer to that problem. It is a sustainable digital archive — sustainable meaning it is designed to last, to be maintained, to survive the fires that consume most creative work. Most of what artists and thinkers produce disappears. It goes unpublished, unshared, unseen. It exists on hard drives that fail and in notebooks that get lost and in conversations that no one recorded.</p><p>I am building something that does not burn. A place for ideas, for research, for the writing and music and visual work of people whose names the world does not know yet. I am the founding editor and curator. I am also, inevitably, one of the first subjects — building the infrastructure by becoming an example of what the infrastructure can hold.</p><p>The Morenita Prototype, my journal calls it. Amelia Arabe is building the infrastructure for the next generation of renaissance leaders — she is proving it works by becoming one.</p>'},
     {id:7,title:'Why I Entered a Pageant',tag:'Personal',cat:'morenita',date:'2026-03-24',status:'draft',cover:'',body:'<div class="mag-hero">Why I Entered<br>a <em>Pageant</em></div><div class="mag-byline">By Amelia Arabe · Library of Morenita</div><div class="mag-pq">"I am not here for the crown. I am here for the microphone."</div><p><strong>OUTLINE</strong></p><p><strong>Hook:</strong> Start with the question everyone asks. Not defensively — directly. Yes, I entered a pageant. Here is exactly why.</p><p><strong>Section 1 — The Tool Argument:</strong> Every platform is a tool. A GitHub repo does not reach the people who write California policy. A pageant stage does. I am an engineer. I use the right tool for the job.</p><p><strong>Section 2 — What I Actually Want:</strong> Not validation. Not a crown. A microphone pointed at the people who fund clean energy legislation and set textile import policy. That is what Miss California USA gives me.</p><p><strong>Section 3 — The Tension:</strong> Honest about the contradiction. Pageantry has a complicated history. I am not pretending otherwise. I am choosing to be inside the room rather than critiquing it from outside.</p><p><strong>Section 4 — What Winning Means:</strong> Platform amplification. Press access. A title that opens doors for the policy conversations I am already having.</p><p><strong>Close:</strong> If I do not win, the work continues. But I plan to win.</p>'},
     {id:8,title:'SB 707 Explained — The Law That Could Change Fashion',tag:'Fashion Accountability',cat:'fashion',date:'2026-03-24',status:'draft',cover:'',body:'<div class="mag-hero">SB 707 Explained —<br>The Law That Could Change <em>Fashion</em></div><div class="mag-byline">By Amelia Arabe · Fashion Accountability</div><div class="mag-pq">"Extended Producer Responsibility means the brand pays. Not the planet. Not the taxpayer."</div><p><strong>OUTLINE</strong></p><p><strong>Hook:</strong> One number: 85% of textiles end up in landfills. One law: SB 707. Here is what it actually does.</p><p><strong>Section 1 — What EPR Means:</strong> Extended Producer Responsibility in plain language. The brand that makes the garment becomes financially responsible for what happens when you are done with it.</p><p><strong>Section 2 — What SB 707 Specifically Does:</strong> The Responsible Textile Producer Program. How it shifts costs. What the compliance timeline looks like. Who is affected.</p><p><strong>Section 3 — Why This Is Elegant Engineering:</strong> You do not have to convince every designer to care about the planet. You change the economic structure so that caring is the rational business decision.</p><p><strong>Section 4 — What Brands Are Fighting It:</strong> Who lobbied against it and why. What their arguments are and why they do not hold.</p><p><strong>Close:</strong> The law exists. The fight now is implementation and funding.</p>'},
     {id:9,title:'What Keel Labs Is Doing With Algae',tag:'Solarpunk & Sustainable Tech',cat:'solarpunk',date:'2026-03-24',status:'draft',cover:'',body:'<div class="mag-hero">What Keel Labs<br>Is Doing With <em>Algae</em></div><div class="mag-byline">By Amelia Arabe · Solarpunk & Sustainable Tech</div><div class="mag-pq">"Kelsun is not a sustainability compromise. It is a better material."</div><p><strong>OUTLINE</strong></p><p><strong>Hook:</strong> The shirt you are wearing is probably made from crude oil. Keel Labs is making fiber from algae. Here is why that matters more than you think.</p><p><strong>Section 1 — The Polyester Problem:</strong> 65% of all clothing is polyester. Derived from petroleum. Energy-intensive to produce. Takes centuries to decompose. This is the problem Keel is solving.</p><p><strong>Section 2 — How Kelsun Works:</strong> Engineer explanation of algae-based fiber production. What makes it different. What the tradeoffs are — because there are always tradeoffs.</p><p><strong>Section 3 — Why This Is a Systems Story:</strong> Keel Labs is not just a material company. It is proof that the technical solutions already exist. The gap is adoption speed and policy support.</p><p><strong>Section 4 — What I Would Build With It:</strong> Personal angle. As an engineer designing net-zero hardware, what does this material unlock?</p><p><strong>Close:</strong> The future of fashion is not cotton or polyester. It is grown.</p>'},
@@ -537,7 +537,7 @@ function seedLibrary(){
 }
 
 // ═══ PASSWORDS ════════════════════════════════════════════════
-var PASSWORDS={amelia:'serph',laneea:'withlove'};
+var PASSWORDS={amelia:'serph',laneea:'withlove',kathy:'finance2026'};
 
 // ═══ UNIFIED LOGIN ═══════════════════════════════════════════
 // Single username/password login that routes to the right role
@@ -572,7 +572,13 @@ function submitUnifiedLogin(){
     showLoginError(); return;
   }
 
-  // 4. Check portal profiles across all portal roles
+  // 4. Check Kathy (finance)
+  if(username==='kathy'||username==='finance'){
+    if(password===PASSWORDS.kathy){ doLogin('finance'); return; }
+    showLoginError(); return;
+  }
+
+  // 5. Check portal profiles across all portal roles
   var portalRoles=['hmu','sponsor','contributor'];
   for(var ri=0;ri<portalRoles.length;ri++){
     var role=portalRoles[ri];
@@ -856,6 +862,7 @@ var ROLES={
     nav:[
       {ico:'🏠',lbl:'Dashboard',id:'dashboard'},
       {ico:'👤',lbl:'My Profile',id:'profile'},
+      {ico:'👥',lbl:'Team Admin',id:'team-admin'},
       {ico:'✍️',lbl:'Library Editor',id:'library-editor'},
       {ico:'💰',lbl:'Sponsors',id:'sponsors',badge:true},
       {ico:'📅',lbl:'Calendar',id:'calendar'},
@@ -868,7 +875,6 @@ var ROLES={
       {ico:'📱',lbl:'Social Media',id:'social'},
       {ico:'📬',lbl:'Inbox',id:'inbox'},
       {ico:'🗂',lbl:'Discussion',id:'board'},
-      {ico:'🔗',lbl:'Portfolio',id:'lookbook'},
       {ico:'📁',lbl:'Files',id:'files'},
     ],
     editable:['timeline','sponsors','looks','brand','dashboard','workouts','appointments','goals','todos','library']
@@ -914,7 +920,7 @@ var ROLES={
     ],
     editable:[]
   },
-  contributor:{name:'Contributor',abbr:'CO',color:'var(--tz4)',
+  contributor:{name:'Contributor',abbr:'CO',color:'var(--go)',
     nav:[
       {ico:'🏠',lbl:'Dashboard',id:'contributor-dash'},
       {ico:'👤',lbl:'My Profile',id:'profile'},
@@ -922,6 +928,19 @@ var ROLES={
       {ico:'📁',lbl:'Files',id:'files'},
     ],
     editable:[]
+  },
+  finance:{name:'Kathy',abbr:'KF',color:'var(--sg2)',
+    nav:[
+      {ico:'🏠',lbl:'Dashboard',id:'finance-dash'},
+      {ico:'👤',lbl:'My Profile',id:'profile'},
+      {ico:'💰',lbl:'Expenses',id:'expenses'},
+      {ico:'🧾',lbl:'Invoices',id:'invoices'},
+      {ico:'👗',lbl:'Looks & Costs',id:'looks'},
+      {ico:'🗂',lbl:'Discussion',id:'board'},
+      {ico:'💬',lbl:'Chat',id:'messages'},
+      {ico:'📁',lbl:'Files',id:'files'},
+    ],
+    editable:['expenses','invoices','looks']
   }
 };
 
@@ -986,7 +1005,8 @@ var PANELS={
   'dashboard':bDash,'laneea-dash':bLaneaDash,'hmu-dash':bHMUDash,
   'sponsor-portal':bSponsorPortal,'sponsors':bSponsors,'calendar':bCalendar,
   'library':bLibrary,'quiz':bQuiz,'brand':bBrand,'moodboard':bMoodboard,
-  'library-editor':bLibraryEditor,'profile':bProfile,
+  'library-editor':bLibraryEditor,'profile':bProfile,'team-admin':bTeamAdmin,
+  'finance-dash':bFinanceDash,'expenses':bExpenses,'invoices':bInvoices,
   'looks':bLooks,'fitness':bFitness,'messages':bMessages,'files':bFiles,
   'deliverables':bDeliverables,'comp-progress':bCompProgress,'advocacy':bAdvocacy,'board':bBoard,'lookbook':bLookbook,'social':bSocial,'inbox':bInbox,'peace':bPeace,'contributor-dash':bContributorDash
 };
@@ -2047,9 +2067,11 @@ function updatePostCat(val){
 function togglePostStatus(){
   var p=S.posts.find(function(x){return x.id===S.editingPostId;});if(!p)return;
   p.status=p.status==='published'?'draft':'published';
+  if(p.status==='published'&&!p.date) p.date=new Date().toISOString().slice(0,10);
   var btn=g('post-status-btn');if(btn)btn.textContent=p.status==='published'?'Published':'Draft';
   lsSave('chq-po',S.posts);
-  showToast('Status updated');
+  sbSavePosts();
+  showToast(p.status==='published'?'Published \u2713':'Moved to draft');
 }
 function savePost(){
   var p=S.posts.find(function(x){return x.id===S.editingPostId;});
@@ -2057,6 +2079,9 @@ function savePost(){
   if(p&&body)p.body=body.innerHTML;
   if(p&&title)p.title=title.value;
   lsSave('chq-po',S.posts);
+  sbSavePosts();
+  // Update public library key if any published posts exist
+  localStorage.setItem('chq-po', JSON.stringify(S.posts));
   var btn=document.querySelector('.ed-top .btn.bp');
   if(btn){btn.textContent='Saved!';setTimeout(function(){btn.textContent='Save';},1500);}
   showToast('Article saved');
@@ -2336,10 +2361,192 @@ function bFitness(){
     measurements:saved.measurements&&typeof saved.measurements==='object'?saved.measurements:{},
     nutrition:saved.nutrition&&typeof saved.nutrition==='object'?saved.nutrition:{},
     rituals:saved.rituals&&typeof saved.rituals==='object'?saved.rituals:{},
+    exChecks:saved.exChecks&&typeof saved.exChecks==='object'?saved.exChecks:{},
     weight:saved.weight||'',
     quit:saved.quit&&typeof saved.quit==='object'?saved.quit:{}
   };
   lsWriteLocal('chq-fitness',fd);
+
+  var today=new Date().toLocaleDateString('en-US',{weekday:'short'}).toLowerCase();
+  var todayKey=today.slice(0,3);
+  var daysClean=0;
+  if(fd.quit&&fd.quit.startDate){
+    daysClean=Math.floor((new Date()-new Date(fd.quit.startDate))/(1000*60*60*24));
+  }
+
+  var split=[
+    {day:'Mon',key:'mon',focus:'Core Circuit',color:'var(--si)',exercises:[
+      {name:'Dead Bugs',sets:'3x12',note:'Lower back flat. This builds the corset.'},
+      {name:'Hollow Body Hold',sets:'3x30s',note:'Ribs down. The waist wraps here.'},
+      {name:'Pallof Press',sets:'3x12 each',note:'Anti-rotation. Builds the taper.'},
+      {name:'Side Plank + Hip Dip',sets:'3x15 each',note:'Obliques. This is the curve.'},
+      {name:'Single Leg RDL',sets:'3x10 each',note:'Balance + posterior chain.'},
+      {name:'Bicycle Crunch',sets:'3x20',note:'Controlled. Elbow to knee.'},
+    ]},
+    {day:'Tue',key:'tue',focus:'Swim',color:'var(--go2)',exercises:[
+      {name:'Freestyle Laps',sets:'20 min',note:'Long and lean. Think elongation.'},
+      {name:'Butterfly Arms',sets:'4x25m',note:'Shoulders and lats. Creates the V-taper.'},
+      {name:'Kickboard Legs',sets:'4x25m',note:'Quads and glutes activated.'},
+      {name:'Cool Down Float',sets:'5 min',note:'Breathe. Let your body reset.'},
+    ]},
+    {day:'Wed',key:'wed',focus:'Legs + Barre',color:'var(--sg2)',exercises:[
+      {name:'Bulgarian Split Squat',sets:'4x10 each',note:'Rear foot elevated. Go deep.'},
+      {name:'Glute Bridge + Hold',sets:'4x15',note:'Squeeze at top 2 seconds.'},
+      {name:'Lateral Band Walks',sets:'3x20 each way',note:'Band above knees. Burn.'},
+      {name:'Relevé Holds',sets:'3x30s',note:'Ballet. Calves and balance.'},
+      {name:'Arabesque Pulses',sets:'3x20 each',note:'Glute and hip flexor length.'},
+      {name:'Plié Squats',sets:'3x15',note:'Turnout. Inner thigh activation.'},
+    ]},
+    {day:'Thu',key:'thu',focus:'Tennis',color:'var(--go)',exercises:[
+      {name:'Serve Practice',sets:'20 min',note:'Shoulder rotation. Core drives power.'},
+      {name:'Footwork Drills',sets:'15 min',note:'Explosive lateral movement.'},
+      {name:'Rally Sets',sets:'3 sets',note:'Cardio base. Rotational core.'},
+      {name:'Cool Down Stretch',sets:'10 min',note:'Hip flexors and shoulders.'},
+    ]},
+    {day:'Fri',key:'fri',focus:'Arms + Core',color:'var(--lv)',exercises:[
+      {name:'Port de Bras with Weights',sets:'3x12',note:'Ballet arms. 2-3lb. Slow and deliberate.'},
+      {name:'Swimmer Lat Pulldown',sets:'4x12',note:'V-taper. Waist looks smaller instantly.'},
+      {name:'Overhead Press',sets:'3x10',note:'Shoulders and posture.'},
+      {name:'Tricep Dip',sets:'3x12',note:'Back of arm. Lean and sculpted.'},
+      {name:'Resistance Band Row',sets:'3x15',note:'Posture muscles. Stage presence.'},
+      {name:'Plank to Downdog',sets:'3x10',note:'Core + shoulder mobility.'},
+    ]},
+    {day:'Sat',key:'sat',focus:'Swim + Ballet',color:'var(--sil)',exercises:[
+      {name:'Freestyle Endurance',sets:'30 min',note:'Build your base. Think long.'},
+      {name:'Full Barre',sets:'45-60 min',note:'YouTube barre counts. Non-negotiable.'},
+      {name:'Stretching Flow',sets:'15 min',note:'Hips, hamstrings, shoulders.'},
+    ]},
+    {day:'Sun',key:'sun',focus:'Active Recovery',color:'var(--sal)',exercises:[
+      {name:'Ocean or Beach Walk',sets:'30-45 min',note:'Clear your head. This is medicine.'},
+      {name:'Yoga Flow',sets:'20 min',note:'YouTube. Any beginner flow.'},
+      {name:'Full Body Stretch',sets:'15 min',note:'Every muscle. Breathe into it.'},
+    ]},
+  ];
+
+  // Today's split
+  var todayMap={mon:'Mon',tue:'Tue',wed:'Wed',thu:'Thu',fri:'Fri',sat:'Sat',sun:'Sun'};
+  var todayFull=new Date().toLocaleDateString('en-US',{weekday:'long'}).slice(0,3).toLowerCase();
+  var todaySplit=split.find(function(s){return s.key===todayFull;})||split[0];
+
+  inject(
+    '<div class="ph"><div><div class="ph-tag">Fitness</div><div class="ph-title">Body by <em>Design</em></div></div>' +
+    '<div class="ph-acts"><button class="btn bc" onclick="saveFitnessLog()">Save check-ins</button></div></div>' +
+    '<div class="pb">' +
+
+    // ── TODAY'S CHECKLIST — TOP ──────────────────────────────────
+    '<div style="background:var(--ink);border-radius:10px;padding:1.2rem 1.35rem;margin-bottom:1rem;border:0.5px solid rgba(201,168,76,.1)">' +
+    '<div style="font-family:var(--fm);font-size:.46rem;letter-spacing:3px;color:rgba(201,168,76,.4);text-transform:uppercase;margin-bottom:.65rem">Today\'s Check-ins &mdash; ' + new Date().toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'}) + '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.45rem;margin-bottom:.75rem">' +
+    [
+      {k:'breakfast',l:'Protein breakfast',n:'Within 30 min of waking'},
+      {k:'water',l:'Water before coffee',n:'Every single morning'},
+      {k:'snacks',l:'Smart snacks only',n:'Almonds, fruit, hummus'},
+      {k:'dinner',l:'Cooked dinner',n:'20 minutes. Non-negotiable.'},
+    ].map(function(n){
+      var done=fd.nutrition&&fd.nutrition[n.k];
+      return '<div onclick="saveFitnessNutrition(\''+n.k+'\')" style="padding:.5rem .65rem;background:'+(done?'rgba(74,94,72,.15)':'rgba(250,247,242,.04)')+';border-radius:6px;cursor:pointer;border:0.5px solid '+(done?'rgba(106,138,104,.4)':'rgba(250,247,242,.08)')+';display:flex;gap:.5rem;align-items:center;transition:all .15s">' +
+        '<div style="width:15px;height:15px;border-radius:50%;border:1.5px solid '+(done?'var(--sg2)':'rgba(250,247,242,.25)')+';background:'+(done?'var(--sg2)':'transparent')+';flex-shrink:0;display:flex;align-items:center;justify-content:center">'+(done?'<div style="width:5px;height:5px;border-radius:50%;background:white"></div>':'')+'</div>' +
+        '<div><div style="font-size:.72rem;font-weight:500;color:rgba(250,247,242,.85)">'+n.l+'</div><div style="font-family:var(--fm);font-size:.46rem;color:rgba(250,247,242,.3)">'+n.n+'</div></div>' +
+        '</div>';
+    }).join('') +
+    '</div>' +
+    // Rituals inline
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.45rem">' +
+    ['Water before coffee','Vitamin C serum','Moisturizer + SPF','Omega-3 supplement','Double cleanse','Retinol/niacinamide','Heavy moisturizer','Magnesium supplement'].map(function(item,i){
+      var rkey=i<4?'morn':'night';
+      var ridx=i<4?i:(i-4);
+      var done=fd.rituals&&fd.rituals[rkey]&&fd.rituals[rkey][ridx];
+      return '<div onclick="saveFitnessRitual(\''+rkey+'\','+ridx+')" style="padding:.42rem .62rem;background:'+(done?'rgba(74,94,72,.12)':'rgba(250,247,242,.03)')+';border-radius:5px;cursor:pointer;border:0.5px solid '+(done?'rgba(106,138,104,.3)':'rgba(250,247,242,.06)')+';display:flex;gap:.45rem;align-items:center">' +
+        '<div class="todo-cb '+(done?'done':'')+'" style="flex-shrink:0;width:13px;height:13px;border-radius:2px;'+(done?'':'border:1.5px solid rgba(250,247,242,.2)')+'"></div>' +
+        '<div style="font-size:.68rem;color:rgba(250,247,242,'+(done?'.4':'.75')+');">'+(done?'<s>':'')+item+(done?'</s>':'')+'</div>' +
+        '</div>';
+    }).join('') +
+    '</div>' +
+    '</div>' +
+
+    // ── STATS ROW ─────────────────────────────────────────────────
+    '<div class="g4" style="margin-bottom:.85rem">' +
+    '<div class="stat st-sg"><div class="sn">'+(daysClean||0)+'</div><div class="sl">Days Clear</div></div>' +
+    '<div class="stat st-ch"><input id="m-waist" value="'+(fd.measurements.waist||'')+'" placeholder="—" style="border:none;outline:none;font-family:var(--fd);font-size:1.8rem;font-style:italic;color:var(--ink);background:transparent;width:100%" onblur="saveFitnessField(\'measurements\',\'waist\',this.value)"><div class="sl">Waist (in)</div></div>' +
+    '<div class="stat st-ch"><input id="m-hips" value="'+(fd.measurements.hips||'')+'" placeholder="—" style="border:none;outline:none;font-family:var(--fd);font-size:1.8rem;font-style:italic;color:var(--ink);background:transparent;width:100%" onblur="saveFitnessField(\'measurements\',\'hips\',this.value)"><div class="sl">Hips (in)</div></div>' +
+    '<div class="stat st-bl"><input id="m-weight" value="'+(fd.weight||'')+'" placeholder="—" style="border:none;outline:none;font-family:var(--fd);font-size:1.8rem;font-style:italic;color:var(--ink);background:transparent;width:100%" onblur="saveFitnessWeight(this.value)"><div class="sl">Weight (lbs)</div></div>' +
+    '</div>' +
+
+    // ── WEEKLY TRAINING SPLIT ─────────────────────────────────────
+    '<div style="font-family:var(--fm);font-size:.48rem;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:.65rem">Weekly Training Split</div>' +
+    '<div style="display:flex;flex-direction:column;gap:.65rem;margin-bottom:.85rem">' +
+    split.map(function(s){
+      var dayDone=fd.days&&fd.days[s.key]&&fd.days[s.key].done;
+      var exKey='ex_'+s.key;
+      var exChecks=fd.exChecks&&fd.exChecks[s.key]||{};
+      var doneCount=Object.values(exChecks).filter(Boolean).length;
+      var isToday=(s.key===todayFull);
+      return '<div style="border-radius:10px;overflow:hidden;border:0.5px solid '+(isToday?'var(--si)':'var(--iv3)')+';background:var(--wh)">' +
+        // Header — always visible, tap to expand
+        '<div style="background:'+(dayDone?s.color:'var(--iv2)')+';padding:.65rem 1rem;display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleFitnessDay(\''+s.key+'\')">' +
+        '<div style="display:flex;align-items:center;gap:.75rem">' +
+        '<div onclick="event.stopPropagation();saveFitnessDay(\''+s.key+'\')" style="width:24px;height:24px;border-radius:50%;border:2px solid '+(dayDone?'rgba(255,255,255,.6)':'var(--iv3)')+';background:'+(dayDone?'rgba(255,255,255,.85)':'transparent')+';cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s">' +
+        (dayDone?'<div style="color:'+s.color+';font-size:.65rem;font-weight:700">✓</div>':'') +
+        '</div>' +
+        '<div><div style="font-family:var(--fm);font-size:.46rem;letter-spacing:2.5px;color:'+(dayDone?'rgba(255,255,255,.6)':'var(--muted)')+';text-transform:uppercase">'+s.day+(isToday?' — TODAY':'')+'</div>' +
+        '<div style="font-family:var(--fd);font-size:1rem;font-style:italic;color:'+(dayDone?'white':'var(--ink)')+'">'+s.focus+'</div></div>' +
+        '</div>' +
+        '<div style="font-family:var(--fm);font-size:.48rem;color:'+(dayDone?'rgba(255,255,255,.5)':'var(--muted)')+'">' + doneCount + '/' + s.exercises.length + '</div>' +
+        '</div>' +
+        // Exercises
+        '<div id="fit-day-'+s.key+'" style="'+(isToday||dayDone?'':'display:none')+'">' +
+        s.exercises.map(function(e,ei){
+          var exDone=exChecks[ei];
+          return '<div onclick="saveFitnessEx(\''+s.key+'\','+ei+')" style="display:flex;gap:.65rem;padding:.45rem 1rem;border-bottom:0.5px solid var(--iv3);align-items:center;cursor:pointer;background:'+(exDone?'var(--sgp)':'transparent')+';transition:background .12s">' +
+            '<div class="wk-chk '+(exDone?'done':'')+'" style="flex-shrink:0"></div>' +
+            '<div style="flex:1"><div style="font-size:.78rem;font-weight:500;color:var(--ink);'+(exDone?'text-decoration:line-through;opacity:.5':'')+'">'+e.name+'</div>' +
+            '<div style="font-family:var(--fm);font-size:.48rem;color:var(--muted);margin-top:.1rem">'+e.note+'</div></div>' +
+            '<div style="font-family:var(--fm);font-size:.55rem;color:'+s.color+';white-space:nowrap;flex-shrink:0">'+e.sets+'</div>' +
+            '</div>';
+        }).join('') +
+        '</div>' +
+        '</div>';
+    }).join('') +
+    '</div>' +
+
+    // ── BODY TRACKING ─────────────────────────────────────────────
+    '<div class="g2" style="margin-bottom:.85rem">' +
+    '<div class="card"><div class="cl">Body Tracking</div>' +
+    ['waist','hips','arms','thighs'].map(function(m){
+      return '<div style="display:flex;align-items:center;gap:.5rem;padding:.3rem 0;border-bottom:0.5px solid var(--iv3)">' +
+        '<div style="font-family:var(--fm);font-size:.48rem;color:var(--muted);text-transform:uppercase;min-width:52px">'+m+'</div>' +
+        '<input id="mt-'+m+'" value="'+(fd.measurements[m]||'')+'" placeholder="inches" style="border:none;outline:none;font-family:var(--fd);font-size:.9rem;font-style:italic;color:var(--si);background:transparent;flex:1" onblur="saveFitnessField(\'measurements\',\''+m+'\',this.value)">' +
+        '<div style="font-family:var(--fm);font-size:.46rem;color:var(--faint)">in</div>' +
+        '</div>';
+    }).join('') +
+    '</div>' +
+    '<div class="card" style="border-left:3px solid var(--sg2)">' +
+    '<div class="cl">Clarity Tracker</div>' +
+    '<div style="font-family:var(--fd);font-size:2.6rem;font-style:italic;color:var(--sg2);line-height:1;margin-bottom:.2rem">'+(daysClean||0)+'</div>' +
+    '<div style="font-family:var(--fm);font-size:.48rem;color:var(--muted);text-transform:uppercase;margin-bottom:.65rem">days clear</div>' +
+    (fd.quit&&fd.quit.startDate?'<div style="font-size:.75rem;color:var(--muted);margin-bottom:.5rem">Since '+new Date(fd.quit.startDate).toLocaleDateString('en-US',{month:'long',day:'numeric'})+'</div>':'')+
+    '<div class="fg"><label>Start Date</label><input type="date" value="'+(fd.quit&&fd.quit.startDate||'')+'" class="fi" style="padding:.35rem .65rem;font-size:.75rem" onchange="saveFitnessQuit(this.value)"></div>' +
+    '<div style="font-size:.7rem;color:var(--muted);font-style:italic;line-height:1.5;margin-top:.35rem">Cortisol stores fat at the waist. Clarity is the fastest path to the body you want.</div>' +
+    '</div>' +
+    '</div>' +
+
+    '</div>'
+  );
+}
+
+function toggleFitnessDay(key){
+  var el=document.getElementById('fit-day-'+key);
+  if(el) el.style.display=el.style.display==='none'?'block':'none';
+}
+
+function saveFitnessEx(dayKey,exIdx){
+  var fd=lsGet('chq-fitness',{});
+  if(!fd.exChecks)fd.exChecks={};
+  if(!fd.exChecks[dayKey])fd.exChecks[dayKey]={};
+  fd.exChecks[dayKey][exIdx]=!fd.exChecks[dayKey][exIdx];
+  lsSave('chq-fitness',fd);
+  rerenderKeepScroll(bFitness);
+
 
   var today=new Date().toLocaleDateString('en-US',{weekday:'short'}).toLowerCase();
   var daysClean=0;
@@ -4524,6 +4731,443 @@ if(isPublicPortfolioRoute()){
   renderPublicPortfolioRoute();
 }
 
+
+
+// ═══════════════════════════════════════════════════════════════
+// FINANCE SYSTEM — Kathy's Dashboard
+// Expense tracking, invoice creation, PDF generation
+// ═══════════════════════════════════════════════════════════════
+
+var FIN_KEY = 'chq-finance';
+
+function getFinData(){
+  var d = lsGet(FIN_KEY, {});
+  if(!d.expenses) d.expenses = [];
+  if(!d.invoices) d.invoices = [];
+  if(!d.budget)   d.budget   = 5000; // default campaign budget
+  return d;
+}
+
+function saveFinData(d){ lsSave(FIN_KEY, d); }
+
+var EXP_CATS = ['Wardrobe','Competition Fees','Training','Travel','Photography','Hair & Makeup','Marketing','Misc'];
+var INV_STATUS = ['Draft','Sent','Paid','Overdue'];
+
+function finTotals(){
+  var d = getFinData();
+  var spent    = d.expenses.reduce(function(a,e){ return a+(parseFloat(e.amount)||0); }, 0);
+  var invoiced = d.invoices.filter(function(i){ return i.status==='Sent'||i.status==='Overdue'; }).reduce(function(a,i){ return a+(parseFloat(i.amount)||0); }, 0);
+  var paid     = d.invoices.filter(function(i){ return i.status==='Paid'; }).reduce(function(a,i){ return a+(parseFloat(i.amount)||0); }, 0);
+  var budget   = d.budget || 0;
+  return { spent:spent, invoiced:invoiced, paid:paid, budget:budget, remaining: budget - spent };
+}
+
+// ── FINANCE DASHBOARD ─────────────────────────────────────────
+function bFinanceDash(){
+  var t = finTotals();
+  var d = getFinData();
+  var recentExp = d.expenses.slice(-5).reverse();
+  var recentInv = d.invoices.slice(-5).reverse();
+
+  inject(
+    '<div class="ph"><div><div class="ph-tag">Finance & Operations</div><div class="ph-title">Campaign <em>Finances</em></div></div>' +
+    '<div class="ph-acts">' +
+    '<button class="btn bg" onclick="showPanel(\'expenses\')">+ Expense</button>' +
+    '<button class="btn bc" onclick="showPanel(\'invoices\')">+ Invoice</button>' +
+    '</div></div>' +
+    '<div class="pb">' +
+
+    // Stats
+    '<div class="fin-stat-grid" style="margin-bottom:1rem">' +
+    '<div class="fin-stat expense"><div class="fin-n">$'+t.spent.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})+'</div><div class="fin-l">Total Spent</div></div>' +
+    '<div class="fin-stat income"><div class="fin-n">$'+t.paid.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})+'</div><div class="fin-l">Sponsorship Received</div></div>' +
+    '<div class="fin-stat pending"><div class="fin-n">$'+t.invoiced.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})+'</div><div class="fin-l">Invoiced / Pending</div></div>' +
+    '<div class="fin-stat balance"><div class="fin-n" style="color:'+((t.remaining>=0)?'var(--sg2)':'var(--si)')+'">$'+Math.abs(t.remaining).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})+'</div><div class="fin-l">'+(t.remaining>=0?'Budget Remaining':'Over Budget')+'</div></div>' +
+    '</div>' +
+
+    // Budget bar
+    '<div class="card" style="margin-bottom:.85rem">' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem">' +
+    '<div class="cl" style="margin-bottom:0">Budget Tracker</div>' +
+    '<div style="display:flex;align-items:center;gap:.5rem">' +
+    '<span style="font-family:var(--fm);font-size:.5rem;color:var(--muted)">Campaign budget:</span>' +
+    '<input id="fin-budget-inp" value="'+t.budget+'" style="border:none;outline:none;font-family:var(--fd);font-size:.95rem;font-style:italic;color:var(--ink);background:transparent;width:80px;text-align:right" onblur="saveBudget(this.value)">' +
+    '</div></div>' +
+    '<div style="height:8px;background:var(--iv3);border-radius:4px;overflow:hidden">' +
+    '<div style="height:100%;width:'+Math.min(100,Math.round(t.budget?t.spent/t.budget*100:0))+'%;background:'+(t.remaining>=0?'var(--si)':'#C0392B')+';border-radius:4px;transition:width .6s"></div>' +
+    '</div>' +
+    '<div style="display:flex;justify-content:space-between;margin-top:.35rem">' +
+    '<span style="font-family:var(--fm);font-size:.48rem;color:var(--muted)">$'+t.spent.toLocaleString()+' spent</span>' +
+    '<span style="font-family:var(--fm);font-size:.48rem;color:var(--muted)">'+(t.budget?Math.min(100,Math.round(t.spent/t.budget*100)):0)+'% used</span>' +
+    '</div>' +
+    '</div>' +
+
+    '<div class="g2">' +
+    // Recent expenses
+    '<div class="card">' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.65rem">' +
+    '<div class="cl" style="margin-bottom:0">Recent Expenses</div>' +
+    '<button class="btn bg" style="font-size:.55rem;padding:.2rem .6rem;min-height:28px" onclick="showPanel(\'expenses\')">View all</button>' +
+    '</div>' +
+    (recentExp.length ? recentExp.map(function(e){
+      return '<div class="exp-row">' +
+        '<div class="exp-cat">'+escHtml(e.cat||'Misc')+'</div>' +
+        '<div class="exp-desc">'+escHtml(e.desc||'')+'</div>' +
+        '<div class="exp-date">'+escHtml(e.date||'')+'</div>' +
+        '<div class="exp-amt">$'+parseFloat(e.amount||0).toFixed(2)+'</div>' +
+        '</div>';
+    }).join('') : '<div style="font-size:.75rem;color:var(--faint);text-align:center;padding:1rem">No expenses logged yet</div>') +
+    '</div>' +
+
+    // Recent invoices
+    '<div class="card">' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.65rem">' +
+    '<div class="cl" style="margin-bottom:0">Recent Invoices</div>' +
+    '<button class="btn bg" style="font-size:.55rem;padding:.2rem .6rem;min-height:28px" onclick="showPanel(\'invoices\')">View all</button>' +
+    '</div>' +
+    (recentInv.length ? recentInv.map(function(inv){
+      return '<div class="inv-row">' +
+        '<div class="inv-num">'+escHtml(inv.number||'INV-000')+'</div>' +
+        '<div class="inv-to">'+escHtml(inv.to||'')+'</div>' +
+        '<div class="inv-date">'+escHtml(inv.date||'')+'</div>' +
+        '<div class="inv-amt">$'+parseFloat(inv.amount||0).toFixed(2)+'</div>' +
+        '<div class="inv-status inv-'+((inv.status||'Draft').toLowerCase())+'">'+escHtml(inv.status||'Draft')+'</div>' +
+        '</div>';
+    }).join('') : '<div style="font-size:.75rem;color:var(--faint);text-align:center;padding:1rem">No invoices created yet</div>') +
+    '</div>' +
+    '</div>' + // g2
+
+    '</div>' // pb
+  );
+}
+
+function saveBudget(val){
+  var d = getFinData();
+  d.budget = parseFloat(val) || 0;
+  saveFinData(d);
+  showToast('Budget updated');
+}
+
+// ── EXPENSES ──────────────────────────────────────────────────
+function bExpenses(){
+  var d = getFinData();
+
+  inject(
+    '<div class="ph"><div><div class="ph-tag">Finance</div><div class="ph-title">Campaign <em>Expenses</em></div></div>' +
+    '<div class="ph-acts"><button class="btn bc" onclick="openAddExpense()">+ Add Expense</button></div></div>' +
+    '<div class="pb">' +
+
+    // Add expense form (hidden by default)
+    '<div id="exp-form" style="display:none;margin-bottom:1rem">' +
+    '<div class="card">' +
+    '<div class="cl">New Expense</div>' +
+    '<div class="g2">' +
+    '<div class="fg"><label>Description</label><input class="fi" id="exp-desc" placeholder="What was this for?"></div>' +
+    '<div class="fg"><label>Amount ($)</label><input class="fi" id="exp-amount" type="number" step="0.01" placeholder="0.00"></div>' +
+    '</div>' +
+    '<div class="g2">' +
+    '<div class="fg"><label>Category</label><select class="fs" id="exp-cat">'+EXP_CATS.map(function(c){return '<option>'+c+'</option>';}).join('')+'</select></div>' +
+    '<div class="fg"><label>Date</label><input class="fi" id="exp-date" type="date" value="'+new Date().toISOString().slice(0,10)+'"></div>' +
+    '</div>' +
+    '<div class="fg"><label>Notes (optional)</label><input class="fi" id="exp-notes" placeholder="Receipt details, vendor, etc."></div>' +
+    '<div style="display:flex;gap:.5rem;margin-top:.5rem">' +
+    '<button class="btn bc" onclick="saveExpense()">Save Expense</button>' +
+    '<button class="btn bg" onclick="document.getElementById(\'exp-form\').style.display=\'none\'">Cancel</button>' +
+    '</div>' +
+    '</div>' +
+    '</div>' +
+
+    // Expenses by category summary
+    '<div class="g4" style="margin-bottom:1rem">' +
+    EXP_CATS.slice(0,4).map(function(cat){
+      var total = d.expenses.filter(function(e){ return e.cat===cat; }).reduce(function(a,e){ return a+(parseFloat(e.amount)||0); },0);
+      return '<div class="card" style="margin-bottom:0;padding:.75rem">' +
+        '<div style="font-family:var(--fm);font-size:.46rem;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:.25rem">'+cat+'</div>' +
+        '<div style="font-family:var(--fd);font-size:1.3rem;font-style:italic;color:var(--si)">$'+total.toFixed(0)+'</div>' +
+        '</div>';
+    }).join('') +
+    '</div>' +
+
+    // All expenses table
+    '<div class="card">' +
+    '<div class="cl">All Expenses ('+d.expenses.length+')</div>' +
+    (d.expenses.length ? d.expenses.slice().reverse().map(function(e,ri){
+      var i = d.expenses.length - 1 - ri;
+      return '<div class="exp-row" style="align-items:center">' +
+        '<div class="exp-cat">'+escHtml(e.cat||'Misc')+'</div>' +
+        '<div class="exp-desc" style="flex:1">' +
+        '<div>'+escHtml(e.desc||'')+'</div>' +
+        (e.notes?'<div style="font-size:.65rem;color:var(--faint)">'+escHtml(e.notes)+'</div>':'') +
+        '</div>' +
+        '<div class="exp-date">'+escHtml(e.date||'')+'</div>' +
+        '<div class="exp-amt">$'+parseFloat(e.amount||0).toFixed(2)+'</div>' +
+        '<button onclick="deleteExpense('+i+')" style="border:none;background:transparent;color:var(--faint);cursor:pointer;font-size:.9rem;padding:0 .3rem;flex-shrink:0">&times;</button>' +
+        '</div>';
+    }).join('') : '<div style="font-size:.75rem;color:var(--faint);text-align:center;padding:2rem">No expenses yet. Add your first one above.</div>') +
+    '</div>' +
+
+    '</div>'
+  );
+}
+
+function openAddExpense(){
+  var f = document.getElementById('exp-form');
+  if(f){ f.style.display = 'block'; setTimeout(function(){ var el=document.getElementById('exp-desc'); if(el) el.focus(); },60); }
+}
+
+function saveExpense(){
+  var desc   = (document.getElementById('exp-desc').value||'').trim();
+  var amount = document.getElementById('exp-amount').value;
+  if(!desc||!amount){ showToast('Description and amount required'); return; }
+  var d = getFinData();
+  d.expenses.push({
+    id:    Date.now(),
+    desc:  desc,
+    amount: parseFloat(amount),
+    cat:   document.getElementById('exp-cat').value,
+    date:  document.getElementById('exp-date').value,
+    notes: document.getElementById('exp-notes').value
+  });
+  saveFinData(d);
+  showToast('Expense saved \u2713');
+  bExpenses();
+}
+
+function deleteExpense(i){
+  if(!confirm('Delete this expense?')) return;
+  var d = getFinData();
+  d.expenses.splice(i,1);
+  saveFinData(d);
+  bExpenses();
+}
+
+// ── INVOICES ──────────────────────────────────────────────────
+function bInvoices(){
+  var d = getFinData();
+
+  inject(
+    '<div class="ph"><div><div class="ph-tag">Finance</div><div class="ph-title">Invoices &amp; <em>Billing</em></div></div>' +
+    '<div class="ph-acts"><button class="btn bc" onclick="openCreateInvoice()">+ Create Invoice</button></div></div>' +
+    '<div class="pb">' +
+
+    // Create invoice form
+    '<div id="inv-form" style="display:none;margin-bottom:1rem">' +
+    '<div class="card">' +
+    '<div class="cl">New Invoice</div>' +
+    '<div class="g2">' +
+    '<div class="fg"><label>Bill To (Company / Sponsor)</label><input class="fi" id="inv-to" placeholder="Company name"></div>' +
+    '<div class="fg"><label>Contact Name</label><input class="fi" id="inv-contact" placeholder="Contact person"></div>' +
+    '</div>' +
+    '<div class="g2">' +
+    '<div class="fg"><label>Contact Email</label><input class="fi" id="inv-email" type="email" placeholder="billing@company.com"></div>' +
+    '<div class="fg"><label>Amount ($)</label><input class="fi" id="inv-amount" type="number" step="0.01" placeholder="0.00"></div>' +
+    '</div>' +
+    '<div class="g2">' +
+    '<div class="fg"><label>Invoice Date</label><input class="fi" id="inv-date" type="date" value="'+new Date().toISOString().slice(0,10)+'"></div>' +
+    '<div class="fg"><label>Due Date</label><input class="fi" id="inv-due" type="date" value="'+new Date(Date.now()+30*86400000).toISOString().slice(0,10)+'"></div>' +
+    '</div>' +
+    '<div class="fg"><label>Description of services / sponsorship tier</label><textarea class="ft" id="inv-desc" style="min-height:70px" placeholder="Sponsorship &ndash; Gold Tier &middot; Logo placement on all campaign materials, social media acknowledgment, competition presence&hellip;"></textarea></div>' +
+    '<div class="fg"><label>Notes / Payment Instructions</label><input class="fi" id="inv-notes" placeholder="Wire transfer, PayPal, check made payable to Amelia Arabe&hellip;"></div>' +
+    '<div style="display:flex;gap:.5rem;margin-top:.5rem">' +
+    '<button class="btn bc" onclick="createInvoice()">Create Invoice</button>' +
+    '<button class="btn bg" onclick="document.getElementById(\'inv-form\').style.display=\'none\'">Cancel</button>' +
+    '</div>' +
+    '</div>' +
+    '</div>' +
+
+    // Invoice list
+    '<div class="card">' +
+    '<div class="cl">All Invoices ('+d.invoices.length+')</div>' +
+    (d.invoices.length ? d.invoices.slice().reverse().map(function(inv, ri){
+      var i = d.invoices.length - 1 - ri;
+      var statusCls = 'inv-'+(inv.status||'draft').toLowerCase();
+      return '<div class="inv-row" style="flex-wrap:wrap;align-items:center;gap:.5rem">' +
+        '<div class="inv-num">'+escHtml(inv.number)+'</div>' +
+        '<div class="inv-to" style="flex:1;min-width:120px">'+escHtml(inv.to)+'<br><span style="font-size:.65rem;color:var(--muted)">'+escHtml(inv.contact||'')+(inv.email?' · '+escHtml(inv.email):'')+'</span></div>' +
+        '<div class="inv-date">Due '+escHtml(inv.dueDate||inv.date||'')+'</div>' +
+        '<div class="inv-amt">$'+parseFloat(inv.amount||0).toFixed(2)+'</div>' +
+        '<select class="inv-status '+statusCls+'" onchange="updateInvoiceStatus('+i+',this.value)" style="border:0.5px solid var(--iv3);border-radius:4px;cursor:pointer;padding:.2rem .4rem;font-family:var(--fm);font-size:.48rem">'+
+        INV_STATUS.map(function(s){ return '<option'+(inv.status===s?' selected':'')+'>'+s+'</option>'; }).join('')+
+        '</select>' +
+        '<div style="display:flex;gap:.3rem">' +
+        '<button onclick="printInvoice('+i+')" class="btn bg" style="font-size:.52rem;padding:.2rem .6rem;min-height:28px">PDF</button>' +
+        '<button onclick="emailInvoice('+i+')" class="btn bg" style="font-size:.52rem;padding:.2rem .6rem;min-height:28px">Email</button>' +
+        '<button onclick="deleteInvoice('+i+')" style="border:none;background:transparent;color:var(--faint);cursor:pointer;font-size:.9rem;padding:0 .3rem">&times;</button>' +
+        '</div>' +
+        '</div>';
+    }).join('') : '<div style="font-size:.75rem;color:var(--faint);text-align:center;padding:2rem">No invoices yet. Create your first one above.</div>') +
+    '</div>' +
+
+    '</div>'
+  );
+}
+
+function openCreateInvoice(){
+  var f = document.getElementById('inv-form');
+  if(f){ f.style.display='block'; setTimeout(function(){ var el=document.getElementById('inv-to'); if(el) el.focus(); },60); }
+}
+
+function createInvoice(){
+  var to = (document.getElementById('inv-to').value||'').trim();
+  var amount = document.getElementById('inv-amount').value;
+  if(!to||!amount){ showToast('Company name and amount required'); return; }
+  var d = getFinData();
+  var num = 'INV-' + String(d.invoices.length+1).padStart(3,'0');
+  d.invoices.push({
+    id:      Date.now(),
+    number:  num,
+    to:      to,
+    contact: document.getElementById('inv-contact').value,
+    email:   document.getElementById('inv-email').value,
+    amount:  parseFloat(amount),
+    date:    document.getElementById('inv-date').value,
+    dueDate: document.getElementById('inv-due').value,
+    desc:    document.getElementById('inv-desc').value,
+    notes:   document.getElementById('inv-notes').value,
+    status:  'Draft'
+  });
+  saveFinData(d);
+  showToast('Invoice created \u2713');
+  bInvoices();
+}
+
+function updateInvoiceStatus(i, status){
+  var d = getFinData();
+  if(d.invoices[i]) d.invoices[i].status = status;
+  saveFinData(d);
+  showToast('Status updated');
+  // Re-render status chip color without full reload
+  bInvoices();
+}
+
+function deleteInvoice(i){
+  if(!confirm('Delete this invoice?')) return;
+  var d = getFinData();
+  d.invoices.splice(i,1);
+  saveFinData(d);
+  bInvoices();
+}
+
+function emailInvoice(i){
+  var d = getFinData();
+  var inv = d.invoices[i];
+  if(!inv) return;
+  var subject = encodeURIComponent('Invoice '+inv.number+' — Amelia Arabe Campaign Sponsorship');
+  var body = encodeURIComponent(
+    'Dear '+(inv.contact||inv.to)+',\n\n'+
+    'Please find attached Invoice '+inv.number+' for $'+parseFloat(inv.amount).toFixed(2)+'.\n\n'+
+    'Description: '+(inv.desc||'Sponsorship')+'\n'+
+    'Invoice Date: '+inv.date+'\n'+
+    'Due Date: '+inv.dueDate+'\n\n'+
+    (inv.notes?'Payment instructions: '+inv.notes+'\n\n':'')+
+    'Thank you for your partnership and support of the Miss California USA 2026 campaign.\n\n'+
+    'With gratitude,\nAmelia Arabe\n'+
+    'Miss Temecula USA 2026 · Competing for Miss California USA\n'+
+    'missameliava@gmail.com'
+  );
+  window.location = 'mailto:'+(inv.email||'')+
+    '?subject='+subject+'&body='+body;
+  updateInvoiceStatus(i,'Sent');
+}
+
+function printInvoice(i){
+  var d = getFinData();
+  var inv = d.invoices[i];
+  if(!inv) return;
+
+  // Build a print-ready invoice page
+  var win = window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head><title>${inv.number}</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Figtree:wght@300;400;500&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Figtree',sans-serif;color:#1C1714;background:white;padding:3rem;max-width:760px;margin:0 auto;font-size:13px}
+.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3rem;padding-bottom:1.5rem;border-bottom:0.5px solid #E5DDD2}
+.logo-area h1{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;font-style:italic;color:#1C1714}
+.logo-area p{font-size:11px;color:#7A6F68;margin-top:4px;letter-spacing:0.04em}
+.inv-meta{text-align:right}
+.inv-num{font-size:22px;font-family:'Cormorant Garamond',serif;font-style:italic;color:#8B4A2F;margin-bottom:4px}
+.inv-dates{font-size:11px;color:#7A6F68;line-height:1.8}
+.bill-section{display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-bottom:2.5rem}
+.bill-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#B0A89F;margin-bottom:8px}
+.bill-name{font-size:15px;font-weight:600;color:#1C1714;margin-bottom:2px}
+.bill-detail{font-size:12px;color:#7A6F68;line-height:1.7}
+.line-items{width:100%;border-collapse:collapse;margin-bottom:2rem}
+.line-items th{text-align:left;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#B0A89F;padding:8px 12px;border-bottom:0.5px solid #E5DDD2}
+.line-items td{padding:14px 12px;border-bottom:0.5px solid #F0EBE3;font-size:13px;color:#3D3028;vertical-align:top}
+.line-items .amt{text-align:right;font-family:'Cormorant Garamond',serif;font-size:16px;font-style:italic;color:#1C1714}
+.total-row{display:flex;justify-content:flex-end;margin-bottom:2.5rem}
+.total-box{background:#FAF7F2;border:0.5px solid #E5DDD2;border-radius:8px;padding:1.25rem 1.75rem;text-align:right;min-width:220px}
+.total-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#7A6F68;margin-bottom:6px}
+.total-amount{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:300;font-style:italic;color:#8B4A2F}
+.notes{padding:1.25rem;background:#F5EDE8;border-radius:6px;font-size:12px;color:#3D3028;line-height:1.7;margin-bottom:2rem}
+.footer{text-align:center;font-size:10px;color:#B0A89F;letter-spacing:1px;padding-top:1.5rem;border-top:0.5px solid #E5DDD2}
+@media print{body{padding:1.5rem}button{display:none}}
+</style></head><body>
+<div style="text-align:right;margin-bottom:1.5rem"><button onclick="window.print()" style="padding:8px 18px;background:#1C1714;color:white;border:none;border-radius:5px;cursor:pointer;font-size:12px">Print / Save PDF</button></div>
+<div class="header">
+  <div class="logo-area">
+    <h1>Amelia Arabe</h1>
+    <p>Miss Temecula USA 2026 · Competing for Miss California USA<br>missameliava@gmail.com · Riverside, CA</p>
+  </div>
+  <div class="inv-meta">
+    <div class="inv-num">${inv.number}</div>
+    <div class="inv-dates">
+      Invoice Date: ${inv.date}<br>
+      Due Date: <strong>${inv.dueDate}</strong><br>
+      Status: <strong style="color:${inv.status==='Paid'?'#4A5E48':inv.status==='Overdue'?'#8B4A2F':'#A07830'}">${inv.status}</strong>
+    </div>
+  </div>
+</div>
+<div class="bill-section">
+  <div>
+    <div class="bill-label">From</div>
+    <div class="bill-name">Amelia Arabe</div>
+    <div class="bill-detail">Miss Temecula USA 2026<br>Riverside, California<br>missameliava@gmail.com</div>
+  </div>
+  <div>
+    <div class="bill-label">Bill To</div>
+    <div class="bill-name">${inv.to}</div>
+    <div class="bill-detail">${inv.contact||''}${inv.email?'<br>'+inv.email:''}</div>
+  </div>
+</div>
+<table class="line-items">
+  <thead><tr><th>Description</th><th style="text-align:right">Amount</th></tr></thead>
+  <tbody>
+    <tr><td>${inv.desc||'Campaign Sponsorship'}</td><td class="amt">$${parseFloat(inv.amount).toFixed(2)}</td></tr>
+  </tbody>
+</table>
+<div class="total-row">
+  <div class="total-box">
+    <div class="total-label">Total Due</div>
+    <div class="total-amount">$${parseFloat(inv.amount).toFixed(2)}</div>
+  </div>
+</div>
+${inv.notes?'<div class="notes"><strong style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#7A6F68;display:block;margin-bottom:6px">Payment Instructions</strong>'+inv.notes+'</div>':''}
+<div class="footer">
+  Library of Morenita · Amelia Arabe Campaign 2026 · Thank you for your partnership
+</div>
+</body></html>`);
+  win.document.close();
+}
+
+// ── SEED DEFAULT FINANCE DATA ─────────────────────────────────
+(function seedFinance(){
+  var d = getFinData();
+  if(!d.expenses.length && !d.invoices.length){
+    // Seed with some example data so Kathy sees a real dashboard
+    d.budget = 8000;
+    d.expenses = [
+      {id:1,desc:'Competition entry fee',cat:'Competition Fees',amount:395,date:'2026-03-15',notes:'Full payment secures embroidered sash'},
+      {id:2,desc:'Gown consultation — Laneea',cat:'Wardrobe',amount:150,date:'2026-03-20',notes:'Initial styling session'},
+      {id:3,desc:'Headshot session — Dorian Qi',cat:'Photography',amount:250,date:'2026-03-22',notes:'Official campaign headshots'},
+      {id:4,desc:'Training sessions — Donovan',cat:'Training',amount:300,date:'2026-03-25',notes:'March training package'},
+    ];
+    saveFinData(d);
+  }
+})();
+
+
 // ═══════════════════════════════════════════════════════════════
 // PROFILE SYSTEM
 // Each team member has a profile stored in localStorage under
@@ -4776,13 +5420,297 @@ function uploadProfilePhoto(e){
   reader.readAsDataURL(file);
 }
 
-// Seed default profiles for known team members on first load
+// ── TEAM ADMIN PANEL (Amelia only) ────────────────────────────
+// Shows all profiles, lets Amelia view/edit any of them
+
+var _adminEditingKey = null;
+
+function bTeamAdmin(){
+  if(S.role !== 'amelia'){ inject('<div style="padding:2rem;color:var(--wg)">Access restricted.</div>'); return; }
+
+  var profiles = getAllProfiles();
+  var keys = Object.keys(profiles);
+
+  // If editing a specific profile, show edit view
+  if(_adminEditingKey){
+    return bTeamAdminEdit(_adminEditingKey);
+  }
+
+  var rows = keys.map(function(key){
+    var p = profiles[key];
+    if(!p || !p.name) return '';
+    var initials = String(p.name||'?').split(' ').map(function(x){return x.charAt(0);}).join('').slice(0,2).toUpperCase();
+    var photoHtml = p.photo
+      ? '<div style="width:40px;height:40px;border-radius:50%;background:url('+p.photo+') center/cover;border:1.5px solid var(--ch4);flex-shrink:0"></div>'
+      : '<div style="width:40px;height:40px;border-radius:50%;background:rgba(240,216,152,.12);border:1.5px solid var(--ch4);display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-style:italic;color:var(--ch);font-size:.95rem;flex-shrink:0">'+initials+'</div>';
+    var pubBadge = p.displayOnPublic !== false
+      ? '<span style="font-size:.58rem;padding:.2rem .5rem;background:rgba(100,180,100,.15);color:#6DC06D;border-radius:3px;letter-spacing:1px">PUBLIC</span>'
+      : '<span style="font-size:.58rem;padding:.2rem .5rem;background:rgba(180,100,100,.1);color:#C06D6D;border-radius:3px;letter-spacing:1px">HIDDEN</span>';
+    return '<div style="display:flex;align-items:center;gap:.85rem;padding:.85rem 1rem;border-bottom:1px solid rgba(240,216,152,.07);cursor:pointer;transition:background .15s" ' +
+      'onmouseover="this.style.background=\'rgba(240,216,152,.04)\'" onmouseout="this.style.background=\'\'" ' +
+      'onclick="openTeamAdminEdit(\''+key+'\')">' +
+      photoHtml +
+      '<div style="flex:1;min-width:0">' +
+        '<div style="font-size:.88rem;font-weight:600;color:var(--wh);margin-bottom:.1rem">'+escHtml(p.name)+'</div>' +
+        '<div style="font-size:.72rem;color:var(--wg)">'+escHtml(p.roleLabel||p.category||'')+'</div>' +
+      '</div>' +
+      pubBadge +
+      '<div style="font-size:.7rem;color:var(--ch);letter-spacing:1px;margin-left:.5rem">Edit →</div>' +
+    '</div>';
+  }).filter(Boolean).join('');
+
+  inject(
+    '<div style="padding:1.5rem 1.75rem">' +
+    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;text-transform:uppercase;color:var(--ch2);margin-bottom:.3rem">Team Admin</div>' +
+    '<div style="font-family:var(--fd);font-size:1.6rem;font-style:italic;color:var(--ch);margin-bottom:.25rem">Team Profiles</div>' +
+    '<div style="font-size:.76rem;color:var(--st);margin-bottom:1.5rem">View and edit every team member\'s public profile. Changes reflect on the campaign site immediately.</div>' +
+
+    '<div class="card" style="padding:0;overflow:hidden">' +
+      (rows || '<div style="padding:1.5rem;font-size:.8rem;color:var(--wg)">No profiles found yet. Team members need to log in and save their profiles first.</div>') +
+    '</div>' +
+
+    // Public site preview note
+    '<div style="margin-top:1rem;padding:.85rem 1rem;background:rgba(240,216,152,.05);border:1px solid rgba(240,216,152,.1);border-radius:8px">' +
+      '<div style="font-size:.72rem;color:var(--wg);line-height:1.7">' +
+        '&#9432; Changes here update the public campaign site team section immediately. ' +
+        'Team members marked <strong style="color:#6DC06D">PUBLIC</strong> appear on the site. ' +
+        'Those marked <strong style="color:#C06D6D">HIDDEN</strong> do not.' +
+      '</div>' +
+    '</div>' +
+
+    '</div>'
+  );
+}
+
+function openTeamAdminEdit(key){
+  _adminEditingKey = key;
+  bTeamAdminEdit(key);
+}
+
+function bTeamAdminEdit(key){
+  var profiles = getAllProfiles();
+  var p = profiles[key] || {};
+  var initials = String(p.name||'?').split(' ').map(function(x){return x.charAt(0);}).join('').slice(0,2).toUpperCase();
+
+  inject(
+    '<div style="padding:1.5rem 1.75rem;max-width:680px">' +
+
+    // Back button
+    '<button class="btn bg" onclick="_adminEditingKey=null;bTeamAdmin()" style="margin-bottom:1.2rem">← All Profiles</button>' +
+
+    // Header
+    '<div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem">' +
+      (p.photo
+        ? '<div style="width:64px;height:64px;border-radius:50%;background:url('+p.photo+') center/cover;border:2px solid var(--ch4);flex-shrink:0"></div>'
+        : '<div style="width:64px;height:64px;border-radius:50%;background:rgba(240,216,152,.12);border:2px solid var(--ch4);display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-style:italic;color:var(--ch);font-size:1.5rem;flex-shrink:0">'+initials+'</div>'
+      ) +
+      '<div>' +
+        '<div style="font-family:var(--fd);font-size:1.3rem;font-style:italic;color:var(--ch)">'+escHtml(p.name||key)+'</div>' +
+        '<div style="font-size:.74rem;color:var(--st)">'+escHtml(p.roleLabel||p.category||'')+'</div>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="card">' +
+      '<div class="cl">Edit Profile</div>' +
+
+      '<div style="margin-bottom:.85rem">' +
+        '<div style="font-size:.68rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--wg);margin-bottom:.3rem">Display Name</div>' +
+        '<input id="adm-name" class="fi" value="'+escHtml(p.name||'')+'" style="width:100%">' +
+      '</div>' +
+      '<div style="margin-bottom:.85rem">' +
+        '<div style="font-size:.68rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--wg);margin-bottom:.3rem">Role / Title</div>' +
+        '<input id="adm-role" class="fi" value="'+escHtml(p.roleLabel||'')+'" style="width:100%">' +
+      '</div>' +
+      '<div style="margin-bottom:.85rem">' +
+        '<div style="font-size:.68rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--wg);margin-bottom:.3rem">Bio</div>' +
+        '<textarea id="adm-bio" class="ft" style="width:100%;min-height:80px;resize:vertical">'+escHtml(p.bio||'')+'</textarea>' +
+      '</div>' +
+      '<div style="margin-bottom:.85rem">' +
+        '<div style="font-size:.68rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--wg);margin-bottom:.3rem">Sort Order</div>' +
+        '<input id="adm-order" class="fi" type="number" min="1" max="20" value="'+(p.sortOrder||10)+'" style="width:80px">' +
+      '</div>' +
+      '<div style="margin-bottom:1rem">' +
+        '<label style="display:flex;align-items:center;gap:.5rem;font-size:.74rem;color:var(--st);cursor:pointer">' +
+          '<input type="checkbox" id="adm-public" '+(p.displayOnPublic!==false?'checked':'')+' style="width:14px;height:14px">' +
+          'Show on public campaign site' +
+        '</label>' +
+      '</div>' +
+
+      // Photo upload
+      '<div style="margin-bottom:1rem">' +
+        '<div style="font-size:.68rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--wg);margin-bottom:.4rem">Profile Photo</div>' +
+        '<label style="display:inline-flex;align-items:center;gap:.4rem;cursor:pointer;font-size:.72rem;color:var(--wg);border:1px solid rgba(240,216,152,.2);padding:.35rem .8rem;border-radius:5px">' +
+          '📷 Upload Photo' +
+          '<input type="file" accept="image/*" style="display:none" onchange="adminUploadPhoto(event,\''+key+'\')">' +
+        '</label>' +
+        (p.photo ? ' <span style="font-size:.68rem;color:var(--ch)">✓ Photo set</span>' : '') +
+      '</div>' +
+
+      '<button class="btn bp" onclick="saveAdminProfile(\''+key+'\')" style="width:100%;padding:.7rem">Save Changes →</button>' +
+    '</div>' +
+
+    '</div>'
+  );
+}
+
+function saveAdminProfile(key){
+  var profiles = getAllProfiles();
+  if(!profiles[key]) profiles[key] = {};
+  profiles[key].name         = (document.getElementById('adm-name').value||'').trim();
+  profiles[key].roleLabel    = (document.getElementById('adm-role').value||'').trim();
+  profiles[key].bio          = (document.getElementById('adm-bio').value||'').trim();
+  profiles[key].sortOrder    = parseInt(document.getElementById('adm-order').value)||10;
+  profiles[key].displayOnPublic = document.getElementById('adm-public').checked;
+  profiles[key].updatedAt    = new Date().toISOString();
+  lsSave(PROFILE_KEY, profiles);
+  localStorage.setItem('chq-team-public', JSON.stringify(buildPublicTeamData()));
+  showToast('Profile saved \u2713');
+  bTeamAdminEdit(key);
+}
+
+function adminUploadPhoto(e, key){
+  var file = e.target.files && e.target.files[0];
+  if(!file) return;
+  if(file.size > 2*1024*1024){ showToast('Photo must be under 2MB'); return; }
+  var reader = new FileReader();
+  reader.onload = function(ev){
+    var profiles = getAllProfiles();
+    if(!profiles[key]) profiles[key] = {};
+    profiles[key].photo = ev.target.result;
+    profiles[key].updatedAt = new Date().toISOString();
+    lsSave(PROFILE_KEY, profiles);
+    localStorage.setItem('chq-team-public', JSON.stringify(buildPublicTeamData()));
+    showToast('Photo saved \u2713');
+    bTeamAdminEdit(key);
+  };
+  reader.readAsDataURL(file);
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// FINANCE & OPERATIONS — Kathy's Dashboard
+// ═══════════════════════════════════════════════════════════════
+var FIN_KEY='chq-finance';
+function getFinanceData(){return lsGet(FIN_KEY,{expenses:[],invoices:[],budget:{total:10000,categories:{'Competition Fees':2000,'Wardrobe':3000,'Hair & Makeup':1500,'Photography':1000,'Marketing':800,'Training':600,'Travel & Hotel':800,'Miscellaneous':300}}});}
+function saveFinanceData(data){lsSave(FIN_KEY,data);showToast('Saved ✓');}
+
+function bFinanceDash(){
+  var fin=getFinanceData();
+  var expenses=fin.expenses||[];
+  var invoices=fin.invoices||[];
+  var totalExpenses=expenses.reduce(function(a,e){return a+(parseFloat(e.amount)||0);},0);
+  var totalPaid=invoices.filter(function(i){return i.status==='paid';}).reduce(function(a,i){return a+(parseFloat(i.amount)||0);},0);
+  var totalPending=invoices.filter(function(i){return i.status==='sent'||i.status==='overdue';}).reduce(function(a,i){return a+(parseFloat(i.amount)||0);},0);
+  var budget=fin.budget&&fin.budget.total?fin.budget.total:10000;
+  var remaining=budget-totalExpenses;
+  var tab=window._finTab||'expenses';
+  inject(
+    '<div class="ph"><div><div class="ph-tag">Finance & Operations</div><div class="ph-title">Campaign <em>Finances</em></div></div>'+
+    '<div class="ph-acts">'+
+    (tab==='expenses'?'<button class="btn bp" onclick="openAddExpense()">+ Expense</button>':'')+
+    (tab==='invoices'?'<button class="btn bp" onclick="openCreateInvoice()">+ Invoice</button>':'')+
+    '</div></div>'+
+    '<div class="fin-stat-grid" style="padding:1.1rem 1.75rem 0">'+
+    '<div class="fin-stat expense"><div class="fin-n">$'+totalExpenses.toFixed(0)+'</div><div class="fin-l">Total Expenses</div></div>'+
+    '<div class="fin-stat income"><div class="fin-n">$'+totalPaid.toFixed(0)+'</div><div class="fin-l">Sponsorships Paid</div></div>'+
+    '<div class="fin-stat pending"><div class="fin-n">$'+totalPending.toFixed(0)+'</div><div class="fin-l">Pending</div></div>'+
+    '<div class="fin-stat balance" style="border-top-color:'+( remaining>=0?'var(--sg2)':'var(--si)')+'"><div class="fin-n" style="color:'+( remaining>=0?'var(--sg2)':'var(--si)')+'">$'+Math.abs(remaining).toFixed(0)+( remaining<0?' over':'')+'</div><div class="fin-l">'+( remaining>=0?'Remaining':'Over Budget')+'</div></div>'+
+    '</div>'+
+    '<div class="sp-tabbar">'+
+    [{k:'expenses',l:'Expenses'},{k:'invoices',l:'Invoices'},{k:'budget',l:'Budget'}].map(function(t){return '<button class="sp-tab '+( tab===t.k?'on':'')+'" onclick="window._finTab=\''+t.k+'\';bFinanceDash()">'+t.l+'</button>';}).join('')+
+    '</div>'+
+    '<div class="pb" style="padding-top:1.1rem">'+
+    (tab==='expenses'?renderExpenses(expenses):'')+
+    (tab==='invoices'?renderInvoices(invoices):'')+
+    (tab==='budget'?renderBudget(fin,totalExpenses):'')+
+    '</div>'
+  );
+}
+
+function renderExpenses(expenses){
+  if(!expenses.length)return '<div style="text-align:center;padding:3rem;font-family:var(--fd);font-size:1.1rem;font-style:italic;color:var(--muted)">No expenses logged yet.</div>';
+  return '<div class="card" style="padding:0;overflow:hidden">'+
+    '<div style="padding:.65rem 1rem;background:var(--iv2);border-bottom:0.5px solid var(--iv3);display:flex;align-items:center;justify-content:space-between"><div style="font-family:var(--fm);font-size:.48rem;letter-spacing:2px;text-transform:uppercase;color:var(--muted)">All Expenses</div><button class="btn bg" style="font-size:.56rem;padding:.25rem .65rem;min-height:28px" onclick="exportExpensesCSV()">Export CSV</button></div>'+
+    expenses.slice().reverse().map(function(e,ri){var i=expenses.length-1-ri;return '<div class="exp-row" style="padding:.65rem 1rem"><div class="exp-cat">'+escHtml(e.category||'Other')+'</div><div style="flex:1"><div class="exp-desc">'+escHtml(e.description)+'</div>'+( e.vendor?'<div style="font-size:.65rem;color:var(--muted)">'+escHtml(e.vendor)+'</div>':'')+'</div><div class="exp-date">'+escHtml(e.date||'')+'</div><div class="exp-amt">$'+parseFloat(e.amount||0).toFixed(2)+'</div><button onclick="deleteExpense('+i+')" style="border:none;background:none;color:var(--faint);cursor:pointer;font-size:.85rem">&times;</button></div>';}).join('')+
+    '</div>';
+}
+
+function renderInvoices(invoices){
+  if(!invoices.length)return '<div style="text-align:center;padding:3rem;font-family:var(--fd);font-size:1.1rem;font-style:italic;color:var(--muted)">No invoices yet.</div>';
+  return '<div class="card" style="padding:0;overflow:hidden">'+
+    invoices.slice().reverse().map(function(inv,ri){var i=invoices.length-1-ri;var sc={draft:'inv-draft',sent:'inv-sent',paid:'inv-paid',overdue:'inv-overdue'}[inv.status]||'inv-draft';return '<div class="inv-row" style="padding:.7rem 1rem"><div class="inv-num">#'+String(inv.number||i+1).padStart(3,'0')+'</div><div style="flex:1"><div class="inv-to">'+escHtml(inv.to)+'</div>'+( inv.description?'<div style="font-size:.68rem;color:var(--muted)">'+escHtml(inv.description.slice(0,50))+'</div>':'')+'</div><div class="inv-date">'+escHtml(inv.date||'')+'</div><div class="inv-amt">$'+parseFloat(inv.amount||0).toFixed(2)+'</div><div class="inv-status '+sc+'">'+inv.status+'</div><div style="display:flex;gap:.25rem;margin-left:.5rem"><button onclick="printInvoice('+i+')" style="border:0.5px solid var(--iv3);background:transparent;color:var(--muted);cursor:pointer;font-size:.58rem;padding:.2rem .5rem;border-radius:4px;font-family:var(--fm)">PDF</button><button onclick="cycleInvoiceStatus('+i+')" style="border:0.5px solid var(--iv3);background:transparent;color:var(--muted);cursor:pointer;font-size:.58rem;padding:.2rem .5rem;border-radius:4px;font-family:var(--fm)">Status</button><button onclick="deleteInvoice('+i+')" style="border:none;background:none;color:var(--faint);cursor:pointer;font-size:.85rem">&times;</button></div></div>';}).join('')+
+    '</div>';
+}
+
+function renderBudget(fin,totalExpenses){
+  var budget=fin.budget||{};var total=budget.total||10000;var cats=budget.categories||{};var expenses=fin.expenses||[];
+  var spent={};expenses.forEach(function(e){spent[e.category]=(spent[e.category]||0)+(parseFloat(e.amount)||0);});
+  return '<div class="g2"><div class="card"><div class="cl">Total Budget</div><input id="budget-total" value="'+total+'" type="number" style="font-family:var(--fd);font-size:1.6rem;font-style:italic;color:var(--ink);border:none;outline:none;background:transparent;width:120px" onblur="saveBudgetTotal(this.value)"><div style="height:3px;background:var(--iv3);border-radius:2px;overflow:hidden;margin-top:.5rem"><div style="height:100%;width:'+Math.min(100,(totalExpenses/total)*100)+'%;background:'+( totalExpenses>total?'var(--si)':'var(--sg2)')+';border-radius:2px;transition:width .6s"></div></div><div style="font-size:.68rem;color:var(--muted);margin-top:.3rem">$'+totalExpenses.toFixed(0)+' of $'+total.toLocaleString()+'</div></div>'+
+    '<div class="card"><div class="cl">By Category</div>'+Object.keys(cats).map(function(cat){var b=cats[cat]||0;var u=spent[cat]||0;var p=b>0?Math.min(100,(u/b)*100):0;return '<div style="margin-bottom:.55rem"><div style="display:flex;justify-content:space-between;margin-bottom:.15rem"><div style="font-size:.72rem;color:var(--ink)">'+cat+'</div><div style="font-family:var(--fm);font-size:.6rem;color:var(--muted)">$'+u.toFixed(0)+' / $'+b.toLocaleString()+'</div></div><div style="height:2px;background:var(--iv3);border-radius:1px;overflow:hidden"><div style="height:100%;width:'+p+'%;background:var(--si);border-radius:1px;opacity:.7"></div></div></div>';}).join('')+'</div></div>';
+}
+
+function openAddExpense(){
+  inject('<div class="ph"><div><div class="ph-tag">Finance</div><div class="ph-title">Add <em>Expense</em></div></div></div><div class="pb"><div style="max-width:520px"><div class="fg"><label>Description</label><input class="fi" id="exp-desc" placeholder="e.g. Competition entry fee"></div><div class="fg-row"><div class="fg"><label>Amount ($)</label><input class="fi" id="exp-amt" type="number" step="0.01" placeholder="0.00"></div><div class="fg"><label>Date</label><input class="fi" id="exp-date" type="date" value="'+new Date().toISOString().slice(0,10)+'"></div></div><div class="fg-row"><div class="fg"><label>Category</label><select class="fs" id="exp-cat">'+['Competition Fees','Wardrobe','Hair & Makeup','Photography','Marketing','Training','Travel & Hotel','Miscellaneous'].map(function(c){return '<option>'+c+'</option>';}).join('')+'</select></div><div class="fg"><label>Vendor</label><input class="fi" id="exp-vendor" placeholder="optional"></div></div><div class="fg"><label>Notes</label><textarea class="ft" id="exp-notes" style="min-height:55px"></textarea></div><div style="display:flex;gap:.5rem"><button class="btn bp" onclick="saveExpense()">Save</button><button class="btn bg" onclick="window._finTab=\'expenses\';bFinanceDash()">Cancel</button></div></div></div>');
+}
+
+function saveExpense(){
+  var desc=(document.getElementById('exp-desc').value||'').trim();var amt=document.getElementById('exp-amt').value;
+  if(!desc||!amt){showToast('Required fields missing');return;}
+  var fin=getFinanceData();
+  fin.expenses.push({id:Date.now(),description:desc,amount:parseFloat(amt),date:document.getElementById('exp-date').value,category:document.getElementById('exp-cat').value,vendor:(document.getElementById('exp-vendor').value||'').trim(),notes:(document.getElementById('exp-notes').value||'').trim()});
+  saveFinanceData(fin);window._finTab='expenses';bFinanceDash();
+}
+
+function deleteExpense(i){if(!confirm('Delete this expense?'))return;var fin=getFinanceData();fin.expenses.splice(i,1);saveFinanceData(fin);bFinanceDash();}
+
+function exportExpensesCSV(){
+  var fin=getFinanceData();
+  var rows=[['Date','Category','Description','Vendor','Amount']];
+  fin.expenses.forEach(function(e){rows.push([e.date||'',e.category||'',e.description||'',e.vendor||'',e.amount||0]);});
+  var csv=rows.map(function(r){return r.map(function(v){return '"'+String(v).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='expenses-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+}
+
+function openCreateInvoice(){
+  var fin=getFinanceData();var nextNum=fin.invoices.length+1;
+  inject('<div class="ph"><div><div class="ph-tag">Finance</div><div class="ph-title">Create <em>Invoice</em></div></div></div><div class="pb"><div style="max-width:560px"><div class="fg-row"><div class="fg"><label>Invoice #</label><input class="fi" id="inv-num" value="'+String(nextNum).padStart(3,'0')+'"></div><div class="fg"><label>Date</label><input class="fi" id="inv-date" type="date" value="'+new Date().toISOString().slice(0,10)+'"></div></div><div class="fg"><label>Bill To</label><input class="fi" id="inv-to" placeholder="Sponsor company name"></div><div class="fg"><label>Contact Name</label><input class="fi" id="inv-contact" placeholder="Contact name"></div><div class="fg"><label>Contact Email</label><input class="fi" id="inv-email" type="email" placeholder="billing@company.com"></div><div class="fg"><label>Description</label><textarea class="ft" id="inv-desc" placeholder="e.g. Title Sponsorship — Miss California USA 2026" style="min-height:75px"></textarea></div><div class="fg-row"><div class="fg"><label>Amount ($)</label><input class="fi" id="inv-amt" type="number" step="0.01"></div><div class="fg"><label>Due Date</label><input class="fi" id="inv-due" type="date"></div></div><div class="fg"><label>Payment Instructions</label><input class="fi" id="inv-payment" placeholder="e.g. Zelle: missameliava@gmail.com"></div><div style="display:flex;gap:.5rem"><button class="btn bp" onclick="saveInvoice()">Save Invoice</button><button class="btn bg" onclick="window._finTab=\'invoices\';bFinanceDash()">Cancel</button></div></div></div>');
+}
+
+function saveInvoice(){
+  var to=(document.getElementById('inv-to').value||'').trim();var amt=document.getElementById('inv-amt').value;
+  if(!to||!amt){showToast('Required fields missing');return;}
+  var fin=getFinanceData();
+  fin.invoices.push({id:Date.now(),number:document.getElementById('inv-num').value,to:to,contact:(document.getElementById('inv-contact').value||'').trim(),email:(document.getElementById('inv-email').value||'').trim(),description:(document.getElementById('inv-desc').value||'').trim(),amount:parseFloat(amt),date:document.getElementById('inv-date').value,due:document.getElementById('inv-due').value,payment:(document.getElementById('inv-payment').value||'').trim(),status:'draft'});
+  saveFinanceData(fin);window._finTab='invoices';bFinanceDash();showToast('Invoice saved — click PDF to print');
+}
+
+function cycleInvoiceStatus(i){var fin=getFinanceData();var inv=fin.invoices[i];if(!inv)return;var cycle={draft:'sent',sent:'paid',paid:'overdue',overdue:'draft'};inv.status=cycle[inv.status]||'draft';saveFinanceData(fin);bFinanceDash();}
+function deleteInvoice(i){if(!confirm('Delete this invoice?'))return;var fin=getFinanceData();fin.invoices.splice(i,1);saveFinanceData(fin);bFinanceDash();}
+function saveBudgetTotal(val){var fin=getFinanceData();if(!fin.budget)fin.budget={};fin.budget.total=parseFloat(val)||10000;saveFinanceData(fin);}
+
+function printInvoice(i){
+  var fin=getFinanceData();var inv=fin.invoices[i];if(!inv)return;
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Invoice #'+escHtml(String(inv.number||i+1))+'</title><style>@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Figtree:wght@300;400;500&display=swap");body{font-family:Figtree,sans-serif;color:#1C1714;background:white;margin:0;padding:0}.page{max-width:700px;margin:0 auto;padding:3rem 2.5rem}.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3rem;padding-bottom:1.5rem;border-bottom:1px solid #E5DDD2}.brand{font-family:"Cormorant Garamond",serif;font-size:2rem;font-style:italic;font-weight:300}.brand small{display:block;font-family:Figtree,sans-serif;font-size:.6rem;letter-spacing:3px;text-transform:uppercase;color:#B0A89F;font-style:normal;margin-top:.2rem}.inv-num{font-family:monospace;font-size:.8rem;color:#7A6F68}.inv-title{font-family:"Cormorant Garamond",serif;font-size:1.6rem;font-style:italic;color:#8B4A2F}.parties{display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-bottom:2.5rem}.party-label{font-size:.6rem;letter-spacing:2px;text-transform:uppercase;color:#B0A89F;margin-bottom:.5rem}.party-name{font-family:"Cormorant Garamond",serif;font-size:1.2rem;font-style:italic;color:#1C1714;margin-bottom:.15rem}.party-detail{font-size:.78rem;color:#7A6F68;line-height:1.6}table{width:100%;border-collapse:collapse;margin-bottom:2rem}thead th{font-size:.58rem;letter-spacing:2px;text-transform:uppercase;color:#B0A89F;padding:.5rem .75rem;text-align:left;border-bottom:1px solid #E5DDD2;background:#FAF7F2}tbody td{padding:.75rem;border-bottom:.5px solid #F0EBE3;font-size:.85rem;color:#3D3028}.total-row td{font-size:.95rem;font-weight:500;background:#FAF7F2;padding:1rem .75rem}.total-amount{font-family:"Cormorant Garamond",serif;font-size:1.6rem;font-style:italic;color:#8B4A2F;text-align:right}.footer{margin-top:3rem;padding-top:1.5rem;border-top:1px solid #E5DDD2;font-size:.75rem;color:#B0A89F;line-height:1.8}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><div class="page">'+
+    '<div class="header"><div class="brand">Library of Morenita<small>Amelia Arabe · Crown HQ</small></div><div><div class="inv-title">Invoice</div><div class="inv-num">#'+escHtml(String(inv.number||i+1).padStart(3,'0'))+'</div></div></div>'+
+    '<div class="parties"><div><div class="party-label">From</div><div class="party-name">Amelia Arabe</div><div class="party-detail">Miss Temecula USA 2026<br>missameliava@gmail.com<br>Riverside, California</div></div>'+
+    '<div><div class="party-label">Bill To</div><div class="party-name">'+escHtml(inv.to)+'</div><div class="party-detail">'+( inv.contact?escHtml(inv.contact)+'<br>':'')+( inv.email?escHtml(inv.email):'')+'</div></div></div>'+
+    '<table><thead><tr><th>Description</th><th>Date</th><th style="text-align:right">Amount</th></tr></thead><tbody>'+
+    '<tr><td>'+escHtml(inv.description||'Campaign Sponsorship')+'</td><td style="font-size:.75rem;color:#B0A89F">'+escHtml(inv.date||'')+'</td><td style="text-align:right;font-family:Cormorant Garamond,serif;font-size:1rem;font-style:italic">$'+parseFloat(inv.amount||0).toFixed(2)+'</td></tr>'+
+    '<tr class="total-row"><td colspan="2" style="color:#7A6F68;font-size:.78rem;text-transform:uppercase;letter-spacing:1px">Total Due</td><td class="total-amount">$'+parseFloat(inv.amount||0).toFixed(2)+'</td></tr></tbody></table>'+
+    ( inv.due?'<div style="font-size:.75rem;color:#7A6F68;margin-bottom:1rem"><strong>Due:</strong> '+escHtml(inv.due)+'</div>':'')+
+    ( inv.payment?'<div style="font-size:.78rem;color:#3D3028;background:#FAF7F2;padding:.85rem 1rem;border-radius:6px;border:.5px solid #E5DDD2"><strong>Payment:</strong> '+escHtml(inv.payment)+'</div>':'')+
+    '<div class="footer">Thank you for supporting the Library of Morenita campaign. Questions: missameliava@gmail.com</div>'+
+    '</div></body></html>';
+  var win=window.open('','_blank');win.document.write(html);win.document.close();setTimeout(function(){win.print();},500);
+}
+
 (function seedDefaultProfiles(){
   var profiles = getAllProfiles();
   var defaults = [
     { key:'amelia',  name:'Amelia Arabe',  roleLabel:'Miss Temecula USA 2026',    bio:'Engineer, artist, cellist, and the force behind this campaign. Competing July 10.',                          sortOrder:1, category:'Miss Temecula USA 2026',  displayOnPublic:true  },
     { key:'laneea',  name:'Laneea',        roleLabel:'Campaign Manager \u00b7 Stylist', bio:'Directing campaign strategy and curating every look from competition gown to interview day.',        sortOrder:2, category:'Styling & Fashion',        displayOnPublic:true  },
     { key:'trainer', name:'Donovan',       roleLabel:'Fitness Coach',             bio:'Training program designed for competition performance \u2014 strength, posture, and stage presence.',      sortOrder:3, category:'Fitness & Training',        displayOnPublic:true  },
+    { key:'finance', name:'Kathy',         roleLabel:'Financial Manager',         bio:'Managing campaign budget, sponsor invoicing, and financial operations through competition day.',            sortOrder:4, category:'Finance & Operations',      displayOnPublic:true  },
   ];
   var changed = false;
   defaults.forEach(function(d){

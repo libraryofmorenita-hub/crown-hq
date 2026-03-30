@@ -416,7 +416,8 @@ body{font-family:var(--fb);background:var(--ivory);color:var(--ink);font-size:13
 <!-- ══ NAV ══ -->
 <nav class="nav">
   <a href="#" class="nav-logo">
-    <img src="assets/Library_of_Morenita_Logo_brown-02.png" alt="Library of Morenita" class="nav-logo-img">
+    <img src="assets/Library_of_Morenita_Logo_brown-02.png" alt="Library of Morenita" class="nav-logo-img"
+      onerror="this.style.display='none'">
     <div class="nav-logo-text">
       <span class="nav-logo-name">Amelia Arabe</span>
       <span class="nav-logo-title">Miss Temecula USA 2026</span>
@@ -529,6 +530,37 @@ body{font-family:var(--fb);background:var(--ivory);color:var(--ink);font-size:13
         <div class="pq-mark">&ldquo;</div>
         <p class="pq-text">I am not running to be beautiful on a stage. I am running to build something that lasts after the crown comes off.</p>
         <div class="pq-attr">&mdash; Amelia Arabe</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ LIBRARY ══ -->
+<section class="section" id="library" style="background:var(--ivory);padding-top:4rem;padding-bottom:4rem">
+  <div class="section-inner">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:1rem;margin-bottom:2.5rem;flex-wrap:wrap">
+      <div>
+        <div class="s-eyebrow ey-si reveal">Library of Morenita</div>
+        <h2 class="s-title reveal">Writing &amp; <em>Essays</em></h2>
+        <p class="s-sub reveal" style="margin-top:.5rem">Published writing on technology, culture, sustainability, and the ideas behind the campaign.</p>
+      </div>
+      <a href="https://substack.com/@musesofmorenita" target="_blank" class="btn" style="background:var(--iv2);color:var(--ink);white-space:nowrap;font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:9px 18px;border-radius:6px;text-decoration:none">Read on Substack &rarr;</a>
+    </div>
+
+    <!-- Articles rendered from localStorage when available, placeholder cards as fallback -->
+    <div id="library-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;"></div>
+    <div id="library-placeholder" style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;">
+      <div style="background:white;border:0.5px dashed var(--bd);border-radius:10px;padding:1.4rem;opacity:.5">
+        <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--si);margin-bottom:.4rem">Essay &middot; Coming Soon</div>
+        <div style="font-family:var(--fd);font-size:15px;color:var(--ink);line-height:1.4">On building systems that breathe &mdash; engineering and the human condition</div>
+      </div>
+      <div style="background:white;border:0.5px dashed var(--bd);border-radius:10px;padding:1.4rem;opacity:.5">
+        <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--si);margin-bottom:.4rem">Culture &middot; Coming Soon</div>
+        <div style="font-family:var(--fd);font-size:15px;color:var(--ink);line-height:1.4">Fashion as infrastructure: the argument for sustainability policy</div>
+      </div>
+      <div style="background:white;border:0.5px dashed var(--bd);border-radius:10px;padding:1.4rem;opacity:.5">
+        <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--si);margin-bottom:.4rem">Technology &middot; Coming Soon</div>
+        <div style="font-family:var(--fd);font-size:15px;color:var(--ink);line-height:1.4">Solar in the underserved: what the green energy gap actually looks like</div>
       </div>
     </div>
   </div>
@@ -814,7 +846,7 @@ body{font-family:var(--fb);background:var(--ivory);color:var(--ink);font-size:13
 <footer class="footer">
   <div class="footer-inner">
     <div style="display:flex;align-items:center;gap:10px;">
-      <img src="assets/Library_of_Morenita_Logo_brown-02.png" alt="Library of Morenita" style="height:28px;width:auto;opacity:.7;">
+      <img src="assets/Library_of_Morenita_Logo_brown-02.png" alt="Library of Morenita" style="height:28px;width:auto;opacity:.7;" onerror="this.style.display='none'">
       <div>
         <div class="footer-logo">Amelia <em>Arabe</em></div>
         <div style="font-size:10px;color:var(--faint);letter-spacing:.06em;">Miss Temecula USA 2026 &middot; Competing for Miss California USA</div>
@@ -1041,6 +1073,51 @@ function renderLiveTeam(team){
 }
 
 loadLiveTeamData();
+
+// ── LIBRARY ARTICLES FROM DASHBOARD ───────────────
+// Reads published posts from localStorage written by app.js.
+// Shows placeholder cards if none found.
+function loadPublishedArticles(){
+  try {
+    var raw = localStorage.getItem('chq-po');
+    if(!raw) return;
+    var posts = JSON.parse(raw);
+    if(!Array.isArray(posts)) return;
+    var published = posts.filter(function(p){ return p.status==='published'; })
+      .sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
+    if(!published.length) return;
+
+    var grid = document.getElementById('library-grid');
+    var placeholder = document.getElementById('library-placeholder');
+    if(!grid) return;
+
+    var CAT_COLORS = {
+      essay:'var(--si)', culture:'var(--sa)', technology:'var(--go)',
+      advocacy:'var(--si)', fashion:'var(--sa)', platform:'var(--go)'
+    };
+
+    grid.innerHTML = published.map(function(p){
+      var catColor = CAT_COLORS[(p.cat||'').toLowerCase()] || 'var(--si)';
+      var dateStr = p.date ? new Date(p.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '';
+      // Truncate body for preview
+      var preview = (p.body||'').replace(/<[^>]*>/g,'').slice(0,120);
+      if(preview.length===120) preview += '\u2026';
+      return '<div style="background:white;border:0.5px solid var(--bd);border-radius:10px;padding:1.4rem;transition:border-color .15s,transform .15s;cursor:pointer" ' +
+        'onmouseover="this.style.borderColor=\'var(--sil)\';this.style.transform=\'translateY(-2px)\'" ' +
+        'onmouseout="this.style.borderColor=\'\';this.style.transform=\'\'">' +
+        '<div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:'+catColor+';margin-bottom:.4rem">'+(p.tag||p.cat||'Essay')+'</div>' +
+        '<div style="font-family:var(--fd);font-size:16px;color:var(--ink);line-height:1.4;margin-bottom:.4rem">'+p.title+'</div>' +
+        (preview ? '<div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:.6rem">'+preview+'</div>' : '') +
+        '<div style="font-size:10px;color:var(--faint)">'+dateStr+'</div>' +
+      '</div>';
+    }).join('');
+
+    if(placeholder) placeholder.style.display = 'none';
+    grid.style.display = 'grid';
+  } catch(e){}
+}
+
+loadPublishedArticles();
 
 var sections=['platform','about','team','join','sponsor','press'];
 var navLinks=document.querySelectorAll('.nav-link');
