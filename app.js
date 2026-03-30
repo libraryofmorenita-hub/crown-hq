@@ -191,24 +191,60 @@ var S={
 
 function lsGet(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
 function lsWriteLocal(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+
+// ── PERFORMANCE: debounced Supabase saves ─────────────────────
+// localStorage writes are instant. Supabase syncs are batched
+// with a 1.2s debounce so rapid keystrokes don't flood the API.
+var _sbDebounce = {};
+function debouncedSbSave(key, fn){
+  clearTimeout(_sbDebounce[key]);
+  _sbDebounce[key] = setTimeout(fn, 1200);
+}
+
 function lsSave(k,v){
   lsWriteLocal(k,v);
   if(SB_SYNC_SUSPENDED)return;
-  if(k==='chq-sp')sbSaveSponsors();
-  else if(k==='chq-ce')sbSaveEvents();
-  else if(k==='chq-po')sbSavePosts();
-  else if(k==='chq-lk')sbSaveLooks();
-  else if(k==='chq-wk')sbSaveWorkouts();
-  else if(k==='chq-ms')sbSaveMessages();
-  else if(k==='chq-gl')sbSaveKV('goals',v);
-  else if(k==='chq-td')sbSaveKV('todos',v);
-  else if(k==='chq-an')sbSaveKV('answers',v);
-  else if(k==='chq-br')sbSaveKV('brand',v);
-  else if(k==='chq-adv')sbSaveKV('adv',v);
-  else if(k==='chq-gd')sbSaveKV('gd',v);
-  else if(k==='chq-timeline')sbSaveKV('timeline',v);
-  else if(SB_KV_MAP[k])sbSaveKV(SB_KV_MAP[k],v);
+  // Debounce all Supabase writes
+  if(k==='chq-sp')      debouncedSbSave(k, sbSaveSponsors);
+  else if(k==='chq-ce') debouncedSbSave(k, sbSaveEvents);
+  else if(k==='chq-po') debouncedSbSave(k, sbSavePosts);
+  else if(k==='chq-lk') debouncedSbSave(k, sbSaveLooks);
+  else if(k==='chq-wk') debouncedSbSave(k, sbSaveWorkouts);
+  else if(k==='chq-ms') debouncedSbSave(k, sbSaveMessages);
+  else if(k==='chq-gl') debouncedSbSave(k, function(){ sbSaveKV('goals',v); });
+  else if(k==='chq-td') debouncedSbSave(k, function(){ sbSaveKV('todos',v); });
+  else if(k==='chq-an') debouncedSbSave(k, function(){ sbSaveKV('answers',v); });
+  else if(k==='chq-br') debouncedSbSave(k, function(){ sbSaveKV('brand',v); });
+  else if(k==='chq-adv')debouncedSbSave(k, function(){ sbSaveKV('adv',v); });
+  else if(k==='chq-gd') debouncedSbSave(k, function(){ sbSaveKV('gd',v); });
+  else if(k==='chq-timeline') debouncedSbSave(k, function(){ sbSaveKV('timeline',v); });
+  else if(SB_KV_MAP[k]) debouncedSbSave(k, function(){ sbSaveKV(SB_KV_MAP[k],v); });
 }
+
+// ── PERFORMANCE: panel cache ──────────────────────────────────
+// Panels that haven't changed don't re-render. Cache keyed by
+// panel id + a lightweight data hash.
+var _panelCache = {};
+function panelHash(id){
+  // Quick hash — just use key data source per panel type
+  var src = {
+    'sponsors': S.sponsors.length,
+    'calendar': (S.appts||[]).length+(S.calEvents||[]).length,
+    'fitness': JSON.stringify(lsGet('chq-fitness',{}).days||{}),
+    'looks': S.looks.length,
+    'files': (window.FILE_STORE||[]).length
+  };
+  return id + ':' + (src[id] !== undefined ? src[id] : Date.now());
+}
+function shouldSkipRender(id){
+  var h = panelHash(id);
+  if(_panelCache[id]===h) return true;
+  _panelCache[id] = h;
+  return false;
+}
+// Call this when navigating away to invalidate
+function invalidatePanel(id){ delete _panelCache[id]; }
+function invalidateAll(){ _panelCache = {}; }
 function sv(k,v){S[k]=v;lsSave('chq-'+k.replace(/[A-Z]/g,function(c){return '-'+c.toLowerCase();}).replace('chq-',''),v);}
 
 function getRolePages(){
@@ -904,7 +940,8 @@ var ROLES={
   },
   trainer:{name:'Donovan',abbr:'TR',color:'var(--sg)',
     nav:[
-      {ico:'💪',lbl:'Fitness',id:'fitness'},
+      {ico:'🏠',lbl:'Dashboard',id:'trainer-dash'},
+      {ico:'💪',lbl:'Training Plan',id:'fitness'},
       {ico:'👤',lbl:'My Profile',id:'profile'},
       {ico:'📅',lbl:'Calendar',id:'calendar'},
       {ico:'🗂',lbl:'Discussion',id:'board'},
@@ -959,11 +996,20 @@ function doLogin(role,portalProfileId){
   g('tb-un').textContent=displayName;
   g('tb-date').textContent=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}).toUpperCase();
   buildSB(r.nav);
-  loadFromSupabase().then(function(){
-    if(portalProfileId)S.portalProfile=getPortalProfile(role,portalProfileId);
-    showPanel(r.nav[0].id);
-  });
-  // show edit btn if editable
+
+  // ── PERFORMANCE: show dashboard immediately from localStorage ──
+  // Supabase syncs in background — user never waits for network
+  if(portalProfileId) S.portalProfile=getPortalProfile(role,portalProfileId);
+  showPanel(r.nav[0].id);
+  // Background Supabase sync — silently refreshes data after render
+  setTimeout(function(){
+    loadFromSupabase().then(function(){
+      if(portalProfileId) S.portalProfile=getPortalProfile(role,portalProfileId);
+      // Only re-render current panel if data changed
+      if(S.panel) showPanel(S.panel);
+    }).catch(function(){/* Supabase unavailable — localStorage data is fine */});
+  }, 800);
+
   var eb=g('em-btn');
   if(eb) eb.style.display=(r.editable&&r.editable.length)?'block':'none';
   var days=Math.ceil((new Date('2026-07-10')-new Date())/(1000*60*60*24));
@@ -1006,7 +1052,7 @@ var PANELS={
   'sponsor-portal':bSponsorPortal,'sponsors':bSponsors,'calendar':bCalendar,
   'library':bLibrary,'quiz':bQuiz,'brand':bBrand,'moodboard':bMoodboard,
   'library-editor':bLibraryEditor,'profile':bProfile,'team-admin':bTeamAdmin,
-  'finance-dash':bFinanceDash,'expenses':bExpenses,'invoices':bInvoices,
+  'finance-dash':bFinanceDash,'expenses':bExpenses,'invoices':bInvoices,'trainer-dash':bTrainerDash,
   'looks':bLooks,'fitness':bFitness,'messages':bMessages,'files':bFiles,
   'deliverables':bDeliverables,'comp-progress':bCompProgress,'advocacy':bAdvocacy,'board':bBoard,'lookbook':bLookbook,'social':bSocial,'inbox':bInbox,'peace':bPeace,'contributor-dash':bContributorDash
 };
@@ -1067,7 +1113,7 @@ function renderRegistrationCard(){
   var contacts=getPageantContacts();
   var hotel=contacts.links.hotel;
   return '<div class="card reg-card"><div class="cl">Registration HQ</div>' +
-    '<div class="reg-head">Miss Temecula USA 2026 confirmed</div>' +
+    '<div class="reg-head">Miss Temecula Valley USA 2026 confirmed</div>' +
     '<div class="reg-sub">Grand Hyatt Indian Wells Resort & Villas · July 10-12, 2026</div>' +
     '<div class="reg-grid">' +
     '<div class="reg-item"><span class="reg-k">Mar 31</span><strong>Pay in full for complimentary embroidered sash</strong></div>' +
@@ -1094,7 +1140,7 @@ function bDash(){
     {dot:'var(--du)',date:'Apr 1',text:'Priority 1 sponsor outreach',idx:2},
     {dot:'var(--du)',date:'Apr 30',text:'$500 installment due',idx:3},
     {dot:'var(--du)',date:'Jun 30',text:'$1,000 final balance',idx:4},
-    {dot:'var(--du)',date:'Jul 10',text:'Miss Temecula USA 2026',idx:5},
+    {dot:'var(--du)',date:'Jul 10',text:'Miss Temecula Valley USA 2026',idx:5},
   ];
   var goals=S.goals;
   var gDefaults=[
@@ -1134,7 +1180,7 @@ function bDash(){
     '<div class="oath">' +
     '<div class="oath-glow"></div>' +
     '<div class="oath-label">The Seraphim Oath</div>' +
-    '<div class="oath-text" data-e="oath:seraphim:text">'+(goals.oath||'Miss Temecula USA 2026. Miss California USA 2026. Miss USA. Miss Universe. I am not competing. I am arriving.')+'</div>' +
+    '<div class="oath-text" data-e="oath:seraphim:text">'+(goals.oath||'Miss Temecula Valley USA 2026. Miss California USA 2026. Miss USA. Miss Universe. I am not competing. I am arriving.')+'</div>' +
     '<div class="oath-attr">Amelia Arabe · 2026</div>' +
     '</div>' +
 
@@ -1276,15 +1322,248 @@ function saveGoals(){
   bDash();
 }
 function bLaneaDash(){
-  var rp=getRolePages().laneea;
-  var raised=S.sponsors.filter(function(s){return s.status==='closed';}).reduce(function(a,s){return a+(s.amount||0);},0);
-  bPlaceholderDash('laneea',
-    rp.quote,
-    '<div class="g3">' +
-    '<div class="stat st-ch"><div class="sn">$'+raised.toLocaleString()+'</div><div class="sl">Raised</div></div>' +
-    '<div class="stat st-tz"><div class="sn">'+S.sponsors.filter(function(s){return s.status==='meeting';}).length+'</div><div class="sl">Meetings Set</div></div>' +
-    '<div class="stat st-bl"><div class="sn">'+S.appts.length+'</div><div class="sl">Appointments</div></div>' +
+  var today = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  var raised = S.sponsors.filter(function(s){return s.status==='closed';}).reduce(function(a,s){return a+(s.amount||0);},0);
+  var meetings = S.sponsors.filter(function(s){return s.status==='meeting';}).length;
+  var contacted = S.sponsors.filter(function(s){return s.status==='contacted';}).length;
+  var daysLeft = Math.ceil((new Date('2026-07-10')-new Date())/(1000*60*60*24));
+  var nextAppts = (S.appts||[]).filter(function(a){ return a.date >= new Date().toISOString().slice(0,10); }).slice(0,3);
+  var looks = S.looks||[];
+  var todos = (S.todos&&S.todos.laneea)||[];
+  var openTodos = todos.filter(function(t){return !t.done;});
+
+  inject(
+    '<div class="ph"><div>' +
+    '<div class="ph-tag">Campaign Manager</div>' +
+    '<div class="ph-title">Good to see you, <em>Laneea</em></div>' +
+    '</div>' +
+    '<div class="ph-acts" style="font-family:var(--fm);font-size:.5rem;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase">'+today+'</div>' +
+    '</div>' +
+    '<div class="pb">' +
+
+    // Countdown banner
+    '<div style="background:var(--ink);border-radius:10px;padding:1.1rem 1.4rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;border:0.5px solid rgba(201,168,76,.1)">' +
+    '<div><div style="font-family:var(--fm);font-size:.44rem;letter-spacing:3px;color:rgba(201,168,76,.38);text-transform:uppercase;margin-bottom:.2rem">Competition Day</div>' +
+    '<div style="font-family:var(--fd);font-size:1.2rem;font-style:italic;color:rgba(250,247,242,.85)">Miss California USA &middot; July 10, 2026</div></div>' +
+    '<div style="text-align:right"><div style="font-family:var(--fd);font-size:2.5rem;font-style:italic;color:var(--go);line-height:1">'+daysLeft+'</div><div style="font-family:var(--fm);font-size:.44rem;color:rgba(201,168,76,.38);letter-spacing:2px;text-transform:uppercase">days</div></div>' +
+    '</div>' +
+
+    // Stats row
+    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.65rem;margin-bottom:1rem">' +
+    '<div class="stat st-sg"><div class="sn">$'+raised.toLocaleString()+'</div><div class="sl">Raised</div></div>' +
+    '<div class="stat st-ch"><div class="sn">'+meetings+'</div><div class="sl">Meetings Set</div></div>' +
+    '<div class="stat st-bl"><div class="sn">'+contacted+'</div><div class="sl">In Pipeline</div></div>' +
+    '<div class="stat" style="border-top-color:var(--go)"><div class="sn">'+looks.length+'</div><div class="sl">Looks Staged</div></div>' +
+    '</div>' +
+
+    '<div class="g2">' +
+
+    // This week
+    '<div>' +
+    '<div class="card">' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem">' +
+    '<div class="cl" style="margin-bottom:0">This Week</div>' +
+    '<button class="btn bg" style="font-size:.52rem;padding:.2rem .6rem;min-height:28px" onclick="showPanel(\'calendar\')">Full calendar</button>' +
+    '</div>' +
+    (nextAppts.length ? nextAppts.map(function(a){
+      return '<div class="appt-i">' +
+        '<div class="appt-time">'+fdate(a.date)+'<br><span style="color:var(--muted)">'+( a.time||'')+'</span></div>' +
+        '<div class="appt-body"><div class="appt-title">'+escHtml(a.title||'')+'</div><div class="appt-who">'+escHtml(a.who||'')+'</div></div>' +
+        '</div>';
+    }).join('') : '<div style="font-size:.75rem;color:var(--faint);text-align:center;padding:1rem">No upcoming appointments</div>') +
+    '</div>' +
+
+    // Open tasks
+    '<div class="card" style="margin-top:.75rem">' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem">' +
+    '<div class="cl" style="margin-bottom:0">Open Tasks <span style="color:var(--si)">'+openTodos.length+'</span></div>' +
+    '</div>' +
+    (openTodos.length ? openTodos.slice(0,5).map(function(t){
+      return '<div class="todo-item"><div class="todo-cb '+(t.done?'done':'')+'" onclick="toggleTodo(\'laneea\','+t.id+',this)"></div><span class="todo-txt">'+escHtml(t.text)+'</span></div>';
+    }).join('') : '<div style="font-size:.75rem;color:var(--faint);text-align:center;padding:.75rem">All clear ✓</div>') +
+    '<div class="todo-add-row"><input class="todo-inp" id="todo-inp-laneea" placeholder="Add task..." onkeydown="if(event.key===\'Enter\')addTodo(\'laneea\')"><button class="btn bg" style="font-size:.58rem;min-height:32px" onclick="addTodo(\'laneea\')">Add</button></div>' +
+    '</div>' +
+    '</div>' +
+
+    // Sponsor pipeline snapshot + looks queue
+    '<div>' +
+    '<div class="card">' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem">' +
+    '<div class="cl" style="margin-bottom:0">Sponsor Pipeline</div>' +
+    '<button class="btn bg" style="font-size:.52rem;padding:.2rem .6rem;min-height:28px" onclick="showPanel(\'sponsors\')">Manage</button>' +
+    '</div>' +
+    (S.sponsors.slice(0,5).map(function(s){
+      var cls = {new:'s-new',contacted:'s-contacted',meeting:'s-meeting',closed:'s-closed',declined:'s-declined'}[s.status]||'s-new';
+      return '<div style="display:flex;align-items:center;gap:.65rem;padding:.42rem 0;border-bottom:0.5px solid var(--iv3)">' +
+        '<div style="flex:1;font-size:.78rem;font-weight:500;color:var(--ink)">'+escHtml(s.name)+'</div>' +
+        '<div style="font-family:var(--fd);font-size:.88rem;font-style:italic;color:var(--muted)">'+escHtml(s.ask||'')+'</div>' +
+        '<span class="s-btn '+cls+'">'+s.status+'</span></div>';
+    }).join('') || '<div style="font-size:.75rem;color:var(--faint);text-align:center;padding:1rem">No sponsors yet</div>') +
+    '</div>' +
+
+    '<div class="card" style="margin-top:.75rem">' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem">' +
+    '<div class="cl" style="margin-bottom:0">Looks Queue</div>' +
+    '<button class="btn bg" style="font-size:.52rem;padding:.2rem .6rem;min-height:28px" onclick="showPanel(\'looks\')">All looks</button>' +
+    '</div>' +
+    (looks.slice(0,3).map(function(lk){
+      return '<div style="display:flex;align-items:center;gap:.65rem;padding:.42rem 0;border-bottom:0.5px solid var(--iv3)">' +
+        (lk.img?'<img src="'+lk.img+'" style="width:36px;height:36px;border-radius:4px;object-fit:cover;flex-shrink:0">':'<div style="width:36px;height:36px;border-radius:4px;background:var(--iv2);flex-shrink:0"></div>') +
+        '<div><div style="font-size:.78rem;font-weight:500;color:var(--ink)">'+escHtml(lk.title||'')+'</div><div style="font-size:.68rem;color:var(--muted)">'+escHtml(lk.event_name||'')+'</div></div></div>';
+    }).join('') || '<div style="font-size:.75rem;color:var(--faint);text-align:center;padding:.75rem">No looks staged yet</div>') +
+    '</div>' +
+    '</div>' +
+
+    '</div>' + // g2
+    '</div>'   // pb
+  );
+}
+
+function bHMUDash(){
+  var profile = S.portalProfile;
+  var name = profile ? profile.name : 'Hair & Makeup Team';
+  var specialty = profile && profile.specialty ? profile.specialty : 'Beauty direction';
+  var daysLeft = Math.ceil((new Date('2026-07-10')-new Date())/(1000*60*60*24));
+  var nextAppts = (S.appts||[]).filter(function(a){
+    return a.date >= new Date().toISOString().slice(0,10) && (a.type==='hair'||a.type==='styling'||a.type==='hmu');
+  }).slice(0,4);
+
+  inject(
+    '<div class="ph"><div><div class="ph-tag">Hair & Makeup</div><div class="ph-title">Welcome, <em>'+escHtml(name)+'</em></div></div></div>' +
+    '<div class="pb">' +
+
+    // Hero card
+    '<div style="background:var(--ink);border-radius:10px;padding:1.5rem;margin-bottom:1rem;border:0.5px solid rgba(201,168,76,.1)">' +
+    '<div style="font-family:var(--fm);font-size:.44rem;letter-spacing:3px;color:rgba(201,168,76,.35);text-transform:uppercase;margin-bottom:.5rem">Your role on this campaign</div>' +
+    '<div style="font-family:var(--fd);font-size:1.25rem;font-style:italic;color:rgba(250,247,242,.85);margin-bottom:.3rem">'+escHtml(name)+' is the beauty direction for Amelia Arabe.</div>' +
+    '<div style="font-size:.78rem;color:rgba(250,247,242,.45);line-height:1.7">'+escHtml(specialty)+' &middot; Competition: July 10, 2026 &middot; <strong style="color:rgba(201,168,76,.6)">'+daysLeft+' days away</strong></div>' +
+    '</div>' +
+
+    '<div class="g2">' +
+
+    // Upcoming events
+    '<div class="card">' +
+    '<div class="cl">Upcoming Dates</div>' +
+    (nextAppts.length ? nextAppts.map(function(a){
+      return '<div class="appt-i">' +
+        '<div class="appt-time">'+fdate(a.date)+'<br><span style="color:var(--muted)">'+(a.time||'')+'</span></div>' +
+        '<div class="appt-body"><div class="appt-title">'+escHtml(a.title||'')+'</div><div class="appt-who">'+escHtml(a.who||'')+'</div></div>' +
+        '</div>';
+    }).join('') :
+    '<div style="font-size:.75rem;color:var(--faint);padding:1rem;text-align:center">No upcoming beauty appointments yet.</div>') +
+    '<div style="margin-top:.75rem;font-size:.72rem;color:var(--muted)">Check Calendar for the full schedule.</div>' +
+    '</div>' +
+
+    // Goals + quick links
+    '<div>' +
+    renderPortalGoalsCard('Beauty Goals') +
+    '<div class="card" style="margin-top:.75rem">' +
+    '<div class="cl">Quick Links</div>' +
+    '<div style="display:flex;flex-direction:column;gap:.4rem">' +
+    '<button class="btn bg" style="width:100%;text-align:left;justify-content:flex-start" onclick="showPanel(\'messages\')">💬 Message Amelia</button>' +
+    '<button class="btn bg" style="width:100%;text-align:left;justify-content:flex-start" onclick="showPanel(\'files\')">📁 Upload Photos / Files</button>' +
+    '<button class="btn bg" style="width:100%;text-align:left;justify-content:flex-start" onclick="showPanel(\'calendar\')">📅 View Calendar</button>' +
+    '</div>' +
+    (profile ? '<div style="margin-top:.75rem;display:flex;gap:.4rem"><button class="btn bg" style="font-size:.52rem;flex:1" onclick="changePortalUsername()">Change Username</button><button class="btn bg" style="font-size:.52rem;flex:1" onclick="changePortalPassword()">Change Password</button></div>' : '') +
+    '</div>' +
+    '</div>' +
+
+    '</div></div>'
+  );
+}
+
+function bSponsorPortal(){
+  var profile = S.portalProfile;
+  var partnerName = profile ? (profile.company||profile.name) : 'Sponsor Partner';
+  var daysLeft = Math.ceil((new Date('2026-07-10')-new Date())/(1000*60*60*24));
+  var progress = [
+    {label:'Entry Secured',done:true,note:'Miss Temecula Valley USA 2026'},
+    {label:'Coach Engaged',done:true,note:'Weekly training sessions'},
+    {label:'Wardrobe In Progress',done:false,note:'With Laneea — gown + swimsuit'},
+    {label:'Sponsor Partnerships',done:false,note:'Building now'},
+    {label:'Competition Week',done:false,note:'July 10 · Grand Hyatt Indian Wells'},
+  ];
+
+  inject(
+    '<div style="background:var(--ink);padding:2rem 1.75rem;border-bottom:0.5px solid rgba(201,168,76,.08)">' +
+    '<div style="font-family:var(--fm);font-size:.44rem;letter-spacing:4px;color:rgba(201,168,76,.3);text-transform:uppercase;margin-bottom:.5rem">Sponsor Portal</div>' +
+    '<div style="font-family:var(--fd);font-size:1.7rem;font-style:italic;color:rgba(250,247,242,.85);margin-bottom:.6rem;line-height:1.2">'+escHtml(partnerName)+' is not sponsoring a pageant.<br>'+escHtml(partnerName)+' is funding a platform.</div>' +
+    '<div style="font-size:.8rem;line-height:1.8;color:rgba(250,247,242,.5)">Thank you for investing in Amelia Arabe\'s Miss Temecula Valley USA 2026 campaign. Your support puts clean energy and fashion accountability policy on a California stage.</div>' +
+    '<div style="font-family:var(--fm);font-size:.5rem;color:rgba(201,168,76,.28);margin-top:.75rem">— Amelia Arabe &amp; Laneea</div>' +
+    '</div>' +
+    '<div class="pb">' +
+
+    // Countdown
+    '<div style="background:var(--sip);border-radius:8px;padding:.85rem 1.1rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;border:0.5px solid var(--sil)">' +
+    '<div style="font-size:.8rem;color:var(--si)">Competition Day &mdash; July 10, 2026</div>' +
+    '<div style="font-family:var(--fd);font-size:1.6rem;font-style:italic;color:var(--si)">'+daysLeft+' days</div>' +
+    '</div>' +
+
+    '<div class="g2">' +
+    '<div>' +
+    '<div class="cl">Campaign Progress</div>' +
+    progress.map(function(p){
+      return '<div class="tl"><div class="tl-d" style="background:'+(p.done?'var(--sg2)':'var(--iv3)')+'"></div><div class="tl-t"><strong>'+p.label+'</strong> &mdash; '+p.note+'</div></div>';
+    }).join('') +
+    '</div>' +
+    '<div>' +
+    renderPortalGoalsCard('Sponsor Goals') +
+    '<div class="card" style="margin-top:.75rem">' +
+    '<div class="cl">Your Portal</div>' +
+    '<div style="font-size:.78rem;color:var(--muted);line-height:1.7;margin-bottom:.75rem">Use Chat to reach Amelia\'s team directly. Use Files to exchange logos, invoices, and deliverables.</div>' +
+    '<div style="display:flex;flex-direction:column;gap:.4rem">' +
+    '<button class="btn bg" style="width:100%;text-align:left;justify-content:flex-start" onclick="showPanel(\'messages\')">💬 Message the team</button>' +
+    '<button class="btn bg" style="width:100%;text-align:left;justify-content:flex-start" onclick="showPanel(\'files\')">📁 Files & Deliverables</button>' +
+    '</div>' +
+    (profile ? '<div style="margin-top:.75rem;display:flex;gap:.4rem"><button class="btn bg" style="font-size:.52rem;flex:1" onclick="changePortalUsername()">Change Username</button><button class="btn bg" style="font-size:.52rem;flex:1" onclick="changePortalPassword()">Change Password</button></div>' : '') +
+    '</div>' +
+    '</div>' +
+    '</div>' + // g2
     '</div>'
+  );
+}
+
+function bContributorDash(){
+  var profile = S.portalProfile;
+  var name = profile ? profile.name : 'Contributor';
+  var specialty = profile && profile.specialty ? profile.specialty : 'Photography & Media';
+  var daysLeft = Math.ceil((new Date('2026-07-10')-new Date())/(1000*60*60*24));
+
+  inject(
+    '<div class="ph"><div><div class="ph-tag">Contributor Portal</div><div class="ph-title">Welcome, <em>'+escHtml(name)+'</em></div></div></div>' +
+    '<div class="pb">' +
+
+    '<div style="background:var(--ink);border-radius:10px;padding:1.35rem;margin-bottom:1rem;border:0.5px solid rgba(201,168,76,.08)">' +
+    '<div style="font-family:var(--fd);font-size:1.15rem;font-style:italic;color:rgba(250,247,242,.82);margin-bottom:.3rem">'+escHtml(specialty)+'</div>' +
+    '<div style="font-size:.76rem;color:rgba(250,247,242,.42);line-height:1.7">This workspace is for sending Amelia photography, selects, and media assets. Competition: <strong style="color:rgba(201,168,76,.6)">July 10 · '+daysLeft+' days away</strong></div>' +
+    '</div>' +
+
+    '<div class="g2">' +
+
+    '<div class="card">' +
+    '<div class="cl">What to Send</div>' +
+    '<div style="display:flex;flex-direction:column;gap:.6rem">' +
+    [{t:'Headshots',d:'Official selects, retouched finals, vertical crops.'},{t:'Stage Photos',d:'Swimsuit, gown, interview, BTS coverage.'},{t:'Media Notes',d:'Captions, delivery timing, file descriptions.'}].map(function(item){
+      return '<div style="padding:.65rem .75rem;background:var(--iv2);border-radius:6px;border:0.5px solid var(--iv3)">' +
+        '<div style="font-size:.78rem;font-weight:600;color:var(--ink);margin-bottom:.2rem">'+item.t+'</div>' +
+        '<div style="font-size:.7rem;color:var(--muted);line-height:1.6">'+item.d+'</div></div>';
+    }).join('') +
+    '</div>' +
+    '<div style="margin-top:.85rem;display:flex;flex-direction:column;gap:.4rem">' +
+    '<button class="btn bc" style="width:100%;text-align:left;justify-content:flex-start" onclick="showPanel(\'files\')">📁 Upload Files Now</button>' +
+    '<button class="btn bg" style="width:100%;text-align:left;justify-content:flex-start" onclick="showPanel(\'messages\')">💬 Message Amelia</button>' +
+    '</div>' +
+    '</div>' +
+
+    '<div>' +
+    renderPortalGoalsCard('Contributor Goals') +
+    (profile ? '<div class="card" style="margin-top:.75rem"><div class="cl">Account</div>' +
+    '<div style="font-size:.78rem;color:var(--muted);margin-bottom:.65rem">'+escHtml(profile.company||'')+(profile.email?' &middot; '+escHtml(profile.email):'')+'</div>' +
+    '<div style="display:flex;gap:.4rem"><button class="btn bg" style="font-size:.52rem;flex:1" onclick="changePortalUsername()">Change Username</button><button class="btn bg" style="font-size:.52rem;flex:1" onclick="changePortalPassword()">Change Password</button></div>' +
+    '</div>' : '') +
+    '</div>' +
+
+    '</div></div>'
   );
 }
 
@@ -1324,7 +1603,7 @@ function bSponsorPortal(){
     '<div style="background:var(--tz);padding:2rem 1.75rem">' +
     '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:4px;color:rgba(240,216,152,.35);text-transform:uppercase;margin-bottom:.5rem">Sponsor Portal</div>' +
     '<div style="font-family:var(--fd);font-size:1.8rem;font-style:italic;color:var(--ch);margin-bottom:.65rem">'+partnerName+' is not sponsoring a pageant.<br>'+partnerName+' is funding a platform.</div>' +
-    '<div style="font-size:.82rem;line-height:1.8;color:rgba(254,252,247,.6)">Thank you for investing in Amelia Arabe\'s Miss Temecula USA 2026 campaign. Your support puts clean energy and fashion accountability policy on a national stage. We are honored to have '+partnerName+' in this room with us.</div>' +
+    '<div style="font-size:.82rem;line-height:1.8;color:rgba(254,252,247,.6)">Thank you for investing in Amelia Arabe\'s Miss Temecula Valley USA 2026 campaign. Your support puts clean energy and fashion accountability policy on a national stage. We are honored to have '+partnerName+' in this room with us.</div>' +
     '<div style="font-family:var(--fm);font-size:.55rem;color:rgba(240,216,152,.3);margin-top:.85rem">— Amelia Arabe & Laneea Love</div>' +
     '</div>' +
     '<div style="padding:1.35rem 1.75rem">' +
@@ -1335,7 +1614,7 @@ function bSponsorPortal(){
     '</div><div class="cl">Your Deliverables</div>'+buildDelivCards()+'</div>' +
     renderPortalGoalsCard('Sponsor Goals') +
     '<div class="card"><div class="cl">Competition Progress</div>' +
-    [{label:'Entry Secured',done:true,note:'Miss Temecula USA 2026'},{label:'Coach Engaged',done:true,note:'Weekly sessions'},{label:'Wardrobe In Progress',done:false,note:'With Laneea'},{label:'YouTube Channel Launch',done:false,note:'Starting from 0'},{label:'Competition Week',done:false,note:'July 10-12 · Grand Hyatt Indian Wells'}].map(function(p){
+    [{label:'Entry Secured',done:true,note:'Miss Temecula Valley USA 2026'},{label:'Coach Engaged',done:true,note:'Weekly sessions'},{label:'Wardrobe In Progress',done:false,note:'With Laneea'},{label:'YouTube Channel Launch',done:false,note:'Starting from 0'},{label:'Competition Week',done:false,note:'July 10-12 · Grand Hyatt Indian Wells'}].map(function(p){
       return '<div class="tl"><div class="tl-d" style="background:'+(p.done?'var(--sg2)':'var(--du)')+'"></div><div class="tl-t"><strong>'+p.label+'</strong>'+p.note+'</div></div>';
     }).join('') +
     '</div>' +
@@ -1365,6 +1644,80 @@ function bContributorDash(){
     '<div style="padding:.85rem;border:1px solid var(--ch4);border-radius:3px"><strong style="display:block;margin-bottom:.25rem">Stage Photos</strong><span style="font-size:.74rem;color:var(--wg);line-height:1.6">Swimsuit, gown, interview, and behind-the-scenes coverage.</span></div>' +
     '<div style="padding:.85rem;border:1px solid var(--ch4);border-radius:3px"><strong style="display:block;margin-bottom:.25rem">Media Notes</strong><span style="font-size:.74rem;color:var(--wg);line-height:1.6">Caption ideas, file descriptions, and delivery timing.</span></div>' +
     '</div></div>' +
+    '</div>'
+  );
+}
+
+function bTrainerDash(){
+  var fd = lsGet('chq-fitness',{});
+  fd.measurements = fd.measurements || {};
+  fd.days = fd.days || {};
+  var daysLeft = Math.ceil((new Date('2026-07-10')-new Date())/(1000*60*60*24));
+  var today = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  var todayKey = new Date().toLocaleDateString('en-US',{weekday:'short'}).slice(0,3).toLowerCase();
+  var split = ['mon','tue','wed','thu','fri','sat','sun'];
+  var focusMap = {mon:'Core Circuit',tue:'Swim',wed:'Legs + Barre',thu:'Tennis',fri:'Arms + Posture',sat:'Swim + Ballet',sun:'Active Recovery'};
+  var doneThisWeek = split.filter(function(k){ return fd.days[k]&&fd.days[k].done; }).length;
+
+  inject(
+    '<div class="ph"><div><div class="ph-tag">Fitness Coach</div><div class="ph-title">Training Brief, <em>Donovan</em></div></div>' +
+    '<div class="ph-acts" style="font-family:var(--fm);font-size:.5rem;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase">'+today+'</div></div>' +
+    '<div class="pb">' +
+
+    // Countdown
+    '<div style="background:var(--ink);border-radius:10px;padding:1rem 1.3rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;border:0.5px solid rgba(201,168,76,.1)">' +
+    '<div><div style="font-family:var(--fm);font-size:.44rem;letter-spacing:3px;color:rgba(201,168,76,.35);text-transform:uppercase;margin-bottom:.2rem">Competition Day</div>' +
+    '<div style="font-family:var(--fd);font-size:1.1rem;font-style:italic;color:rgba(250,247,242,.82)">Miss California USA &middot; July 10, 2026</div></div>' +
+    '<div style="text-align:right"><div style="font-family:var(--fd);font-size:2.2rem;font-style:italic;color:var(--go);line-height:1">'+daysLeft+'</div>' +
+    '<div style="font-family:var(--fm);font-size:.42rem;color:rgba(201,168,76,.35);letter-spacing:2px;text-transform:uppercase">days</div></div>' +
+    '</div>' +
+
+    '<div class="g2">' +
+
+    // Amelia's stats
+    '<div>' +
+    '<div class="card">' +
+    '<div class="cl">Amelia\'s Measurements</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.65rem">' +
+    [
+      {k:'waist',l:'Waist'},{k:'hips',l:'Hips'},
+      {k:'arms',l:'Arms'},{k:'thighs',l:'Thighs'}
+    ].map(function(m){
+      return '<div style="background:var(--iv2);border-radius:6px;padding:.65rem;border:0.5px solid var(--iv3)">' +
+        '<div style="font-family:var(--fm);font-size:.44rem;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:.2rem">'+m.l+'</div>' +
+        '<div style="font-family:var(--fd);font-size:1.5rem;font-style:italic;color:'+((fd.measurements[m.k])?'var(--si)':'var(--faint)')+'">'+((fd.measurements[m.k])||'—')+'<span style="font-size:.7rem;color:var(--muted)"> in</span></div>' +
+        '</div>';
+    }).join('') +
+    '</div>' +
+    '<div style="margin-top:.65rem;padding:.65rem;background:var(--sgp);border-radius:6px;border:0.5px solid var(--sal)">' +
+    '<div style="font-family:var(--fm);font-size:.46rem;letter-spacing:2px;color:var(--sa);text-transform:uppercase;margin-bottom:.2rem">This Week</div>' +
+    '<div style="font-family:var(--fd);font-size:1.4rem;font-style:italic;color:var(--sg)">'+doneThisWeek+'/7 <span style="font-size:.9rem;color:var(--sal)">sessions complete</span></div>' +
+    '</div>' +
+    '</div>' +
+
+    // Weekly split overview
+    '<div class="card">' +
+    '<div class="cl">Weekly Split</div>' +
+    split.map(function(k){
+      var done = fd.days[k]&&fd.days[k].done;
+      var isToday = k===todayKey;
+      return '<div style="display:flex;align-items:center;gap:.6rem;padding:.38rem 0;border-bottom:0.5px solid var(--iv3)">' +
+        '<div style="width:28px;height:28px;border-radius:50%;background:'+(done?'var(--sg2)':isToday?'var(--sip)':'var(--iv2)')+';border:0.5px solid '+(done?'var(--sg2)':isToday?'var(--sil)':'var(--iv3)')+';display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:.48rem;color:'+(done?'white':isToday?'var(--si)':'var(--muted)')+';flex-shrink:0;text-transform:uppercase">'+k.toUpperCase()+'</div>' +
+        '<div style="flex:1;font-size:.78rem;color:'+(isToday?'var(--ink)':'var(--muted)')+';font-weight:'+(isToday?'600':'400')+'">'+focusMap[k]+'</div>' +
+        (done?'<span style="font-family:var(--fm);font-size:.46rem;color:var(--sg2)">Done ✓</span>':isToday?'<span style="font-family:var(--fm);font-size:.46rem;color:var(--si)">Today</span>':'') +
+        '</div>';
+    }).join('') +
+    '</div>' +
+
+    '</div>' + // g2
+
+    // Quick links
+    '<div style="display:flex;gap:.6rem;margin-top:.85rem;flex-wrap:wrap">' +
+    '<button class="btn bc" style="flex:1" onclick="showPanel(\'fitness\')">Open Full Training Plan</button>' +
+    '<button class="btn bg" style="flex:1" onclick="showPanel(\'calendar\')">View Calendar</button>' +
+    '<button class="btn bg" style="flex:1" onclick="showPanel(\'board\')">Discussion</button>' +
+    '</div>' +
+
     '</div>'
   );
 }
@@ -1555,7 +1908,7 @@ function renderSpPitchDecks(){
 function renderSpEmails(){
   var pd=lsGet('chq-pitch',{emails:{}});
   var defaults={
-    cold:{subject:'An invitation — Amelia Arabe x [Company]',body:'Hi [Name], My name is Laneea Love — I manage Amelia Arabe, Miss Temecula USA 2026 candidate. Her platform is clean energy and textile accountability policy. Would you be open to a 15-minute call? With gratitude, Laneea Love'},
+    cold:{subject:'An invitation — Amelia Arabe x [Company]',body:'Hi [Name], My name is Laneea Love — I manage Amelia Arabe, Miss Temecula Valley USA 2026 candidate. Her platform is clean energy and textile accountability policy. Would you be open to a 15-minute call? With gratitude, Laneea Love'},
     followUp:{subject:'Following up — Amelia Arabe partnership',body:'Hi [Name], Just following up on my note from [DATE]. Amelia competes July 10-12. We have a few partnership spots remaining. Happy to jump on a quick call. Best, Laneea Love'},
     postMeeting:{subject:'Great connecting — next steps',body:'Hi [Name], Thank you for your time today. As discussed, here are our partnership options: [Tier 1]: [Deliverable] / [Tier 2]: [Deliverable]. I will follow up [DATE]. With gratitude, Laneea Love'}
   };
@@ -2243,7 +2596,7 @@ var DA={
   ig:{head:'ig',title:'Instagram Bio',platform:'@ameliavarabe',text:"engineer building the future\ncellist. miss california usa '26\nfounder @libraryofmorenita\ni learned to find the light. bask in it\nsan diego"},
   press:{head:'press',title:'Press Bio',platform:'Third person',text:"Amelia Arabe is a Filipina-American student engineer, classically trained cellist, and 2026 candidate for Miss California USA based in San Diego.\n\nShe is the founder of Library of Morenita — a sustainable digital archive built for the next century.\n\nA Top Model award winner at Miss Philippines USA, Amelia brings engineering precision and performance presence to every stage.\n\nShe competes not for a crown, but for a microphone.\n\nRepresented by Laneea Love."},
   sub:{head:'sub',title:'Substack',platform:'Library of Morenita',text:"Dispatches from the intersection of engineering, culture, and the planet.\n\nFor people who build things, wear things, and wonder about the systems behind both.\n\nBy Amelia Arabe — engineer, cellist, she/they. San Diego."},
-  li:{head:'li',title:'LinkedIn Headline',platform:'LinkedIn',text:"Student Engineer · Net-Zero Hardware Design · Founder, Library of Morenita · Miss Temecula USA 2026 · San Diego"},
+  li:{head:'li',title:'LinkedIn Headline',platform:'LinkedIn',text:"Student Engineer · Net-Zero Hardware Design · Founder, Library of Morenita · Miss Temecula Valley USA 2026 · San Diego"},
 };
 
 function bBrand(){
@@ -2353,49 +2706,83 @@ function setLookImg(id,e){
 function addLook(){S.looks.push({id:Date.now(),event:'New Event',round:'Competition',title:'New Look',desc:'Describe this look...',img:''});lsSave('chq-lk',S.looks);bLooks();}
 function removeLook(id){S.looks=S.looks.filter(function(x){return x.id!==id;});lsSave('chq-lk',S.looks);bLooks();}
 
-// ═══ FITNESS ═════════════════════════════════════════════════
-function bFitness(){
-  var saved=lsGet('chq-fitness',null)||{};
-  var fd={
-    days:saved.days&&typeof saved.days==='object'?saved.days:{},
-    measurements:saved.measurements&&typeof saved.measurements==='object'?saved.measurements:{},
-    nutrition:saved.nutrition&&typeof saved.nutrition==='object'?saved.nutrition:{},
-    rituals:saved.rituals&&typeof saved.rituals==='object'?saved.rituals:{},
-    exChecks:saved.exChecks&&typeof saved.exChecks==='object'?saved.exChecks:{},
-    weight:saved.weight||'',
-    quit:saved.quit&&typeof saved.quit==='object'?saved.quit:{}
-  };
-  lsWriteLocal('chq-fitness',fd);
 
-  var today=new Date().toLocaleDateString('en-US',{weekday:'short'}).toLowerCase();
-  var todayKey=today.slice(0,3);
-  var daysClean=0;
-  if(fd.quit&&fd.quit.startDate){
-    daysClean=Math.floor((new Date()-new Date(fd.quit.startDate))/(1000*60*60*24));
-  }
+// ═══ BODY & MIND — unified Fitness / Peace / Diet ═══════════════
+// Single panel with three-tab toggle. All state in chq-fitness + chq-peace.
+
+var _bodyTab = 'fitness'; // 'fitness' | 'peace' | 'diet'
+var _dietWeek = 1;        // 1-4 rotation
+var _medTimer = null, _medRunning = false, _medTotal = 0, _medLeft = 0;
+var _breathRunning = false, _breathTimer = null, _breathIdx = 0, _breathCount = 0;
+var _breathPhases = ['Inhale','Hold','Exhale','Hold'];
+
+function bFitness(){ _bodyTab='fitness'; bBody(); }
+function bPeace(){   _bodyTab='peace';   bBody(); }
+
+function bBody(){
+  var fd = lsGet('chq-fitness',{});
+  fd.days      = fd.days      && typeof fd.days==='object'      ? fd.days      : {};
+  fd.measurements = fd.measurements && typeof fd.measurements==='object' ? fd.measurements : {};
+  fd.nutrition = fd.nutrition && typeof fd.nutrition==='object' ? fd.nutrition : {};
+  fd.rituals   = fd.rituals   && typeof fd.rituals==='object'   ? fd.rituals   : {};
+  fd.exChecks  = fd.exChecks  && typeof fd.exChecks==='object'  ? fd.exChecks  : {};
+  fd.weight    = fd.weight    || '';
+  fd.quit      = fd.quit      && typeof fd.quit==='object'      ? fd.quit      : {};
+
+  var tabBar =
+    '<div style="display:flex;border-bottom:0.5px solid var(--iv3);background:var(--wh);padding:0 1.75rem;flex-shrink:0">' +
+    ['fitness','peace','diet'].map(function(t){
+      var labels = {fitness:'💪 Fitness', peace:'🕊 Peace', diet:'🥗 Diet'};
+      var on = _bodyTab===t;
+      return '<button onclick="_bodyTab=\''+t+'\';bBody()" style="font-family:var(--fm);font-size:.55rem;letter-spacing:2px;text-transform:uppercase;padding:.75rem 1rem;border:none;background:transparent;cursor:pointer;border-bottom:2px solid '+(on?'var(--si)':'transparent')+';color:'+(on?'var(--si)':'var(--muted)')+';transition:all .15s">'+labels[t]+'</button>';
+    }).join('') +
+    '</div>';
+
+  var content = '';
+  if(_bodyTab==='fitness') content = renderFitnessTab(fd);
+  else if(_bodyTab==='peace') content = renderPeaceTab(fd);
+  else content = renderDietTab();
+
+  inject(
+    '<div style="display:flex;flex-direction:column;height:100%;min-height:0">' +
+    '<div class="ph" style="flex-shrink:0"><div><div class="ph-tag">Body &amp; Mind</div><div class="ph-title">The whole <em>system</em></div></div>' +
+    (_bodyTab==='fitness'?'<div class="ph-acts"><button class="btn bc" onclick="saveFitnessLog()">Save check-ins</button></div>':'') +
+    (_bodyTab==='diet'?'<div class="ph-acts"><button class="btn bg" onclick="printGroceryList()">🛒 Grocery list</button><button class="btn bc" onclick="_dietWeek=(_dietWeek%4)+1;bBody()">Week '+_dietWeek+' ↻</button></div>':'') +
+    '</div>' +
+    tabBar +
+    '<div class="pb" style="flex:1;overflow-y:auto">' + content + '</div>' +
+    '</div>'
+  );
+}
+
+// ─── FITNESS TAB ───────────────────────────────────────────────
+function renderFitnessTab(fd){
+  var todayFull = new Date().toLocaleDateString('en-US',{weekday:'long'}).slice(0,3).toLowerCase();
+  var daysClean = 0;
+  if(fd.quit&&fd.quit.startDate) daysClean=Math.floor((new Date()-new Date(fd.quit.startDate))/(1000*60*60*24));
 
   var split=[
     {day:'Mon',key:'mon',focus:'Core Circuit',color:'var(--si)',exercises:[
-      {name:'Dead Bugs',sets:'3x12',note:'Lower back flat. This builds the corset.'},
-      {name:'Hollow Body Hold',sets:'3x30s',note:'Ribs down. The waist wraps here.'},
-      {name:'Pallof Press',sets:'3x12 each',note:'Anti-rotation. Builds the taper.'},
-      {name:'Side Plank + Hip Dip',sets:'3x15 each',note:'Obliques. This is the curve.'},
-      {name:'Single Leg RDL',sets:'3x10 each',note:'Balance + posterior chain.'},
-      {name:'Bicycle Crunch',sets:'3x20',note:'Controlled. Elbow to knee.'},
+      {name:'Dead Bugs',sets:'3×12',note:'Lower back flat. Builds the corset.'},
+      {name:'Hollow Body Hold',sets:'3×30s',note:'Ribs down. The waist wraps here.'},
+      {name:'Pallof Press',sets:'3×12 each',note:'Anti-rotation. Builds the taper.'},
+      {name:'Side Plank + Hip Dip',sets:'3×15 each',note:'Obliques. This is the curve.'},
+      {name:'Single Leg RDL',sets:'3×10 each',note:'Balance + posterior chain.'},
+      {name:'Bicycle Crunch',sets:'3×20',note:'Controlled. Elbow to knee.'},
     ]},
     {day:'Tue',key:'tue',focus:'Swim',color:'var(--go2)',exercises:[
       {name:'Freestyle Laps',sets:'20 min',note:'Long and lean. Think elongation.'},
-      {name:'Butterfly Arms',sets:'4x25m',note:'Shoulders and lats. Creates the V-taper.'},
-      {name:'Kickboard Legs',sets:'4x25m',note:'Quads and glutes activated.'},
+      {name:'Butterfly Arms',sets:'4×25m',note:'Shoulders + lats. Creates the V-taper.'},
+      {name:'Kickboard Legs',sets:'4×25m',note:'Quads and glutes activated.'},
       {name:'Cool Down Float',sets:'5 min',note:'Breathe. Let your body reset.'},
     ]},
     {day:'Wed',key:'wed',focus:'Legs + Barre',color:'var(--sg2)',exercises:[
-      {name:'Bulgarian Split Squat',sets:'4x10 each',note:'Rear foot elevated. Go deep.'},
-      {name:'Glute Bridge + Hold',sets:'4x15',note:'Squeeze at top 2 seconds.'},
-      {name:'Lateral Band Walks',sets:'3x20 each way',note:'Band above knees. Burn.'},
-      {name:'Relevé Holds',sets:'3x30s',note:'Ballet. Calves and balance.'},
-      {name:'Arabesque Pulses',sets:'3x20 each',note:'Glute and hip flexor length.'},
-      {name:'Plié Squats',sets:'3x15',note:'Turnout. Inner thigh activation.'},
+      {name:'Bulgarian Split Squat',sets:'4×10 each',note:'Rear foot elevated. Go deep.'},
+      {name:'Glute Bridge + Hold',sets:'4×15',note:'Squeeze at top 2 seconds.'},
+      {name:'Lateral Band Walks',sets:'3×20 each',note:'Band above knees. Burn.'},
+      {name:'Relevé Holds',sets:'3×30s',note:'Calves and balance.'},
+      {name:'Arabesque Pulses',sets:'3×20 each',note:'Glute and hip flexor length.'},
+      {name:'Plié Squats',sets:'3×15',note:'Turnout. Inner thigh activation.'},
     ]},
     {day:'Thu',key:'thu',focus:'Tennis',color:'var(--go)',exercises:[
       {name:'Serve Practice',sets:'20 min',note:'Shoulder rotation. Core drives power.'},
@@ -2403,2131 +2790,412 @@ function bFitness(){
       {name:'Rally Sets',sets:'3 sets',note:'Cardio base. Rotational core.'},
       {name:'Cool Down Stretch',sets:'10 min',note:'Hip flexors and shoulders.'},
     ]},
-    {day:'Fri',key:'fri',focus:'Arms + Core',color:'var(--lv)',exercises:[
-      {name:'Port de Bras with Weights',sets:'3x12',note:'Ballet arms. 2-3lb. Slow and deliberate.'},
-      {name:'Swimmer Lat Pulldown',sets:'4x12',note:'V-taper. Waist looks smaller instantly.'},
-      {name:'Overhead Press',sets:'3x10',note:'Shoulders and posture.'},
-      {name:'Tricep Dip',sets:'3x12',note:'Back of arm. Lean and sculpted.'},
-      {name:'Resistance Band Row',sets:'3x15',note:'Posture muscles. Stage presence.'},
-      {name:'Plank to Downdog',sets:'3x10',note:'Core + shoulder mobility.'},
+    {day:'Fri',key:'fri',focus:'Arms + Posture',color:'var(--sil)',exercises:[
+      {name:'Port de Bras with Weights',sets:'3×12',note:'2-3lb. Slow and deliberate.'},
+      {name:'Swimmer Lat Pulldown',sets:'4×12',note:'V-taper. Waist looks smaller instantly.'},
+      {name:'Overhead Press',sets:'3×10',note:'Shoulders and posture.'},
+      {name:'Tricep Dip',sets:'3×12',note:'Back of arm. Lean and sculpted.'},
+      {name:'Resistance Band Row',sets:'3×15',note:'Posture muscles. Stage presence.'},
+      {name:'Plank to Downdog',sets:'3×10',note:'Core + shoulder mobility.'},
     ]},
-    {day:'Sat',key:'sat',focus:'Swim + Ballet',color:'var(--sil)',exercises:[
+    {day:'Sat',key:'sat',focus:'Swim + Ballet',color:'var(--sa)',exercises:[
       {name:'Freestyle Endurance',sets:'30 min',note:'Build your base. Think long.'},
-      {name:'Full Barre',sets:'45-60 min',note:'YouTube barre counts. Non-negotiable.'},
+      {name:'Full Barre',sets:'45-60 min',note:'YouTube barre. Non-negotiable.'},
       {name:'Stretching Flow',sets:'15 min',note:'Hips, hamstrings, shoulders.'},
     ]},
     {day:'Sun',key:'sun',focus:'Active Recovery',color:'var(--sal)',exercises:[
       {name:'Ocean or Beach Walk',sets:'30-45 min',note:'Clear your head. This is medicine.'},
-      {name:'Yoga Flow',sets:'20 min',note:'YouTube. Any beginner flow.'},
+      {name:'Yoga Flow',sets:'20 min',note:'Any beginner flow.'},
       {name:'Full Body Stretch',sets:'15 min',note:'Every muscle. Breathe into it.'},
     ]},
   ];
 
-  // Today's split
-  var todayMap={mon:'Mon',tue:'Tue',wed:'Wed',thu:'Thu',fri:'Fri',sat:'Sat',sun:'Sun'};
-  var todayFull=new Date().toLocaleDateString('en-US',{weekday:'long'}).slice(0,3).toLowerCase();
-  var todaySplit=split.find(function(s){return s.key===todayFull;})||split[0];
+  var html = '';
 
-  inject(
-    '<div class="ph"><div><div class="ph-tag">Fitness</div><div class="ph-title">Body by <em>Design</em></div></div>' +
-    '<div class="ph-acts"><button class="btn bc" onclick="saveFitnessLog()">Save check-ins</button></div></div>' +
-    '<div class="pb">' +
+  // TODAY CHECK-INS
+  html += '<div style="background:var(--ink);border-radius:10px;padding:1.1rem 1.2rem;margin-bottom:1rem;border:0.5px solid rgba(201,168,76,.1)">';
+  html += '<div style="font-family:var(--fm);font-size:.44rem;letter-spacing:3px;color:rgba(201,168,76,.38);text-transform:uppercase;margin-bottom:.6rem">Today · ' + new Date().toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'}) + '</div>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-bottom:.6rem">';
+  [{k:'breakfast',l:'Protein breakfast',n:'Within 30 min of waking'},{k:'water',l:'Water before coffee',n:'Every morning'},{k:'snacks',l:'Smart snacks only',n:'No processed, no sugar'},{k:'dinner',l:'Cooked dinner',n:'30 min. Non-negotiable.'}].forEach(function(n){
+    var done=fd.nutrition&&fd.nutrition[n.k];
+    html += '<div onclick="saveFitnessNutrition(\''+n.k+'\')" style="padding:.45rem .6rem;background:'+(done?'rgba(74,94,72,.18)':'rgba(250,247,242,.04)')+';border-radius:6px;cursor:pointer;border:0.5px solid '+(done?'rgba(106,138,104,.35)':'rgba(250,247,242,.07)')+';display:flex;gap:.45rem;align-items:center">';
+    html += '<div style="width:14px;height:14px;border-radius:50%;border:1.5px solid '+(done?'var(--sg2)':'rgba(250,247,242,.2)')+';background:'+(done?'var(--sg2)':'transparent')+';flex-shrink:0;display:flex;align-items:center;justify-content:center">'+(done?'<div style="width:5px;height:5px;border-radius:50%;background:white"></div>':'')+'</div>';
+    html += '<div><div style="font-size:.7rem;font-weight:500;color:rgba(250,247,242,.8)">'+n.l+'</div><div style="font-family:var(--fm);font-size:.44rem;color:rgba(250,247,242,.28)">'+n.n+'</div></div></div>';
+  });
+  html += '</div>';
+  // Rituals
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.35rem">';
+  ['Vitamin C serum','Moisturizer + SPF','Omega-3 supplement','Collagen powder','Double cleanse','Retinol / niacinamide','Heavy moisturizer','Magnesium supplement'].forEach(function(item,i){
+    var rkey=i<4?'morn':'night'; var ridx=i<4?i:(i-4);
+    var done=fd.rituals&&fd.rituals[rkey]&&fd.rituals[rkey][ridx];
+    html += '<div onclick="saveFitnessRitual(\''+rkey+'\','+ridx+')" style="padding:.38rem .58rem;background:'+(done?'rgba(74,94,72,.12)':'rgba(250,247,242,.03)')+';border-radius:4px;cursor:pointer;border:0.5px solid '+(done?'rgba(106,138,104,.28)':'rgba(250,247,242,.05)')+';display:flex;gap:.42rem;align-items:center">';
+    html += '<div class="wk-chk '+(done?'done':'')+'" style="flex-shrink:0;width:12px;height:12px"></div>';
+    html += '<div style="font-size:.66rem;color:rgba(250,247,242,'+(done?'.35':'.7')+');">'+(done?'<s>':'')+item+(done?'</s>':'')+'</div></div>';
+  });
+  html += '</div></div>';
 
-    // ── TODAY'S CHECKLIST — TOP ──────────────────────────────────
-    '<div style="background:var(--ink);border-radius:10px;padding:1.2rem 1.35rem;margin-bottom:1rem;border:0.5px solid rgba(201,168,76,.1)">' +
-    '<div style="font-family:var(--fm);font-size:.46rem;letter-spacing:3px;color:rgba(201,168,76,.4);text-transform:uppercase;margin-bottom:.65rem">Today\'s Check-ins &mdash; ' + new Date().toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'}) + '</div>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.45rem;margin-bottom:.75rem">' +
-    [
-      {k:'breakfast',l:'Protein breakfast',n:'Within 30 min of waking'},
-      {k:'water',l:'Water before coffee',n:'Every single morning'},
-      {k:'snacks',l:'Smart snacks only',n:'Almonds, fruit, hummus'},
-      {k:'dinner',l:'Cooked dinner',n:'20 minutes. Non-negotiable.'},
-    ].map(function(n){
-      var done=fd.nutrition&&fd.nutrition[n.k];
-      return '<div onclick="saveFitnessNutrition(\''+n.k+'\')" style="padding:.5rem .65rem;background:'+(done?'rgba(74,94,72,.15)':'rgba(250,247,242,.04)')+';border-radius:6px;cursor:pointer;border:0.5px solid '+(done?'rgba(106,138,104,.4)':'rgba(250,247,242,.08)')+';display:flex;gap:.5rem;align-items:center;transition:all .15s">' +
-        '<div style="width:15px;height:15px;border-radius:50%;border:1.5px solid '+(done?'var(--sg2)':'rgba(250,247,242,.25)')+';background:'+(done?'var(--sg2)':'transparent')+';flex-shrink:0;display:flex;align-items:center;justify-content:center">'+(done?'<div style="width:5px;height:5px;border-radius:50%;background:white"></div>':'')+'</div>' +
-        '<div><div style="font-size:.72rem;font-weight:500;color:rgba(250,247,242,.85)">'+n.l+'</div><div style="font-family:var(--fm);font-size:.46rem;color:rgba(250,247,242,.3)">'+n.n+'</div></div>' +
-        '</div>';
-    }).join('') +
-    '</div>' +
-    // Rituals inline
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.45rem">' +
-    ['Water before coffee','Vitamin C serum','Moisturizer + SPF','Omega-3 supplement','Double cleanse','Retinol/niacinamide','Heavy moisturizer','Magnesium supplement'].map(function(item,i){
-      var rkey=i<4?'morn':'night';
-      var ridx=i<4?i:(i-4);
-      var done=fd.rituals&&fd.rituals[rkey]&&fd.rituals[rkey][ridx];
-      return '<div onclick="saveFitnessRitual(\''+rkey+'\','+ridx+')" style="padding:.42rem .62rem;background:'+(done?'rgba(74,94,72,.12)':'rgba(250,247,242,.03)')+';border-radius:5px;cursor:pointer;border:0.5px solid '+(done?'rgba(106,138,104,.3)':'rgba(250,247,242,.06)')+';display:flex;gap:.45rem;align-items:center">' +
-        '<div class="todo-cb '+(done?'done':'')+'" style="flex-shrink:0;width:13px;height:13px;border-radius:2px;'+(done?'':'border:1.5px solid rgba(250,247,242,.2)')+'"></div>' +
-        '<div style="font-size:.68rem;color:rgba(250,247,242,'+(done?'.4':'.75')+');">'+(done?'<s>':'')+item+(done?'</s>':'')+'</div>' +
-        '</div>';
-    }).join('') +
-    '</div>' +
-    '</div>' +
+  // STATS
+  html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.65rem;margin-bottom:.85rem">';
+  html += '<div class="stat st-sg"><div class="sn">'+(daysClean||0)+'</div><div class="sl">Days Clear</div></div>';
+  html += '<div class="stat st-ch"><input id="m-waist" value="'+(fd.measurements.waist||'')+'" placeholder="—" style="border:none;outline:none;font-family:var(--fd);font-size:1.8rem;font-style:italic;color:var(--ink);background:transparent;width:100%" onblur="saveFitnessField(\'measurements\',\'waist\',this.value)"><div class="sl">Waist (in)</div></div>';
+  html += '<div class="stat st-ch"><input id="m-hips" value="'+(fd.measurements.hips||'')+'" placeholder="—" style="border:none;outline:none;font-family:var(--fd);font-size:1.8rem;font-style:italic;color:var(--ink);background:transparent;width:100%" onblur="saveFitnessField(\'measurements\',\'hips\',this.value)"><div class="sl">Hips (in)</div></div>';
+  html += '<div class="stat st-bl"><input id="m-weight" value="'+(fd.weight||'')+'" placeholder="—" style="border:none;outline:none;font-family:var(--fd);font-size:1.8rem;font-style:italic;color:var(--ink);background:transparent;width:100%" onblur="saveFitnessWeight(this.value)"><div class="sl">Weight (lbs)</div></div>';
+  html += '</div>';
 
-    // ── STATS ROW ─────────────────────────────────────────────────
-    '<div class="g4" style="margin-bottom:.85rem">' +
-    '<div class="stat st-sg"><div class="sn">'+(daysClean||0)+'</div><div class="sl">Days Clear</div></div>' +
-    '<div class="stat st-ch"><input id="m-waist" value="'+(fd.measurements.waist||'')+'" placeholder="—" style="border:none;outline:none;font-family:var(--fd);font-size:1.8rem;font-style:italic;color:var(--ink);background:transparent;width:100%" onblur="saveFitnessField(\'measurements\',\'waist\',this.value)"><div class="sl">Waist (in)</div></div>' +
-    '<div class="stat st-ch"><input id="m-hips" value="'+(fd.measurements.hips||'')+'" placeholder="—" style="border:none;outline:none;font-family:var(--fd);font-size:1.8rem;font-style:italic;color:var(--ink);background:transparent;width:100%" onblur="saveFitnessField(\'measurements\',\'hips\',this.value)"><div class="sl">Hips (in)</div></div>' +
-    '<div class="stat st-bl"><input id="m-weight" value="'+(fd.weight||'')+'" placeholder="—" style="border:none;outline:none;font-family:var(--fd);font-size:1.8rem;font-style:italic;color:var(--ink);background:transparent;width:100%" onblur="saveFitnessWeight(this.value)"><div class="sl">Weight (lbs)</div></div>' +
-    '</div>' +
-
-    // ── WEEKLY TRAINING SPLIT ─────────────────────────────────────
-    '<div style="font-family:var(--fm);font-size:.48rem;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:.65rem">Weekly Training Split</div>' +
-    '<div style="display:flex;flex-direction:column;gap:.65rem;margin-bottom:.85rem">' +
-    split.map(function(s){
-      var dayDone=fd.days&&fd.days[s.key]&&fd.days[s.key].done;
-      var exKey='ex_'+s.key;
-      var exChecks=fd.exChecks&&fd.exChecks[s.key]||{};
-      var doneCount=Object.values(exChecks).filter(Boolean).length;
-      var isToday=(s.key===todayFull);
-      return '<div style="border-radius:10px;overflow:hidden;border:0.5px solid '+(isToday?'var(--si)':'var(--iv3)')+';background:var(--wh)">' +
-        // Header — always visible, tap to expand
-        '<div style="background:'+(dayDone?s.color:'var(--iv2)')+';padding:.65rem 1rem;display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleFitnessDay(\''+s.key+'\')">' +
-        '<div style="display:flex;align-items:center;gap:.75rem">' +
-        '<div onclick="event.stopPropagation();saveFitnessDay(\''+s.key+'\')" style="width:24px;height:24px;border-radius:50%;border:2px solid '+(dayDone?'rgba(255,255,255,.6)':'var(--iv3)')+';background:'+(dayDone?'rgba(255,255,255,.85)':'transparent')+';cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s">' +
-        (dayDone?'<div style="color:'+s.color+';font-size:.65rem;font-weight:700">✓</div>':'') +
-        '</div>' +
-        '<div><div style="font-family:var(--fm);font-size:.46rem;letter-spacing:2.5px;color:'+(dayDone?'rgba(255,255,255,.6)':'var(--muted)')+';text-transform:uppercase">'+s.day+(isToday?' — TODAY':'')+'</div>' +
-        '<div style="font-family:var(--fd);font-size:1rem;font-style:italic;color:'+(dayDone?'white':'var(--ink)')+'">'+s.focus+'</div></div>' +
-        '</div>' +
-        '<div style="font-family:var(--fm);font-size:.48rem;color:'+(dayDone?'rgba(255,255,255,.5)':'var(--muted)')+'">' + doneCount + '/' + s.exercises.length + '</div>' +
-        '</div>' +
-        // Exercises
-        '<div id="fit-day-'+s.key+'" style="'+(isToday||dayDone?'':'display:none')+'">' +
-        s.exercises.map(function(e,ei){
-          var exDone=exChecks[ei];
-          return '<div onclick="saveFitnessEx(\''+s.key+'\','+ei+')" style="display:flex;gap:.65rem;padding:.45rem 1rem;border-bottom:0.5px solid var(--iv3);align-items:center;cursor:pointer;background:'+(exDone?'var(--sgp)':'transparent')+';transition:background .12s">' +
-            '<div class="wk-chk '+(exDone?'done':'')+'" style="flex-shrink:0"></div>' +
-            '<div style="flex:1"><div style="font-size:.78rem;font-weight:500;color:var(--ink);'+(exDone?'text-decoration:line-through;opacity:.5':'')+'">'+e.name+'</div>' +
-            '<div style="font-family:var(--fm);font-size:.48rem;color:var(--muted);margin-top:.1rem">'+e.note+'</div></div>' +
-            '<div style="font-family:var(--fm);font-size:.55rem;color:'+s.color+';white-space:nowrap;flex-shrink:0">'+e.sets+'</div>' +
-            '</div>';
-        }).join('') +
-        '</div>' +
-        '</div>';
-    }).join('') +
-    '</div>' +
-
-    // ── BODY TRACKING ─────────────────────────────────────────────
-    '<div class="g2" style="margin-bottom:.85rem">' +
-    '<div class="card"><div class="cl">Body Tracking</div>' +
-    ['waist','hips','arms','thighs'].map(function(m){
-      return '<div style="display:flex;align-items:center;gap:.5rem;padding:.3rem 0;border-bottom:0.5px solid var(--iv3)">' +
-        '<div style="font-family:var(--fm);font-size:.48rem;color:var(--muted);text-transform:uppercase;min-width:52px">'+m+'</div>' +
-        '<input id="mt-'+m+'" value="'+(fd.measurements[m]||'')+'" placeholder="inches" style="border:none;outline:none;font-family:var(--fd);font-size:.9rem;font-style:italic;color:var(--si);background:transparent;flex:1" onblur="saveFitnessField(\'measurements\',\''+m+'\',this.value)">' +
-        '<div style="font-family:var(--fm);font-size:.46rem;color:var(--faint)">in</div>' +
-        '</div>';
-    }).join('') +
-    '</div>' +
-    '<div class="card" style="border-left:3px solid var(--sg2)">' +
-    '<div class="cl">Clarity Tracker</div>' +
-    '<div style="font-family:var(--fd);font-size:2.6rem;font-style:italic;color:var(--sg2);line-height:1;margin-bottom:.2rem">'+(daysClean||0)+'</div>' +
-    '<div style="font-family:var(--fm);font-size:.48rem;color:var(--muted);text-transform:uppercase;margin-bottom:.65rem">days clear</div>' +
-    (fd.quit&&fd.quit.startDate?'<div style="font-size:.75rem;color:var(--muted);margin-bottom:.5rem">Since '+new Date(fd.quit.startDate).toLocaleDateString('en-US',{month:'long',day:'numeric'})+'</div>':'')+
-    '<div class="fg"><label>Start Date</label><input type="date" value="'+(fd.quit&&fd.quit.startDate||'')+'" class="fi" style="padding:.35rem .65rem;font-size:.75rem" onchange="saveFitnessQuit(this.value)"></div>' +
-    '<div style="font-size:.7rem;color:var(--muted);font-style:italic;line-height:1.5;margin-top:.35rem">Cortisol stores fat at the waist. Clarity is the fastest path to the body you want.</div>' +
-    '</div>' +
-    '</div>' +
-
-    '</div>'
-  );
+  // WEEKLY SPLIT
+  html += '<div style="font-family:var(--fm);font-size:.46rem;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:.6rem">Weekly Training Split</div>';
+  html += '<div style="display:flex;flex-direction:column;gap:.6rem;margin-bottom:.85rem">';
+  split.forEach(function(s){
+    var dayDone=fd.days&&fd.days[s.key]&&fd.days[s.key].done;
+    var exChecks=fd.exChecks&&fd.exChecks[s.key]||{};
+    var doneCount=Object.values(exChecks).filter(Boolean).length;
+    var isToday=(s.key===todayFull);
+    html += '<div style="border-radius:10px;overflow:hidden;border:0.5px solid '+(isToday?'var(--si)':'var(--iv3)')+';background:var(--wh)">';
+    html += '<div style="background:'+(dayDone?s.color:'var(--iv2)')+';padding:.6rem 1rem;display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleFitnessDay(\''+s.key+'\')">';
+    html += '<div style="display:flex;align-items:center;gap:.7rem">';
+    html += '<div onclick="event.stopPropagation();saveFitnessDay(\''+s.key+'\')" style="width:22px;height:22px;border-radius:50%;border:2px solid '+(dayDone?'rgba(255,255,255,.5)':'var(--iv3)')+';background:'+(dayDone?'rgba(255,255,255,.85)':'transparent')+';cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">';
+    html += (dayDone?'<div style="color:'+s.color+';font-size:.6rem;font-weight:700">✓</div>':'')+' </div>';
+    html += '<div><div style="font-family:var(--fm);font-size:.44rem;letter-spacing:2px;color:'+(dayDone?'rgba(255,255,255,.55)':'var(--muted)')+';text-transform:uppercase">'+s.day+(isToday?' · TODAY':'')+'</div>';
+    html += '<div style="font-family:var(--fd);font-size:.98rem;font-style:italic;color:'+(dayDone?'white':'var(--ink)')+'">'+s.focus+'</div></div></div>';
+    html += '<div style="font-family:var(--fm);font-size:.46rem;color:'+(dayDone?'rgba(255,255,255,.45)':'var(--muted)')+'">'+doneCount+'/'+s.exercises.length+'</div></div>';
+    html += '<div id="fit-day-'+s.key+'" style="'+(isToday||dayDone?'':'display:none')+'">';
+    s.exercises.forEach(function(e,ei){
+      var exDone=exChecks[ei];
+      html += '<div onclick="saveFitnessEx(\''+s.key+'\','+ei+')" style="display:flex;gap:.6rem;padding:.42rem 1rem;border-bottom:0.5px solid var(--iv3);align-items:center;cursor:pointer;background:'+(exDone?'var(--sgp)':'transparent')+'">';
+      html += '<div class="wk-chk '+(exDone?'done':'')+'" style="flex-shrink:0"></div>';
+      html += '<div style="flex:1"><div style="font-size:.77rem;font-weight:500;color:var(--ink);'+(exDone?'text-decoration:line-through;opacity:.5':'')+'">'+e.name+'</div>';
+      html += '<div style="font-family:var(--fm);font-size:.46rem;color:var(--muted)">'+e.note+'</div></div>';
+      html += '<div style="font-family:var(--fm);font-size:.52rem;color:'+s.color+';white-space:nowrap;flex-shrink:0">'+e.sets+'</div></div>';
+    });
+    html += '</div></div>';
+  });
+  html += '</div>';
+  return html;
 }
 
+// ─── PEACE TAB ─────────────────────────────────────────────────
+function renderPeaceTab(fd){
+  var pd = lsGet('chq-peace',{});
+  pd.gratitude = pd.gratitude && typeof pd.gratitude==='object' ? pd.gratitude : {};
+  pd.journal   = pd.journal   && typeof pd.journal==='object'   ? pd.journal   : {};
+  pd.sleep     = pd.sleep     && typeof pd.sleep==='object'     ? pd.sleep     : {};
+  var today = new Date().toISOString().split('T')[0];
+  var todayGrat = Array.isArray(pd.gratitude[today]) ? pd.gratitude[today] : ['','',''];
+  var todayJournal = pd.journal[today] || '';
+  var todaySleep = pd.sleep[today] || {};
+  var daysClean = 0;
+  if(fd.quit&&fd.quit.startDate) daysClean=Math.floor((new Date()-new Date(fd.quit.startDate))/(1000*60*60*24));
+  var quoteIdx = new Date().getDate() % _quotes.length;
+  var quote = _quotes[quoteIdx];
+
+  var html = '';
+
+  // Quote
+  html += '<div style="background:var(--ink);border-radius:10px;padding:1.5rem;margin-bottom:1rem;border:0.5px solid rgba(201,168,76,.1);text-align:center">';
+  html += '<div style="font-family:var(--fd);font-size:1.1rem;font-style:italic;color:rgba(250,247,242,.82);line-height:1.75;margin-bottom:.6rem">'+quote.text+'</div>';
+  html += '<div style="font-family:var(--fm);font-size:.46rem;letter-spacing:3px;color:rgba(201,168,76,.3);text-transform:uppercase">— '+quote.author+'</div></div>';
+
+  // Two col
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">';
+
+  // Clarity
+  html += '<div class="card"><div class="cl">Clarity Streak</div>';
+  html += '<div style="text-align:center;padding:.5rem 0"><div style="font-family:var(--fd);font-size:3rem;font-style:italic;color:'+(daysClean>0?'var(--sg2)':'var(--faint)')+'">'+daysClean+'</div>';
+  html += '<div style="font-family:var(--fm);font-size:.46rem;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:.6rem">days of clarity</div>';
+  html += '<input type="date" id="quit-date" value="'+(fd.quit&&fd.quit.startDate||'')+'" style="font-family:var(--fm);font-size:.6rem;border:0.5px solid var(--iv3);border-radius:4px;padding:.3rem .5rem;color:var(--muted);background:var(--iv2)" onchange="saveFitnessQuit(this.value)">';
+  html += '</div></div>';
+
+  // Meditation
+  html += '<div class="card"><div class="cl">Meditation</div>';
+  html += '<div style="display:flex;gap:.4rem;justify-content:center;margin-bottom:.75rem">';
+  [5,10,20].forEach(function(m){
+    html += '<button onclick="startMed('+m+')" style="background:var(--iv2);border:0.5px solid var(--iv3);border-radius:4px;padding:.4rem .8rem;font-family:var(--fm);font-size:.55rem;color:var(--muted);cursor:pointer;letter-spacing:1.5px;text-transform:uppercase">'+m+' min</button>';
+  });
+  html += '</div>';
+  html += '<div style="text-align:center">';
+  html += '<div id="med-circle" style="width:80px;height:80px;border-radius:50%;border:1.5px solid var(--iv3);margin:0 auto .65rem;display:flex;align-items:center;justify-content:center;transition:all 1s">';
+  html += '<div id="med-time" style="font-family:var(--fd);font-size:1.3rem;font-style:italic;color:var(--muted)">—</div></div>';
+  html += '<button id="med-btn" onclick="toggleMed()" style="background:transparent;border:0.5px solid var(--iv3);border-radius:4px;padding:.3rem .8rem;font-family:var(--fm);font-size:.52rem;color:var(--muted);cursor:pointer;letter-spacing:1.5px;text-transform:uppercase">Start</button>';
+  html += '</div></div>';
+  html += '</div>'; // end two col
+
+  // Box breathing
+  html += '<div class="card" style="margin-bottom:1rem"><div class="cl">Box Breathing</div>';
+  html += '<div style="display:flex;align-items:center;justify-content:center;gap:1.5rem;flex-wrap:wrap">';
+  html += '<div id="breath-circle" style="width:100px;height:100px;border-radius:50%;border:1.5px solid var(--iv3);display:flex;align-items:center;justify-content:center;transition:all 4s;flex-shrink:0">';
+  html += '<div id="breath-label" style="font-family:var(--fd);font-size:.88rem;font-style:italic;color:var(--muted);text-align:center">Breathe</div></div>';
+  html += '<div style="display:flex;flex-direction:column;gap:.3rem">';
+  ['Inhale — 4 counts','Hold — 4 counts','Exhale — 4 counts','Hold — 4 counts'].forEach(function(s){
+    html += '<div style="font-family:var(--fm);font-size:.5rem;color:var(--muted);letter-spacing:1px">'+s+'</div>';
+  });
+  html += '</div></div>';
+  html += '<div style="text-align:center;margin-top:.6rem"><button onclick="startBreath()" id="breath-btn" style="background:transparent;border:0.5px solid var(--iv3);border-radius:4px;padding:.3rem .8rem;font-family:var(--fm);font-size:.52rem;color:var(--muted);cursor:pointer;letter-spacing:1.5px;text-transform:uppercase">Begin</button></div></div>';
+
+  // Gratitude
+  html += '<div class="card" style="margin-bottom:1rem"><div class="cl">Three Things</div>';
+  html += '<div style="font-size:.75rem;color:var(--muted);margin-bottom:.75rem">Name three things that softened, strengthened, or surprised you today.</div>';
+  [0,1,2].forEach(function(i){
+    html += '<input value="'+(todayGrat[i]||'')+'" placeholder="I am grateful for..." style="width:100%;border:0.5px solid var(--iv3);border-radius:5px;padding:.5rem .75rem;font-family:var(--fd);font-style:italic;font-size:.9rem;background:var(--iv2);color:var(--ink);outline:none;margin-bottom:.5rem" onblur="saveGratitude('+i+',this.value)">';
+  });
+  html += '</div>';
+
+  // Journal
+  html += '<div class="card" style="margin-bottom:1rem"><div class="cl">Journal</div>';
+  html += '<div style="font-size:.75rem;color:var(--muted);margin-bottom:.65rem">Let the page hold what your body is still trying to say.</div>';
+  html += '<textarea style="width:100%;border:0.5px solid var(--iv3);border-radius:5px;padding:.65rem .85rem;font-family:var(--fd);font-size:.9rem;line-height:1.85;background:var(--iv2);color:var(--ink);outline:none;resize:vertical;min-height:120px" placeholder="This space is yours. No one else reads this." onblur="saveJournal(this.value)">'+todayJournal+'</textarea></div>';
+
+  // Wind down
+  html += '<div class="card"><div class="cl">Wind Down</div>';
+  var windDownItems = ['No screens 30 min before bed','Magnesium supplement','Light stretch or legs up the wall','Room cool and dark','Set tomorrow intention'];
+  windDownItems.forEach(function(item,i){
+    var done = todaySleep&&todaySleep[i];
+    html += '<div onclick="toggleSleep('+i+')" style="display:flex;align-items:center;gap:.6rem;padding:.42rem 0;border-bottom:0.5px solid var(--iv3);cursor:pointer">';
+    html += '<div class="wk-chk '+(done?'done':'')+'"></div>';
+    html += '<div style="font-size:.78rem;color:var(--muted);'+(done?'text-decoration:line-through;opacity:.5':'')+'">'+item+'</div></div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+// ─── DIET TAB ──────────────────────────────────────────────────
+// 4-week low-carb rotation. No pork. No nuts. Spicy preferred.
+// High protein, anti-inflammatory, 30 min max weeknights.
+
+var MEALS = (function(){
+  // Helper: build a meal object
+  function m(name, macros, time, recipe, grocery){
+    return {name:name, macros:macros, time:time, recipe:recipe, grocery:grocery};
+  }
+  // Four weeks × 7 days × 4 meals (B=breakfast, L=lunch, D=dinner, S=snack)
+  var w1 = {
+    Mon:{
+      B: m('Spicy Scrambled Eggs + Avocado','P:28g C:6g F:22g','10 min','Scramble 3 eggs with diced jalapeño, cherry tomatoes, and a pinch of cumin. Serve with ½ avocado and a sprinkle of chili flakes.','eggs,jalapeño,cherry tomatoes,cumin,avocado,chili flakes'),
+      L: m('Grilled Chicken Arugula Bowl','P:42g C:8g F:14g','20 min','Season chicken thigh with paprika, garlic, and lime. Sear 6 min per side. Slice over arugula with cucumber, red onion, and lemon-olive oil dressing.','chicken thighs,paprika,garlic,lime,arugula,cucumber,red onion,olive oil'),
+      D: m('Spicy Shrimp + Zucchini Noodles','P:35g C:10g F:12g','25 min','Sauté shrimp with garlic, butter, red pepper flakes, and lemon. Spiralize 2 zucchini, sauté 3 min. Toss together with fresh parsley.','shrimp,garlic,butter,red pepper flakes,lemon,zucchini,parsley'),
+      S: m('Greek Yogurt + Berries','P:18g C:12g F:3g','2 min','Full-fat Greek yogurt topped with blueberries and a pinch of cinnamon.','Greek yogurt,blueberries,cinnamon'),
+    },
+    Tue:{
+      B: m('Smoked Salmon + Egg Cups','P:32g C:3g F:18g','15 min','Line muffin tin with smoked salmon. Crack egg into each. Add capers and dill. Bake 12 min at 375°F.','smoked salmon,eggs,capers,dill'),
+      L: m('Turkey Lettuce Wraps','P:38g C:7g F:15g','20 min','Brown ground turkey with ginger, garlic, soy sauce, and chili garlic sauce. Serve in butter lettuce cups with shredded carrots and lime.','ground turkey,ginger,garlic,soy sauce,chili garlic sauce,butter lettuce,carrots,lime'),
+      D: m('Baked Salmon + Roasted Asparagus','P:45g C:8g F:20g','30 min','Rub salmon with Dijon, garlic, and lemon zest. Bake 15 min at 400°F. Roast asparagus with olive oil, salt, and red pepper flakes alongside.','salmon fillet,Dijon mustard,lemon,asparagus,olive oil,red pepper flakes'),
+      S: m('Cucumber + Tuna','P:22g C:4g F:6g','5 min','Slice cucumber rounds. Top each with a spoon of tuna mixed with lime juice, diced jalapeño, and a drop of hot sauce.','cucumber,canned tuna,lime,jalapeño,hot sauce'),
+    },
+    Wed:{
+      B: m('Veggie Egg White Omelette','P:30g C:7g F:8g','15 min','Whisk 5 egg whites. Pour into non-stick pan. Fill with spinach, roasted red peppers, and feta. Fold and cook 3 min.','egg whites,spinach,roasted red peppers,feta'),
+      L: m('Chicken Taco Bowl (no tortilla)','P:44g C:12g F:16g','25 min','Season chicken breast with cumin, chili powder, garlic. Cook and shred. Serve over shredded cabbage with pico de gallo, avocado, and lime.','chicken breast,cumin,chili powder,garlic,cabbage,pico de gallo,avocado,lime'),
+      D: m('Spicy Turkey Stir-Fry + Broccoli','P:40g C:14g F:12g','25 min','Brown turkey with ginger, garlic, soy sauce, and sriracha. Add broccoli florets and bell peppers. Cook 8 min. Serve in bowls.','ground turkey,ginger,garlic,soy sauce,sriracha,broccoli,bell peppers'),
+      S: m('Cottage Cheese + Hot Sauce','P:20g C:6g F:4g','2 min','Full-fat cottage cheese with a generous pour of hot sauce and black pepper. Simple and effective.','cottage cheese,hot sauce'),
+    },
+    Thu:{
+      B: m('Shakshuka (Spiced Tomato Eggs)','P:26g C:14g F:16g','25 min','Sauté onion, garlic, and bell pepper in olive oil. Add crushed tomatoes, cumin, paprika, and cayenne. Crack in 3-4 eggs. Simmer covered until eggs set. Top with fresh herbs.','onion,garlic,bell pepper,crushed tomatoes,cumin,paprika,cayenne,eggs,fresh cilantro'),
+      L: m('Salmon Salad Lettuce Wraps','P:36g C:5g F:18g','15 min','Flake canned salmon with avocado, lemon, diced celery, and sriracha. Serve in romaine leaves.','canned salmon,avocado,lemon,celery,sriracha,romaine'),
+      D: m('Garlic Butter Shrimp + Cauliflower Rice','P:38g C:12g F:16g','25 min','Pulse cauliflower in food processor, sauté 5 min. Cook shrimp in garlic butter with lemon and red pepper flakes. Serve over cauli rice.','shrimp,garlic,butter,lemon,red pepper flakes,cauliflower'),
+      S: m('Hard-Boiled Eggs + Tajin','P:12g C:1g F:10g','10 min','Two hard-boiled eggs sliced and dusted with Tajín. High protein, zero sugar.','eggs,Tajin seasoning'),
+    },
+    Fri:{
+      B: m('Spicy Avocado Egg Toast (on cucumber)','P:22g C:8g F:20g','10 min','Mash avocado with lime, salt, and chili flakes. Spread on thick cucumber rounds. Top with a fried egg and hot sauce.','avocado,lime,chili flakes,cucumber,eggs,hot sauce'),
+      L: m('Ground Turkey Stuffed Bell Peppers','P:42g C:16g F:14g','30 min','Halve bell peppers. Fill with spiced ground turkey, diced tomatoes, and cumin. Bake 20 min at 375°F.','bell peppers,ground turkey,diced tomatoes,cumin,garlic'),
+      D: m('Seared Tuna + Bok Choy','P:46g C:8g F:14g','20 min','Coat tuna steak in black sesame and soy. Sear 90 seconds per side. Serve over sautéed bok choy with ginger and garlic.','tuna steak,black sesame,soy sauce,bok choy,ginger,garlic'),
+      S: m('Spicy Edamame','P:18g C:14g F:8g','5 min','Steamed edamame tossed with sesame oil, chili flakes, and sea salt.','edamame,sesame oil,chili flakes'),
+    },
+    Sat:{
+      B: m('Full Protein Breakfast Plate','P:38g C:8g F:24g','25 min','3 eggs any style. 2 turkey bacon strips. Sautéed spinach with garlic. Sliced tomato with sea salt.','eggs,turkey bacon,spinach,garlic,tomatoes'),
+      L: m('Grilled Chicken + Mango Slaw','P:44g C:18g F:14g','30 min','Grill spiced chicken thighs. Make slaw from shredded cabbage, mango, jalapeño, lime, and cilantro. Serve over slaw.','chicken thighs,cabbage,mango,jalapeño,lime,cilantro'),
+      D: m('Salmon Poke Bowl (no rice)','P:42g C:14g F:20g','20 min','Cube fresh salmon. Toss with soy, sesame oil, green onions, and chili. Serve over mixed greens with cucumber, avocado, and edamame.','sashimi salmon,soy sauce,sesame oil,green onions,chili,mixed greens,cucumber,avocado,edamame'),
+      S: m('Protein Smoothie','P:30g C:16g F:6g','5 min','Blend Greek yogurt, frozen berries, spinach, a scoop of collagen powder, and unsweetened almond-free milk substitute.','Greek yogurt,frozen berries,spinach,collagen powder,oat milk'),
+    },
+    Sun:{
+      B: m('Veggie Frittata (meal prep)','P:32g C:9g F:18g','35 min','Whisk 8 eggs. Add roasted veggies (zucchini, peppers, cherry tomatoes), feta, and chili flakes. Pour into oven-safe pan. Bake 20 min at 375°F. Cuts into 4 portions for the week.','eggs,zucchini,bell peppers,cherry tomatoes,feta,chili flakes'),
+      L: m('Slow-Cooked Chicken Thighs + Greens','P:48g C:8g F:18g','35 min','Season chicken with paprika, garlic, cumin. Sear then finish in oven 25 min at 400°F. Serve with sautéed kale and lemon.','chicken thighs,paprika,garlic,cumin,kale,lemon'),
+      D: m('Zucchini Lasagna (turkey)','P:44g C:16g F:18g','40 min','Slice zucchini into thin sheets. Layer with spiced ground turkey, marinara, and ricotta. Bake 30 min at 375°F.','zucchini,ground turkey,marinara sauce,ricotta'),
+      S: m('Greek Yogurt Dip + Veggies','P:16g C:10g F:3g','5 min','Full-fat Greek yogurt mixed with garlic, lemon, and dill. Serve with sliced cucumber, bell pepper, and celery.','Greek yogurt,garlic,dill,cucumber,bell pepper,celery'),
+    },
+  };
+  // Weeks 2-4: simplified variations (same structure, different recipes)
+  var w2 = JSON.parse(JSON.stringify(w1)); // Start from w1, override key meals
+  w2.Mon.D = m('Lemon Herb Chicken + Brussels Sprouts','P:44g C:12g F:16g','28 min','Roast chicken thighs with lemon, thyme, and garlic. Halve Brussels sprouts and roast with olive oil and red pepper flakes alongside.','chicken thighs,lemon,thyme,garlic,Brussels sprouts,olive oil,red pepper flakes');
+  w2.Tue.B = m('Spicy Turkey Breakfast Bowl','P:34g C:8g F:14g','20 min','Brown turkey with cumin, chili powder, and garlic. Serve over spinach with a fried egg and hot sauce on top.','ground turkey,cumin,chili powder,garlic,spinach,eggs,hot sauce');
+  w2.Wed.D = m('Tuna Stuffed Avocado','P:36g C:8g F:22g','10 min','Mix canned tuna with lime, diced jalapeño, and cilantro. Halve two avocados. Fill each half with tuna mixture.','canned tuna,lime,jalapeño,cilantro,avocados');
+  w2.Thu.B = m('Egg + Veggie Scramble','P:28g C:6g F:16g','15 min','Scramble 3 eggs with zucchini, cherry tomatoes, and spinach in olive oil. Season with turmeric, salt, and pepper.','eggs,zucchini,cherry tomatoes,spinach,turmeric,olive oil');
+  w2.Fri.D = m('Spicy Coconut Shrimp Soup','P:36g C:12g F:18g','25 min','Simmer shrimp in coconut milk with lemongrass, chili, ginger, and lime. Add bok choy last 3 min.','shrimp,coconut milk,lemongrass,chili,ginger,lime,bok choy');
+  w2.Sat.D = m('Sheet Pan Chicken + Veggies','P:46g C:14g F:18g','35 min','Toss chicken thighs with cumin, smoked paprika, and olive oil. Arrange on sheet pan with broccoli, bell peppers, and onion. Roast 30 min at 425°F.','chicken thighs,cumin,smoked paprika,olive oil,broccoli,bell peppers,onion');
+  var w3 = JSON.parse(JSON.stringify(w1));
+  w3.Mon.B = m('Collagen Matcha Smoothie Bowl','P:26g C:12g F:8g','8 min','Blend Greek yogurt, matcha powder, collagen, and frozen spinach. Pour into bowl. Top with berries and hemp seeds.','Greek yogurt,matcha powder,collagen powder,spinach,berries,hemp seeds');
+  w3.Tue.D = m('Miso Glazed Salmon','P:44g C:8g F:20g','20 min','Mix white miso, soy, and ginger. Brush on salmon. Broil 8 min. Serve with steamed broccoli and sesame.','salmon,white miso,soy sauce,ginger,broccoli,sesame seeds');
+  w3.Wed.L = m('Spicy Chicken Soup','P:42g C:10g F:12g','30 min','Simmer chicken breast in broth with garlic, jalapeño, cumin, and lime. Shred chicken. Add zucchini and cilantro.','chicken breast,chicken broth,garlic,jalapeño,cumin,lime,zucchini,cilantro');
+  w3.Thu.D = m('Turkey Lettuce Cup Tacos','P:40g C:9g F:14g','20 min','Brown turkey with taco seasoning. Serve in butter lettuce with avocado salsa and sriracha.','ground turkey,taco seasoning,butter lettuce,avocado,lime,sriracha');
+  w3.Fri.B = m('Egg White Frittata Muffins','P:28g C:4g F:6g','20 min','Whisk egg whites with spinach, roasted peppers, and feta. Pour into muffin tin. Bake 18 min at 375°F. Makes 6.','egg whites,spinach,roasted red peppers,feta');
+  var w4 = JSON.parse(JSON.stringify(w2));
+  w4.Mon.L = m('Smoked Salmon Cucumber Rolls','P:30g C:5g F:16g','10 min','Spread cream cheese on sliced cucumber. Top with smoked salmon, capers, and dill. Roll and pin if desired.','smoked salmon,cucumber,cream cheese,capers,dill');
+  w4.Tue.B = m('Turmeric Scrambled Eggs','P:26g C:5g F:16g','12 min','Scramble 3 eggs with turmeric, black pepper, and coconut oil. Serve with sliced tomato and a handful of spinach.','eggs,turmeric,black pepper,coconut oil,tomato,spinach');
+  w4.Wed.B = m('Greek Yogurt Parfait','P:28g C:14g F:8g','5 min','Layer Greek yogurt with mixed berries, hemp seeds, and a drizzle of raw honey. High protein, no gut stress.','Greek yogurt,mixed berries,hemp seeds,honey');
+  w4.Thu.L = m('Chicken + Avocado Salad','P:44g C:8g F:22g','15 min','Dice grilled chicken and avocado. Toss with lime, cilantro, red onion, and jalapeño. Serve on romaine.','grilled chicken,avocado,lime,cilantro,red onion,jalapeño,romaine');
+  w4.Fri.L = m('Shrimp Ceviche Cups','P:32g C:10g F:8g','20 min','Cook shrimp with lime juice. Toss with diced tomato, cucumber, red onion, jalapeño, and cilantro. Serve in endive cups.','shrimp,lime,tomato,cucumber,red onion,jalapeño,cilantro,endive');
+  return [w1,w2,w3,w4];
+})();
+
+function renderDietTab(){
+  var days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  var mealTypes = ['B','L','D','S'];
+  var mealLabels = {B:'Breakfast',L:'Lunch',D:'Dinner',S:'Snack'};
+  var week = MEALS[_dietWeek-1];
+  var today = new Date().toLocaleDateString('en-US',{weekday:'short'});
+
+  var html = '';
+
+  // Week selector
+  html += '<div style="display:flex;gap:.4rem;margin-bottom:1rem;flex-wrap:wrap;align-items:center">';
+  html += '<span style="font-family:var(--fm);font-size:.46rem;letter-spacing:2px;color:var(--muted);text-transform:uppercase">Rotation:</span>';
+  [1,2,3,4].forEach(function(w){
+    html += '<button onclick="_dietWeek='+w+';bBody()" style="font-family:var(--fm);font-size:.52rem;padding:.28rem .7rem;border-radius:20px;border:0.5px solid '+(w===_dietWeek?'var(--si)':'var(--iv3)')+';background:'+(w===_dietWeek?'var(--sip)':'transparent')+';color:'+(w===_dietWeek?'var(--si)':'var(--muted)')+';cursor:pointer">Week '+w+'</button>';
+  });
+  html += '<button onclick="printGroceryList()" style="margin-left:auto;font-family:var(--fm);font-size:.52rem;padding:.28rem .8rem;border-radius:20px;border:0.5px solid var(--sal);background:var(--sap);color:var(--sa);cursor:pointer">🛒 Grocery List</button>';
+  html += '</div>';
+
+  // Macro key
+  html += '<div style="display:flex;gap:.75rem;margin-bottom:1rem;padding:.65rem .85rem;background:var(--ink);border-radius:8px;flex-wrap:wrap">';
+  [{l:'Daily Target',v:'~1,600 cal'},{l:'Protein',v:'~160g'},{l:'Net Carbs',v:'<60g'},{l:'Fat',v:'~80g'}].forEach(function(m){
+    html += '<div style="text-align:center;flex:1;min-width:80px"><div style="font-family:var(--fd);font-size:1rem;font-style:italic;color:var(--go)">'+m.v+'</div><div style="font-family:var(--fm);font-size:.44rem;color:rgba(250,247,242,.3);letter-spacing:1.5px;text-transform:uppercase">'+m.l+'</div></div>';
+  });
+  html += '</div>';
+
+  // Meal grid — each day as a card
+  days.forEach(function(day){
+    var dayMeals = week[day];
+    var isToday = (today===day);
+    html += '<div style="background:var(--wh);border-radius:10px;border:0.5px solid '+(isToday?'var(--si)':'var(--iv3)')+';overflow:hidden;margin-bottom:.75rem">';
+    html += '<div style="background:'+(isToday?'var(--si)':'var(--iv2)')+';padding:.55rem 1rem;display:flex;align-items:center;justify-content:space-between">';
+    html += '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:2.5px;color:'+(isToday?'white':'var(--muted)')+';text-transform:uppercase">'+day+(isToday?' · Today':'')+'</div>';
+    // approx daily protein
+    var totalP = mealTypes.reduce(function(acc,t){ var m=dayMeals&&dayMeals[t]; if(!m)return acc; var match=m.macros.match(/P:(\d+)g/); return acc+(match?parseInt(match[1]):0); },0);
+    html += '<div style="font-family:var(--fm);font-size:.46rem;color:'+(isToday?'rgba(255,255,255,.65)':'var(--faint)')+'">~'+totalP+'g protein</div>';
+    html += '</div>';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0">';
+    mealTypes.forEach(function(t,ti){
+      var meal = dayMeals&&dayMeals[t];
+      if(!meal) return;
+      var border = ti<2 ? 'border-bottom:0.5px solid var(--iv3);' : '';
+      var borderR = (ti%2===0) ? 'border-right:0.5px solid var(--iv3);' : '';
+      html += '<div style="padding:.75rem .85rem;cursor:pointer;'+border+borderR+'transition:background .12s" onmouseover="this.style.background=\'var(--sip)\'" onmouseout="this.style.background=\'\'" onclick="showRecipe(\''+day+'\',\''+t+'\')">';
+      html += '<div style="font-family:var(--fm);font-size:.44rem;letter-spacing:2px;color:var(--si);text-transform:uppercase;margin-bottom:.2rem">'+mealLabels[t]+'</div>';
+      html += '<div style="font-size:.78rem;font-weight:500;color:var(--ink);line-height:1.3;margin-bottom:.2rem">'+meal.name+'</div>';
+      html += '<div style="font-family:var(--fm);font-size:.46rem;color:var(--faint)">'+meal.macros+'</div>';
+      html += '</div>';
+    });
+    html += '</div></div>';
+  });
+
+  return html;
+}
+
+function showRecipe(day, type){
+  var meal = MEALS[_dietWeek-1][day]&&MEALS[_dietWeek-1][day][type];
+  if(!meal) return;
+  var mealLabels = {B:'Breakfast',L:'Lunch',D:'Dinner',S:'Snack'};
+  var ov = document.createElement('div');
+  ov.className = 'ov on';
+  ov.id = 'recipe-modal-ov';
+  ov.innerHTML = '<div class="modal" style="max-width:480px">' +
+    '<div style="font-family:var(--fm);font-size:.46rem;letter-spacing:2.5px;color:var(--si);text-transform:uppercase;margin-bottom:.4rem">'+mealLabels[type]+'</div>' +
+    '<h3 style="font-family:var(--fd);font-size:1.4rem;font-weight:300;font-style:italic;color:var(--ink);margin-bottom:.25rem">'+meal.name+'</h3>' +
+    '<div style="font-family:var(--fm);font-size:.5rem;color:var(--muted);margin-bottom:1rem">'+meal.macros+' &middot; '+meal.time+'</div>' +
+    '<div style="font-size:.78rem;line-height:1.85;color:var(--charcoal);margin-bottom:1rem">'+meal.recipe+'</div>' +
+    '<div style="font-size:.68rem;color:var(--muted);padding:.65rem;background:var(--iv2);border-radius:5px;margin-bottom:1rem"><strong style="font-family:var(--fm);font-size:.44rem;letter-spacing:2px;text-transform:uppercase;color:var(--si);display:block;margin-bottom:.3rem">Grocery</strong>'+meal.grocery+'</div>' +
+    '<div class="m-acts"><button class="btn bg" onclick="document.getElementById(\'recipe-modal-ov\').remove()">Close</button></div>' +
+    '</div>';
+  ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
+  document.body.appendChild(ov);
+}
+
+function printGroceryList(){
+  var week = MEALS[_dietWeek-1];
+  var days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  var types = ['B','L','D','S'];
+  var all = {};
+  days.forEach(function(d){
+    types.forEach(function(t){
+      var meal = week[d]&&week[d][t];
+      if(!meal) return;
+      meal.grocery.split(',').forEach(function(item){
+        var clean = item.trim().toLowerCase();
+        if(clean) all[clean] = true;
+      });
+    });
+  });
+  var cats = {
+    'Proteins':['chicken thighs','chicken breast','ground turkey','salmon','salmon fillet','shrimp','tuna steak','canned tuna','canned salmon','sashimi salmon','smoked salmon','eggs','egg whites','turkey bacon'],
+    'Produce':['avocado','spinach','arugula','romaine','kale','mixed greens','bok choy','broccoli','zucchini','asparagus','cauliflower','bell peppers','cucumber','cherry tomatoes','tomato','red onion','green onions','jalapeño','lemongrass','endive','butter lettuce','celery','cabbage','brussels sprouts'],
+    'Dairy & Eggs':['greek yogurt','cottage cheese','feta','ricotta','cream cheese','butter'],
+    'Pantry':['olive oil','coconut oil','soy sauce','sesame oil','miso','hot sauce','sriracha','chili garlic sauce','chili flakes','red pepper flakes','cumin','paprika','smoked paprika','turmeric','ginger','garlic','lime','lemon','cilantro','parsley','dill','capers','tajin seasoning','black sesame','hemp seeds','collagen powder','matcha powder','honey','marinara sauce','chicken broth','coconut milk'],
+    'Frozen / Other':['edamame','frozen berries','oat milk','berries','blueberries','mango'],
+  };
+  var win = window.open('','_blank');
+  var listHtml = '';
+  Object.keys(cats).forEach(function(cat){
+    var items = cats[cat].filter(function(item){ return all[item]; });
+    if(!items.length) return;
+    // also add uncategorized
+    listHtml += '<div style="margin-bottom:1.5rem"><div style="font-family:\'DM Mono\',monospace;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#8B4A2F;margin-bottom:.6rem;padding-bottom:.3rem;border-bottom:0.5px solid #E5DDD2">'+cat+'</div>';
+    items.forEach(function(i){ listHtml += '<div style="display:flex;align-items:center;gap:.6rem;padding:.3rem 0;font-size:13px;color:#3D3028"><div style="width:14px;height:14px;border-radius:3px;border:1.5px solid #D0C8C0;flex-shrink:0"></div>'+i.charAt(0).toUpperCase()+i.slice(1)+'</div>'; });
+    // uncategorized items
+    var uncatItems = Object.keys(all).filter(function(item){ return !Object.values(cats).some(function(arr){ return arr.includes(item); }); });
+    if(cat==='Pantry' && uncatItems.length){
+      uncatItems.forEach(function(i){ listHtml += '<div style="display:flex;align-items:center;gap:.6rem;padding:.3rem 0;font-size:13px;color:#3D3028"><div style="width:14px;height:14px;border-radius:3px;border:1.5px solid #D0C8C0;flex-shrink:0"></div>'+i.charAt(0).toUpperCase()+i.slice(1)+'</div>'; });
+    }
+    listHtml += '</div>';
+  });
+  win.document.write('<!DOCTYPE html><html><head><title>Grocery List — Week '+_dietWeek+'</title><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;1,300&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet"><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:sans-serif;color:#1C1714;padding:2.5rem;max-width:600px;margin:0 auto}h1{font-family:"Cormorant Garamond",serif;font-size:28px;font-weight:300;font-style:italic;margin-bottom:.25rem}p{font-size:11px;color:#7A6F68;margin-bottom:2rem}@media print{button{display:none}}</style></head><body><button onclick="window.print()" style="padding:8px 18px;background:#1C1714;color:white;border:none;border-radius:5px;cursor:pointer;font-size:12px;margin-bottom:1.5rem">Print List</button><h1>Grocery List</h1><p>Week '+_dietWeek+' · Low-carb · High protein · No pork · No nuts</p>'+listHtml+'</body></html>');
+  win.document.close();
+}
+
+// ─── SHARED HELPERS ────────────────────────────────────────────
 function toggleFitnessDay(key){
   var el=document.getElementById('fit-day-'+key);
   if(el) el.style.display=el.style.display==='none'?'block':'none';
 }
-
 function saveFitnessEx(dayKey,exIdx){
   var fd=lsGet('chq-fitness',{});
   if(!fd.exChecks)fd.exChecks={};
   if(!fd.exChecks[dayKey])fd.exChecks[dayKey]={};
   fd.exChecks[dayKey][exIdx]=!fd.exChecks[dayKey][exIdx];
-  lsSave('chq-fitness',fd);
-  rerenderKeepScroll(bFitness);
-
-
-  var today=new Date().toLocaleDateString('en-US',{weekday:'short'}).toLowerCase();
-  var daysClean=0;
-  if(fd.quit&&fd.quit.startDate){
-    daysClean=Math.floor((new Date()-new Date(fd.quit.startDate))/(1000*60*60*24));
-  }
-
-  var split=[
-    {day:'Mon',key:'mon',focus:'Core Circuit',color:'var(--tz3)',exercises:[
-      {name:'Dead Bugs',sets:'3x12',note:'Lower back flat. This builds the corset.'},
-      {name:'Hollow Body Hold',sets:'3x30s',note:'Ribs down. The waist wraps here.'},
-      {name:'Pallof Press',sets:'3x12 each',note:'Anti-rotation. Builds the taper.'},
-      {name:'Side Plank + Hip Dip',sets:'3x15 each',note:'Obliques. This is the curve.'},
-      {name:'Single Leg RDL',sets:'3x10 each',note:'Balance + posterior chain.'},
-      {name:'Bicycle Crunch',sets:'3x20',note:'Controlled. Elbow to knee.'},
-    ]},
-    {day:'Tue',key:'tue',focus:'Swim',color:'var(--bl2)',exercises:[
-      {name:'Freestyle Laps',sets:'20 min',note:'Long and lean. Think elongation.'},
-      {name:'Butterfly Arms',sets:'4x25m',note:'Shoulders and lats. Creates the V-taper.'},
-      {name:'Kickboard Legs',sets:'4x25m',note:'Quads and glutes activated.'},
-      {name:'Cool Down Float',sets:'5 min',note:'Breathe. Let your body reset.'},
-    ]},
-    {day:'Wed',key:'wed',focus:'Legs + Barre',color:'var(--sg2)',exercises:[
-      {name:'Bulgarian Split Squat',sets:'4x10 each',note:'Rear foot elevated. Go deep.'},
-      {name:'Glute Bridge + Hold',sets:'4x15',note:'Squeeze at top 2 seconds.'},
-      {name:'Lateral Band Walks',sets:'3x20 each way',note:'Band above knees. Burn.'},
-      {name:'Relevé Holds',sets:'3x30s',note:'Ballet. Calves and balance.'},
-      {name:'Arabesque Pulses',sets:'3x20 each',note:'Glute and hip flexor length.'},
-      {name:'Plié Squats',sets:'3x15',note:'Turnout. Inner thigh activation.'},
-    ]},
-    {day:'Thu',key:'thu',focus:'Tennis',color:'var(--ch2)',exercises:[
-      {name:'Serve Practice',sets:'20 min',note:'Shoulder rotation. Core drives power.'},
-      {name:'Footwork Drills',sets:'15 min',note:'Explosive lateral movement.'},
-      {name:'Rally Sets',sets:'3 sets',note:'Cardio base. Rotational core.'},
-      {name:'Cool Down Stretch',sets:'10 min',note:'Hip flexors and shoulders.'},
-    ]},
-    {day:'Fri',key:'fri',focus:'Arms + Core',color:'var(--lv2)',exercises:[
-      {name:'Port de Bras with Weights',sets:'3x12',note:'Ballet arms. 2-3lb. Slow and deliberate.'},
-      {name:'Swimmer Lat Pulldown',sets:'4x12',note:'V-taper. Waist looks smaller instantly.'},
-      {name:'Overhead Press',sets:'3x10',note:'Shoulders and posture.'},
-      {name:'Tricep Dip',sets:'3x12',note:'Back of arm. Lean and sculpted.'},
-      {name:'Resistance Band Row',sets:'3x15',note:'Posture muscles. Stage presence.'},
-      {name:'Plank to Downdog',sets:'3x10',note:'Core + shoulder mobility.'},
-    ]},
-    {day:'Sat',key:'sat',focus:'Swim + Ballet',color:'var(--ir2)',exercises:[
-      {name:'Freestyle Endurance',sets:'30 min',note:'Build your base. Think long.'},
-      {name:'Full Barre',sets:'45-60 min',note:'YouTube barre counts. Non-negotiable.'},
-      {name:'Stretching Flow',sets:'15 min',note:'Hips, hamstrings, shoulders.'},
-    ]},
-    {day:'Sun',key:'sun',focus:'Active Recovery',color:'var(--du)',exercises:[
-      {name:'Ocean or Beach Walk',sets:'30-45 min',note:'Clear your head. This is medicine.'},
-      {name:'Yoga Flow',sets:'20 min',note:'YouTube. Any beginner flow.'},
-      {name:'Full Body Stretch',sets:'15 min',note:'Every muscle. Breathe into it.'},
-    ]},
-  ];
-
-  inject(
-    '<div class="ph"><div><div class="ph-tag">Miss Universe Campaign</div><div class="ph-title">Body by <em>Design</em></div></div>' +
-    '<div class="ph-acts"><button class="btn bc" onclick="saveFitnessLog()">Save</button></div></div>' +
-    '<div class="pb">' +
-
-    // VISION
-    '<div style="background:var(--tz);border-radius:3px;padding:1.35rem;margin-bottom:.85rem;position:relative;overflow:hidden">' +
-    '<div style="position:absolute;top:-30%;right:-10%;width:50%;height:200%;background:radial-gradient(circle,rgba(240,216,152,.05) 0%,transparent 65%);pointer-events:none"></div>' +
-    '<div style="font-family:var(--fm);font-size:.48rem;letter-spacing:4px;color:rgba(240,216,152,.3);text-transform:uppercase;margin-bottom:.3rem">The Vision</div>' +
-    '<div style="font-family:var(--fd);font-size:1.15rem;font-style:italic;color:var(--ch);line-height:1.6">Strong core. Tiny waist. Ballet arms.<br>Swimmer shoulders. Tennis legs.<br>The body that walks into Miss Universe.</div>' +
-    '</div>' +
-
-    // STATS
-    '<div class="g4" style="margin-bottom:.85rem">' +
-    '<div class="stat st-sg"><div class="sn">'+(daysClean||0)+'</div><div class="sl">Days Clear</div></div>' +
-    '<div class="stat st-tz"><div style="font-family:var(--fd);font-size:1.5rem;font-style:italic;color:var(--tz)">'+(fd.measurements.waist||'—')+'"</div><div class="sl">Waist</div></div>' +
-    '<div class="stat st-ch"><div style="font-family:var(--fd);font-size:1.5rem;font-style:italic;color:var(--tz)">'+(fd.measurements.hips||'—')+'"</div><div class="sl">Hips</div></div>' +
-    '<div class="stat st-bl"><div style="font-family:var(--fd);font-size:1.5rem;font-style:italic;color:var(--tz)">'+(fd.weight||'—')+'</div><div class="sl">Weight</div></div>' +
-    '</div>' +
-
-    // MEASUREMENTS + CLARITY
-    '<div class="g2" style="margin-bottom:.85rem">' +
-    '<div class="card"><div class="cl">Track Your Body</div>' +
-    ['waist','hips','arms','thighs'].map(function(m){
-      return '<div style="display:flex;align-items:center;gap:.5rem;padding:.3rem 0;border-bottom:1px solid var(--ch4)">' +
-        '<div style="font-family:var(--fm);font-size:.5rem;color:var(--wg);text-transform:uppercase;min-width:52px">'+m+'</div>' +
-        '<input id="m-'+m+'" value="'+(fd.measurements[m]||'')+'" placeholder="inches" style="border:none;outline:none;font-family:var(--fd);font-size:.9rem;font-style:italic;color:var(--tz);background:transparent;flex:1" onblur="saveFitnessField(\'measurements\',\''+m+'\',this.value)">' +
-        '<div style="font-family:var(--fm);font-size:.48rem;color:var(--du)">in</div>' +
-        '</div>';
-    }).join('') +
-    '<div style="display:flex;align-items:center;gap:.5rem;padding:.3rem 0">' +
-    '<div style="font-family:var(--fm);font-size:.5rem;color:var(--wg);text-transform:uppercase;min-width:52px">weight</div>' +
-    '<input id="m-weight" value="'+(fd.weight||'')+'" placeholder="lbs" style="border:none;outline:none;font-family:var(--fd);font-size:.9rem;font-style:italic;color:var(--tz);background:transparent;flex:1" onblur="saveFitnessWeight(this.value)">' +
-    '<div style="font-family:var(--fm);font-size:.48rem;color:var(--du)">lbs</div>' +
-    '</div>' +
-    '</div>' +
-    '<div class="card" style="border-left:4px solid var(--sg2)">' +
-    '<div class="cl">Clarity Tracker</div>' +
-    '<div style="font-family:var(--fd);font-size:2.8rem;font-style:italic;color:var(--sg2);line-height:1;margin-bottom:.2rem">'+(daysClean||0)+'</div>' +
-    '<div style="font-family:var(--fm);font-size:.5rem;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">days clear</div>' +
-    (fd.quit&&fd.quit.startDate?'<div style="font-size:.75rem;color:var(--st);margin-bottom:.5rem">Since '+new Date(fd.quit.startDate).toLocaleDateString('en-US',{month:'long',day:'numeric'})+'</div>':'')+
-    '<div class="fg"><label>Start Date</label><input type="date" value="'+(fd.quit&&fd.quit.startDate||'')+'" style="width:100%;padding:.35rem .65rem;border:1px solid var(--du);border-radius:3px;font-family:var(--fb);font-size:.75rem;color:var(--ink);background:var(--wh);outline:none" onchange="saveFitnessQuit(this.value)"></div>' +
-    '<div style="font-size:.72rem;color:var(--wg);font-style:italic;line-height:1.5;margin-top:.35rem">Cortisol stores fat at the waist specifically. Clarity is the fastest path to the body you want.</div>' +
-    '</div>' +
-    '</div>' +
-
-    // DAILY NUTRITION
-    '<div class="card" style="margin-bottom:.85rem">' +
-    '<div class="cl">Daily Nutrition</div>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">' +
-    [
-      {k:'breakfast',l:'Protein breakfast within 30 min of waking',n:'Stops the cortisol spike'},
-      {k:'water',l:'Water before coffee',n:'Every single morning'},
-      {k:'snacks',l:'Smart snacks only today',n:'Almonds, fruit, hummus'},
-      {k:'dinner',l:'Cooked dinner tonight',n:'20 minutes. Non-negotiable.'},
-    ].map(function(n){
-      var done=fd.nutrition&&fd.nutrition[n.k];
-      return '<div onclick="saveFitnessNutrition(\''+n.k+'\')" style="padding:.55rem .65rem;background:'+(done?'rgba(90,138,82,.08)':'var(--ch5)')+';border-radius:3px;cursor:pointer;border:1px solid '+(done?'var(--sg2)':'transparent')+';display:flex;gap:.45rem;align-items:flex-start">' +
-        '<div style="width:16px;height:16px;border-radius:50%;border:1.5px solid '+(done?'var(--sg2)':'var(--du)')+';background:'+(done?'var(--sg2)':'transparent')+';flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center">'+(done?'<div style="width:5px;height:5px;border-radius:50%;background:white"></div>':'')+'</div>' +
-        '<div><div style="font-size:.75rem;font-weight:600;color:var(--ink)">'+n.l+'</div><div style="font-family:var(--fm);font-size:.5rem;color:var(--wg)">'+n.n+'</div></div>' +
-        '</div>';
-    }).join('') +
-    '</div>' +
-    '</div>' +
-
-    // SKIN + HAIR RITUALS
-    '<div class="g2" style="margin-bottom:.85rem">' +
-    buildSkinCard('Morning Ritual','morn',['Water before coffee','Vitamin C serum','Moisturizer + SPF 30','Omega-3 supplement','Collagen powder in drink'],fd) +
-    buildSkinCard('Night Ritual','night',['Double cleanse','Retinol or niacinamide','Heavy moisturizer','Silk pillowcase','Magnesium supplement'],fd) +
-    '</div>' +
-
-    // WEEKLY TRAINING
-    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">Weekly Training Split</div>' +
-    '<div style="display:flex;flex-direction:column;gap:.65rem;margin-bottom:.85rem">' +
-    split.map(function(s){
-      var done=fd.days&&fd.days[s.key]&&fd.days[s.key].done;
-      return '<div style="border-radius:3px;overflow:hidden;box-shadow:0 2px 8px rgba(46,37,96,.06)">' +
-        '<div style="background:'+s.color+';padding:.6rem 1rem;display:flex;align-items:center;justify-content:space-between">' +
-        '<div><div style="font-family:var(--fm);font-size:.48rem;letter-spacing:3px;color:rgba(255,255,255,.55);text-transform:uppercase">'+s.day+'</div>' +
-        '<div style="font-family:var(--fd);font-size:1.05rem;font-style:italic;color:white">'+s.focus+'</div></div>' +
-        '<div onclick="saveFitnessDay(\''+s.key+'\')" style="width:26px;height:26px;border-radius:50%;border:2px solid rgba(255,255,255,.35);background:'+(done?'rgba(255,255,255,.85)':'transparent')+';cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">' +
-        (done?'<div style="color:'+s.color+';font-size:.7rem;font-weight:700">✓</div>':'') +
-        '</div>' +
-        '</div>' +
-        '<div style="background:var(--wh);padding:.75rem 1rem">' +
-        s.exercises.map(function(e){
-          return '<div style="display:flex;gap:.65rem;padding:.3rem 0;border-bottom:1px solid var(--ch4);align-items:flex-start">' +
-            '<div style="flex:1"><div style="font-size:.78rem;font-weight:600;color:var(--ink)">'+e.name+'</div>' +
-            '<div style="font-family:var(--fm);font-size:.5rem;color:var(--wg);margin-top:.1rem">'+e.note+'</div></div>' +
-            '<div style="font-family:var(--fm);font-size:.55rem;color:'+s.color+';white-space:nowrap;flex-shrink:0">'+e.sets+'</div>' +
-            '</div>';
-        }).join('') +
-        '</div></div>';
-    }).join('') +
-    '</div>' +
-
-    // NUTRITION GUIDE
-    '<div class="card" style="margin-bottom:1.5rem">' +
-    '<div class="cl">Nutrition for the Body You Are Building</div>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">' +
-    [
-      {t:'Breakfast — every day',c:'var(--tz3)',i:['2-3 eggs any style','Greek yogurt + berries','Protein shake if rushed','Coffee or matcha AFTER eating']},
-      {t:'Smart Snacks',c:'var(--ch2)',i:['Almonds — handful','Apple + almond butter','Hummus + cucumber','Protein bar, low sugar']},
-      {t:'Dinner — cook every night',c:'var(--sg2)',i:['Lean protein: chicken, fish, tofu','Roasted vegetables','Rice or sweet potato','This is 20 minutes. You can.']},
-      {t:'What to cut',c:'var(--bl2)',i:['Alcohol — cortisol + bloat','Sugary drinks','Processed snacks','Skipping meals stores fat']},
-    ].map(function(g){
-      return '<div style="background:var(--ch5);border-radius:3px;padding:.75rem;border-left:3px solid '+g.c+'">' +
-        '<div style="font-family:var(--fm);font-size:.48rem;letter-spacing:2px;color:'+g.c+';text-transform:uppercase;margin-bottom:.4rem">'+g.t+'</div>' +
-        g.i.map(function(item){return '<div style="display:flex;gap:.4rem;padding:.18rem 0"><div style="width:4px;height:4px;border-radius:50%;background:'+g.c+';flex-shrink:0;margin-top:5px"></div><div style="font-size:.72rem;color:var(--st);line-height:1.5">'+item+'</div></div>';}).join('') +
-        '</div>';
-    }).join('') +
-    '</div>' +
-    '</div>' +
-
-    '</div>'
-  );
+  lsSave('chq-fitness',fd);rerenderKeepScroll(bBody);
 }
-
-function buildSkinCard(title,key,items,fd){
-  var r=fd.rituals&&fd.rituals[key]||{};
-  return '<div class="card"><div class="cl">'+title+'</div>' +
-    items.map(function(item,i){
-      var done=r[i];
-      return '<div onclick="saveFitnessRitual(\''+key+'\','+i+')" style="display:flex;align-items:center;gap:.45rem;padding:.3rem 0;border-bottom:1px solid var(--ch4);cursor:pointer">' +
-        '<div class="todo-cb '+(done?'done':'')+'" style="flex-shrink:0"></div>' +
-        '<div style="font-size:.75rem;color:var(--st);'+(done?'text-decoration:line-through;opacity:.5':'')+'">'+item+'</div>' +
-        '</div>';
-    }).join('') +
-    '</div>';
-}
-
 function saveFitnessField(section,key,val){var fd=lsGet('chq-fitness',{});if(!fd[section])fd[section]={};fd[section][key]=val;lsSave('chq-fitness',fd);}
 function saveFitnessWeight(val){var fd=lsGet('chq-fitness',{});fd.weight=val;lsSave('chq-fitness',fd);}
-function saveFitnessDay(key){var fd=lsGet('chq-fitness',{days:{}});if(!fd.days)fd.days={};if(!fd.days[key])fd.days[key]={done:false};fd.days[key].done=!fd.days[key].done;lsSave('chq-fitness',fd);rerenderKeepScroll(bFitness);}
-function saveFitnessNutrition(key){var fd=lsGet('chq-fitness',{nutrition:{}});if(!fd.nutrition)fd.nutrition={};fd.nutrition[key]=!fd.nutrition[key];lsSave('chq-fitness',fd);rerenderKeepScroll(bFitness);}
-function saveFitnessRitual(key,idx){var fd=lsGet('chq-fitness',{rituals:{}});if(!fd.rituals)fd.rituals={};if(!fd.rituals[key])fd.rituals[key]={};fd.rituals[key][idx]=!fd.rituals[key][idx];lsSave('chq-fitness',fd);rerenderKeepScroll(bFitness);}
-function saveFitnessQuit(val){var fd=lsGet('chq-fitness',{quit:{}});if(!fd.quit)fd.quit={};fd.quit.startDate=val;lsSave('chq-fitness',fd);rerenderKeepScroll(bFitness);}
-function saveFitnessLog(){showToast('Saved');}
-
-
-function addWorkout(){
-  var exs=g('wk-exercises').value.split('\n').filter(Boolean).map(function(l){var p=l.split('·');return{name:(p[0]||'').trim(),sets:(p[1]||'').trim()};});
-  var w={id:Date.now(),day:g('wk-day').value,focus:g('wk-focus').value,exercises:exs,notes:g('wk-notes').value};
-  if(!w.focus)return;
-  S.workouts.push(w);lsSave('chq-wk',S.workouts);closeM('m-workout');bFitness();
-}
-
-// ═══ MESSAGES ════════════════════════════════════════════════
-function bMessages(){
-  var msgs=Array.isArray(S.messages)?S.messages:[];
-  var isPortal=!!S.portalProfile;
-  var channel=isPortal?getPortalWorkspaceKey():'';
-  if(isPortal){
-    msgs=msgs.filter(function(m){
-      return m.from===channel||m.to===channel||m.from===S.role||m.to===S.role||m.to==='team'||m.from==='team';
-    });
-  }
-  var avC={amelia:'var(--ch)',laneea:'var(--lv)',hmu:'var(--bl)',trainer:'var(--sg)',team:'var(--tz4)'};
-  if(isPortal)avC[channel]=ROLES[S.role].color;
-  inject(
-    '<div style="display:flex;flex-direction:column;height:100%">' +
-    '<div class="ph"><div><div class="ph-tag">'+(isPortal?'Direct':'Team')+'</div><div class="ph-title"><em>'+(isPortal?'Workspace Chat':'Messages')+'</em></div></div>' +
-    (isPortal?'':'<div class="ph-acts"><button class="btn bp" onclick="openM(\'m-msg\')">+ New</button></div>') +
-    '</div>' +
-    '<div class="pb" style="flex:1;overflow-y:auto">' +
-    '<div class="msg-l">' +
-    msgs.map(function(m){
-      var fromKey=m.from===channel?(S.portalProfile.name||ROLES[S.role].name):m.from;
-      var fromAbbr=m.from===channel?String(S.portalProfile.name||ROLES[S.role].name).split(' ').map(function(x){return x.charAt(0);}).join('').slice(0,2).toUpperCase():m.from.slice(0,2).toUpperCase();
-      return '<div class="msg '+((m.from===S.role||m.from===channel)?'me':'')+'">' +
-        '<div class="msg-av" style="background:'+(avC[m.from]||'var(--du)')+'">'+fromAbbr+'</div>' +
-        '<div><div class="msg-bub">'+m.text+'</div><div class="msg-meta">'+fromKey+' · '+m.time+'</div></div>' +
-        '</div>';
-    }).join('') +
-    '</div></div>' +
-    '<div class="msg-compose">' +
-    '<input class="msg-input" id="quick-msg" placeholder="'+(isPortal?'Message Amelia...':'Message the team...')+'" onkeydown="if(event.key===\'Enter\')quickSend()">' +
-    '<button class="msg-send" onclick="quickSend()">Send</button>' +
-    '</div></div>'
-  );
-}
-function quickSend(){
-  var inp=g('quick-msg');if(!inp||!inp.value.trim())return;
-  var from=S.portalProfile?getPortalWorkspaceKey():S.role;
-  var to=S.portalProfile?'amelia':'team';
-  var m={id:Date.now(),from:from,to:to,text:inp.value.trim(),time:new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})};
-  S.messages.push(m);lsSave('chq-ms',S.messages);inp.value='';bMessages();
-}
-function sendMsg(){
-  var body=g('msg-body').value.trim();if(!body)return;
-  var m={id:Date.now(),from:S.role,to:g('msg-to').value,text:body,time:new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})};
-  S.messages.push(m);lsSave('chq-ms',S.messages);closeM('m-msg');g('msg-body').value='';bMessages();
-}
-
-// ═══ FILES ═══════════════════════════════════════════════════
-// FILES WITH INLINE VIEWER
-var FILE_STORE=[];
-function bFiles(){
-  var isPortal=!!S.portalProfile;
-  var workspaceFolder=isPortal?getPortalWorkspaceLabel():'';
-  window._fileFolder=isPortal?workspaceFolder:(window._fileFolder||'All');
-  inject(
-    '<div class="ph"><div><div class="ph-tag">'+(isPortal?'Workspace':'Shared')+'</div><div class="ph-title"><em>'+(isPortal?'File Sharing':'Files')+'</em></div></div>' +
-    '<div class="ph-acts"><label class="btn bp" style="cursor:pointer">+ Upload<input type="file" multiple style="display:none" onchange="handleUpload(event)"></label></div></div>' +
-    '<div class="pb">' +
-    (isPortal?
-      '<div class="card" style="margin-bottom:1rem"><div class="cl">Shared Folder</div><div style="font-family:var(--fd);font-size:1.05rem;font-style:italic;color:var(--tz);margin-bottom:.25rem">'+workspaceFolder+'</div><div style="font-size:.76rem;color:var(--wg);line-height:1.7">Upload photos, PDFs, invoices, sponsor assets, call sheets, or selects for this workspace only.</div></div>'
-      :renderContactsCard()) +
-    '<label class="up-zone" style="margin-bottom:1.35rem;display:block;cursor:pointer">' +
-    '<input type="file" multiple style="display:none" onchange="handleUpload(event)">' +
-    '<div style="font-size:1.75rem;color:var(--wg);margin-bottom:.4rem">📁</div>' +
-    '<div style="font-family:var(--fd);font-style:italic;font-size:.95rem;color:var(--wg);margin-bottom:.2rem">Click to upload files</div>' +
-    '<div style="font-family:var(--fm);font-size:.57rem;color:var(--du);letter-spacing:1px;text-transform:uppercase">Images · PDFs · Audio · Video · Docs</div>' +
-    '</label>' +
-    '<div id="file-viewer" style="display:none;margin-bottom:1.35rem;background:var(--ink);border-radius:3px;overflow:hidden">' +
-    '<div style="display:flex;align-items:center;justify-content:space-between;padding:.55rem .85rem;border-bottom:1px solid rgba(255,255,255,.07)">' +
-    '<span id="fv-name" style="font-family:var(--fm);font-size:.6rem;color:rgba(254,252,247,.45);letter-spacing:1px"></span>' +
-    '<button onclick="closeFileViewer()" style="background:none;border:none;color:rgba(254,252,247,.4);cursor:pointer;font-size:1.1rem;line-height:1">×</button>' +
-    '</div>' +
-    '<div id="fv-content" style="padding:.85rem;max-height:65vh;overflow:auto"></div>' +
-    '</div>' +
-    (isPortal?'':'<div style="display:flex;gap:.35rem;margin-bottom:.85rem;flex-wrap:wrap" id="folder-tabs">' +
-    ['All','Competition','Sponsors','Press','Looks','Personal'].map(function(f){
-      return '<button class="cal-tab '+(( window._fileFolder||'All')===f?'on':'')+'" onclick="window._fileFolder=\''+f+'\';renderFileList()">'+f+'</button>';
-    }).join('') +
-    '</div>') +
-    '<div id="uploaded-files"></div>' +
-    '</div>'
-  );
-  renderFileList();
-}
-function renderFileList(){
-  var c=g('uploaded-files');if(!c)return;
-  var isPortal=!!S.portalProfile;
-  var folder=isPortal?getPortalWorkspaceLabel():(window._fileFolder||'All');
-  var filtered=folder==='All'?FILE_STORE:FILE_STORE.filter(function(f){return (f.folder||'Personal')===folder;});
-  if(!filtered.length){c.innerHTML='<div style="text-align:center;padding:2rem;font-family:var(--fd);font-style:italic;color:var(--wg)">No files in '+folder+' yet</div>';return;}
-  c.innerHTML=filtered.map(function(f,i){var realIdx=FILE_STORE.indexOf(f);
-    var ext=f.name.split('.').pop().toLowerCase();
-    var ico=(['jpg','jpeg','png','gif','webp'].includes(ext)?'🖼':ext==='pdf'?'📄':(['mp3','wav','ogg','m4a'].includes(ext))?'🎵':(['mp4','mov','webm'].includes(ext))?'🎬':'📎');
-    return '<div class="f-item" onclick="openFile('+realIdx+')" style="cursor:pointer">'+
-      '<div class="f-ico">'+ico+'</div>'+
-      '<div style="flex:1"><div class="f-nm">'+f.name+'</div><div class="f-mt">'+( f.size/1024).toFixed(1)+' KB · click to view</div></div>'+
-      '<div class="f-acts"><button class="btn bg" style="font-size:.58rem" onclick="event.stopPropagation();openFile('+realIdx+')">View</button>'+
-      '<button class="btn bg" style="font-size:.58rem" onclick="event.stopPropagation();downloadFile('+realIdx+')">↓</button>'+
-      '<button class="btn bg" style="font-size:.58rem;color:var(--bl2)" onclick="event.stopPropagation();removeFile('+realIdx+')">×</button></div></div>';
-  }).join('');
-}
-function handleUpload(e){
-  var isPortal=!!S.portalProfile;
-  Array.from(e.target.files).forEach(function(file){
-    var r=new FileReader();
-    r.onload=function(ev){
-      FILE_STORE.push({id:Date.now()+Math.floor(Math.random()*1000000),name:file.name,size:file.size,type:file.type,data:ev.target.result,folder:isPortal?getPortalWorkspaceLabel():(window._fileFolder&&window._fileFolder!=='All'?window._fileFolder:'Personal')});
-      renderFileList();
-      sbSaveFiles();
-    };
-    r.readAsDataURL(file);
-  });
-}
-function openFile(i){
-  var f=FILE_STORE[i];var vw=g('file-viewer'),vc=g('fv-content'),vn=g('fv-name');
-  if(!vw||!vc||!vn)return;
-  vn.textContent=f.name;
-  var ext=f.name.split('.').pop().toLowerCase();
-  if(['jpg','jpeg','png','gif','webp'].includes(ext)){vc.innerHTML='<img src="'+f.data+'" style="max-width:100%;max-height:60vh;display:block;margin:0 auto">';}
-  else if(ext==='pdf'){vc.innerHTML='<iframe src="'+f.data+'" style="width:100%;height:60vh;border:none"></iframe>';}
-  else if(['mp3','wav','ogg','m4a'].includes(ext)){vc.innerHTML='<audio controls src="'+f.data+'" style="width:100%;margin:.5rem 0"></audio>';}
-  else if(['mp4','mov','webm'].includes(ext)){vc.innerHTML='<video controls src="'+f.data+'" style="max-width:100%;max-height:55vh;display:block;margin:0 auto"></video>';}
-  else{vc.innerHTML='<div style="font-family:var(--fm);font-size:.75rem;color:rgba(254,252,247,.4);text-align:center;padding:2rem">Preview not available — <button class="btn bc" onclick="downloadFile('+i+')" style="margin-left:.35rem;font-size:.65rem">Download</button></div>';}
-  vw.style.display='block';vw.scrollIntoView({behavior:'smooth',block:'start'});
-}
-function closeFileViewer(){var v=g('file-viewer');if(v)v.style.display='none';}
-function removeFile(i){FILE_STORE.splice(i,1);renderFileList();sbSaveFiles();}
-function downloadFile(i){var f=FILE_STORE[i];var a=document.createElement('a');a.href=f.data;a.download=f.name;a.click();}
-
-// ═══ DELIVERABLES ════════════════════════════════════════════
-function buildDelivCards(){
-  return [{title:'Instagram Feature Post',due:'Apr 15',status:'pending'},{title:'YouTube Short (Launch)',due:'Apr 1',status:'overdue'},{title:'Logo on Advocacy One-Pager',due:'Mar 31',status:'done'},{title:'Named in Press Materials',due:'Ongoing',status:'done'}].map(function(d){
-    return '<div class="dv-card '+d.status+'"><div class="dv-ti">'+d.title+'</div><div class="dv-du">Due: '+d.due+'</div>' +
-      '<span class="dv-st ds-'+(d.status==='pending'?'p':d.status==='done'?'d':'o')+'">'+(d.status==='done'?'Complete':d.status==='overdue'?'Overdue':'Pending')+'</span></div>';
-  }).join('');
-}
-function bDeliverables(){inject('<div class="ph"><div><div class="ph-tag">Sponsor</div><div class="ph-title">Your <em>Deliverables</em></div></div></div><div class="pb">'+buildDelivCards()+'</div>');}
-function bCompProgress(){
-  inject('<div class="ph"><div><div class="ph-tag">Sponsor View</div><div class="ph-title">Competition <em>Progress</em></div></div></div><div class="pb"><div class="card">' +
-    [{label:'Entry Secured',done:true,note:'Miss Temecula USA 2026'},{label:'Coach Engaged',done:true,note:'Weekly sessions'},{label:'Wardrobe In Progress',done:false,note:'With Laneea'},{label:'YouTube Channel Launch',done:false,note:'Starting from 0'},{label:'Competition Week',done:false,note:'July 10-12 · Grand Hyatt Indian Wells'}].map(function(p){
-      return '<div class="tl"><div class="tl-d" style="background:'+(p.done?'var(--sg2)':'var(--du)')+'"></div><div class="tl-t"><strong>'+p.label+'</strong>'+p.note+'</div></div>';
-    }).join('') +
-    '</div></div>');
-}
-function bAdvocacy(){
-  var advDefaults={
-    energy:{stance:'SB 100 is law. Net-zero is the target. My platform is the bridge between legislation and lived reality — specifically in the textile supply chains that still run on fossil fuels.',stats:['65% of clothing is polyester — derived from crude oil','SB 100 mandates 100% clean energy by 2045','Textile mills rank among the most energy-intensive manufacturers','Green-collar jobs are the economic argument for transition'],notes:'',progress:'Developing',img:''},
-    fashion:{stance:'Every garment has a carbon cost. I advocate for the policy that makes brands pay it — not the planet. SB 707 is the mechanism. EPR is the framework.',stats:['Fashion = 10% of global carbon emissions','SB 707 shifts textile waste costs from taxpayers to brands','85% of textiles end up in landfills','Polyester takes 200+ years to decompose'],notes:'',progress:'Refined',img:''},
-    justice:{stance:'The communities closest to textile mills and fast fashion warehouses bear the greatest environmental burden. Clean fashion is not just a climate argument — it is a justice argument.',stats:['Low-income communities are 3x more likely to live near polluting facilities','California SB 535 directs cap-and-trade revenue to disadvantaged communities','Fast fashion workers earn an average $3/day globally','CA leads with the strongest environmental justice framework in the US'],notes:'',progress:'Drafting',img:''},
-    solarpunk:{stance:'Solarpunk is not a utopia. It is a building permit. Library of Morenita is solarpunk infrastructure — a digital archive designed not to burn.',stats:['Most creative work disappears within a generation','The Library of Alexandria held 400,000+ scrolls — and burned','Circular economy design could eliminate 45% of global emissions','Beauty and sustainability are not opposing forces'],notes:'',progress:'Concept',img:''},
-  };
-  var advSaved=lsGet('chq-adv',{});
-  var adv={};
-  ['energy','fashion','justice','solarpunk'].forEach(function(k){
-    adv[k]=Object.assign({},advDefaults[k],advSaved[k]||{});
-    if(!Array.isArray(adv[k].stats)) adv[k].stats=advDefaults[k].stats;
-  });
-  var sections=[
-    {key:'energy',icon:'⚡',title:'Clean Energy & EV',subtitle:'SB 100 · Net-Zero · Textile Mills',accent:'var(--ch3)',accentRaw:'#C8A84C',accentBg:'var(--ch4)'},
-    {key:'fashion',icon:'🌿',title:'Fashion Accountability',subtitle:'SB 707 · EPR · Fashion Miles',accent:'var(--sg2)',accentRaw:'#5A8A52',accentBg:'rgba(90,138,82,.08)'},
-    {key:'justice',icon:'🌍',title:'Environmental Justice',subtitle:'Frontline Communities · Equity · Policy',accent:'var(--lv2)',accentRaw:'#9880C8',accentBg:'rgba(152,128,200,.08)'},
-    {key:'solarpunk',icon:'✦',title:'Solarpunk & Sustainable Tech',subtitle:'Library of Morenita · Circular Design',accent:'var(--tz3)',accentRaw:'#6B5FBA',accentBg:'var(--tz5)'},
-  ];
-  var stages=['Concept','Drafting','Developing','Refined','Ready'];
-  var html='<div class="ph"><div><div class="ph-tag">Platform</div><div class="ph-title"><em>Advocacy</em></div></div>'+
-    '<div class="ph-acts"><span style="font-family:var(--fm);font-size:.55rem;color:var(--wg);font-style:italic">ameliaarabe.com/advocacy — coming soon</span></div></div>'+
-    '<div class="pb">';
-  sections.forEach(function(sec){
-    var d=adv[sec.key];
-    var hasImg=d.img&&d.img.length>0;
-    html+=
-      '<div class="adv-section" data-key="'+sec.key+'" style="margin-bottom:2rem;border-radius:3px;overflow:hidden;box-shadow:0 2px 16px rgba(46,37,96,.08);border:1px solid rgba(221,208,184,.25)">'+
-      '<div style="position:relative;height:200px;background:linear-gradient(135deg,var(--tz) 0%,var(--tz2) 60%,'+sec.accentRaw+'44 100%);overflow:hidden">'+
-      (hasImg?'<img src="'+d.img+'" style="width:100%;height:100%;object-fit:cover;opacity:.85">':
-        '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:.5rem">'+
-        '<div style="font-size:2.5rem;opacity:.25">'+sec.icon+'</div>'+
-        '<div style="font-family:var(--fm);font-size:.48rem;letter-spacing:4px;color:rgba(240,216,152,.3);text-transform:uppercase">Add a photo for this section</div>'+
-        '</div>')+
-      '<div style="position:absolute;inset:0;background:linear-gradient(transparent 30%,rgba(20,16,40,.75))"></div>'+
-      '<div style="position:absolute;bottom:0;left:0;right:0;padding:1.25rem 1.75rem">'+
-      '<div style="font-family:var(--fm);font-size:.44rem;letter-spacing:4px;color:rgba(240,216,152,.45);text-transform:uppercase;margin-bottom:.3rem">'+sec.subtitle+'</div>'+
-      '<div style="font-family:var(--fd);font-size:clamp(1.4rem,3vw,2rem);font-style:italic;color:var(--ch);line-height:1.1;font-weight:300">'+sec.title+'</div>'+
-      '</div>'+
-      '<label class="adv-img-btn" data-key="'+sec.key+'" style="position:absolute;top:.65rem;right:.65rem;background:rgba(20,16,40,.55);border:1px solid rgba(240,216,152,.2);border-radius:3px;padding:.22rem .6rem;font-family:var(--fm);font-size:.44rem;color:rgba(240,216,152,.65);cursor:pointer;letter-spacing:1px;text-transform:uppercase">'+
-      (hasImg?'Change':'+ Photo')+
-      '<input type="file" accept="image/*" style="display:none" class="adv-img-input" data-key="'+sec.key+'"></label>'+
-      (hasImg?'<button class="adv-img-clear" data-key="'+sec.key+'" style="position:absolute;top:.65rem;left:.65rem;background:rgba(20,16,40,.55);border:1px solid rgba(240,216,152,.2);border-radius:3px;padding:.22rem .6rem;font-family:var(--fm);font-size:.44rem;color:rgba(240,216,152,.65);cursor:pointer;letter-spacing:1px;text-transform:uppercase">Remove</button>':'')+
-      '</div>'+
-      '<div style="background:var(--ch6);padding:.55rem 1.5rem;display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;border-bottom:1px solid rgba(221,208,184,.2)">'+
-      '<span style="font-family:var(--fm);font-size:.44rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-right:.25rem;flex-shrink:0">Stage</span>'+
-      stages.map(function(s){
-        var active=d.progress===s;
-        return '<button class="adv-stage-btn" data-key="'+sec.key+'" data-stage="'+s+'" data-accent="'+sec.accentRaw+'" style="font-family:var(--fm);font-size:.44rem;letter-spacing:1px;padding:.2rem .6rem;border-radius:3px;border:1px solid '+(active?sec.accentRaw:'var(--du)')+';background:'+(active?sec.accentRaw:'transparent')+';color:'+(active?'white':'var(--wg)')+';cursor:pointer;transition:all .15s;text-transform:uppercase">'+s+'</button>';
-      }).join('')+
-      '</div>'+
-      '<div style="padding:1.35rem 1.75rem;background:var(--wh)">'+
-      '<div style="display:grid;grid-template-columns:1.15fr 1fr;gap:1.5rem;margin-bottom:1.25rem">'+
-      '<div>'+
-      '<div style="font-family:var(--fm);font-size:.44rem;letter-spacing:3px;color:'+sec.accent+';text-transform:uppercase;margin-bottom:.5rem">Public Stance</div>'+
-      '<div class="adv-stance" data-key="'+sec.key+'" contenteditable="true" style="font-family:var(--fd);font-size:.98rem;font-style:italic;color:var(--ink);line-height:1.75;outline:none;border-left:2px solid '+sec.accent+';padding:.85rem 1rem;background:'+sec.accentBg+';border-radius:0 3px 3px 0;min-height:90px">'+d.stance+'</div>'+
-      '</div>'+
-      '<div>'+
-      '<div style="font-family:var(--fm);font-size:.44rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.5rem">Key Facts</div>'+
-      '<div class="adv-stats-grid" data-key="'+sec.key+'">'+
-      d.stats.map(function(stat,si){
-        return '<div class="adv-stat-item" data-key="'+sec.key+'" data-idx="'+si+'" contenteditable="true" style="font-family:var(--fb);font-size:.72rem;color:var(--ink);line-height:1.5;padding:.5rem .7rem;margin-bottom:.35rem;background:var(--ch5);border-radius:3px;border-left:2px solid '+sec.accent+';outline:none">'+stat+'</div>';
-      }).join('')+
-      '<button class="adv-add-stat" data-key="'+sec.key+'" data-accent="'+sec.accentRaw+'" style="font-family:var(--fm);font-size:.44rem;letter-spacing:2px;color:var(--wg);background:transparent;border:1px dashed var(--du);border-radius:3px;padding:.25rem .7rem;cursor:pointer;width:100%;text-transform:uppercase;margin-top:.15rem">+ Add Fact</button>'+
-      '</div>'+
-      '</div>'+
-      '</div>'+
-      '<div style="font-family:var(--fm);font-size:.44rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.35rem">Working Notes <span style="opacity:.4;text-transform:none;letter-spacing:0;font-size:.6rem;font-family:var(--fb)">— private</span></div>'+
-      '<textarea class="adv-notes" data-key="'+sec.key+'" placeholder="Research, quotes, talking points in progress..." style="width:100%;border:1.5px dashed var(--du);border-radius:3px;padding:.7rem;font-family:var(--fb);font-size:.75rem;color:var(--st);line-height:1.7;resize:vertical;outline:none;background:#FEFCF9;min-height:70px">'+d.notes+'</textarea>'+
-      '</div></div>';
-  });
-  html+='</div>';
-  inject(html);
-  document.querySelectorAll('.adv-img-input').forEach(function(inp){
-    inp.addEventListener('change',function(){
-      var key=inp.dataset.key;
-      var file=inp.files[0];if(!file)return;
-      var r=new FileReader();
-      r.onload=function(ev){saveAdv(key,'img',ev.target.result);bAdvocacy();};
-      r.readAsDataURL(file);
-    });
-  });
-  document.querySelectorAll('.adv-img-clear').forEach(function(btn){
-    btn.addEventListener('click',function(){saveAdv(btn.dataset.key,'img','');bAdvocacy();});
-  });
-  document.querySelectorAll('.adv-stage-btn').forEach(function(btn){
-    btn.addEventListener('click',function(){
-      var key=btn.dataset.key,stage=btn.dataset.stage,acc=btn.dataset.accent;
-      saveAdv(key,'progress',stage);
-      document.querySelectorAll('.adv-stage-btn[data-key="'+key+'"]').forEach(function(b){
-        var active=b.dataset.stage===stage;
-        b.style.background=active?acc:'transparent';
-        b.style.borderColor=active?acc:'var(--du)';
-        b.style.color=active?'white':'var(--wg)';
-      });
-    });
-  });
-  document.querySelectorAll('.adv-stance').forEach(function(el){
-    el.addEventListener('blur',function(){saveAdv(el.dataset.key,'stance',el.textContent.trim());});
-  });
-  document.querySelectorAll('.adv-stat-item').forEach(function(el){
-    el.addEventListener('blur',function(){
-      var key=el.dataset.key;
-      var stats=Array.from(document.querySelectorAll('.adv-stat-item[data-key="'+key+'"]')).map(function(i){return i.textContent.trim();});
-      saveAdv(key,'stats',stats);
-    });
-  });
-  document.querySelectorAll('.adv-add-stat').forEach(function(btn){
-    btn.addEventListener('click',function(){
-      var key=btn.dataset.key,acc=btn.dataset.accent;
-      var div=document.createElement('div');
-      div.className='adv-stat-item';div.dataset.key=key;div.contentEditable='true';
-      div.style.cssText='font-family:var(--fb);font-size:.72rem;color:var(--ink);line-height:1.5;padding:.5rem .7rem;margin-bottom:.35rem;background:var(--ch5);border-radius:3px;border-left:2px solid '+acc+';outline:none';
-      div.textContent='New fact...';
-      btn.parentElement.insertBefore(div,btn);div.focus();
-      div.addEventListener('blur',function(){
-        var stats=Array.from(document.querySelectorAll('.adv-stat-item[data-key="'+key+'"]')).map(function(i){return i.textContent.trim();});
-        saveAdv(key,'stats',stats);
-      });
-    });
-  });
-  document.querySelectorAll('.adv-notes').forEach(function(el){
-    el.addEventListener('blur',function(){saveAdv(el.dataset.key,'notes',el.value);});
-  });
-}
-function saveAdv(key,field,val){
-  var adv=lsGet('chq-adv',{});
-  if(!adv[key])adv[key]={};
-  adv[key][field]=val;
-  lsSave('chq-adv',adv);
-  showToast();
-}
-function setAdvImg(key,e){
-  var file=e.target.files[0];if(!file)return;
-  var r=new FileReader();
-  r.onload=function(ev){saveAdv(key,'img',ev.target.result);bAdvocacy();};
-  r.readAsDataURL(file);
-}
-function clearAdvImg(key){saveAdv(key,'img','');bAdvocacy();}
-
-function editCalEvent(id){
-  var ev=S.calEvents.find(function(x){return x.id===id;});
-  if(!ev)return;
-  g('ev-title').value=ev.title||'';
-  g('ev-date').value=ev.date||'';
-  g('ev-time').value=ev.time||'';
-  g('ev-dur').value=ev.dur||1;
-  g('ev-type').value=ev.type||'coach';
-  g('ev-who').value=ev.who||'';
-  S._editingEvId=id;
-  var sb=document.querySelector('#m-ev .btn.bp');if(sb)sb.textContent='Update';
-  var db=g('ev-del-btn');if(db)db.style.display='inline-block';
-  openM('m-ev');
-}
-function deleteCalEvent(){
-  if(!S._editingEvId)return;
-  if(!confirm('Remove this event?'))return;
-  S.calEvents=S.calEvents.filter(function(x){return x.id!==S._editingEvId;});
-  lsSave('chq-ce',S.calEvents);
-  S._editingEvId=null;
-  closeM('m-ev');
-  bCalendar();
-}
-
-function bPitch(){
-  var pitchData=lsGet('chq-pitch',{
-    brainstorm:'',
-    mainPoints:'',
-    followUps:[],
-    decks:{
-      general:{name:'General / Universal',color:'var(--tz3)',notes:''},
-      energy:{name:'Clean Energy & EV',color:'var(--ch2)',notes:''},
-      fashion:{name:'Fashion & Sustainability',color:'var(--sg2)',notes:''},
-      local:{name:'Local San Diego',color:'var(--bl2)',notes:''},
-    },
-    emails:{
-      cold:{subject:'An invitation — Amelia Arabe x [Company]',body:'Hi [Name],\n\nMy name is Laneea Love — I manage Amelia Arabe, a Filipina-American student engineer and Miss Temecula USA 2026 candidate based in San Diego.\n\nAmelia\'s platform is clean energy and textile accountability policy. She is building an audience that cares deeply about the same things [Company] stands for.\n\nWe are offering a limited number of sponsorship partnerships — visibility, alignment, and a seat at the table for something that matters.\n\nWould you be open to a 15-minute call this week?\n\nWith gratitude,\nLaneea Love\nManager, Amelia Arabe'},
-      followUp:{subject:'Following up — Amelia Arabe partnership',body:'Hi [Name],\n\nJust following up on my note from [DATE]. I know inboxes get full.\n\nAmelia competes July 10-12 in Miss California USA 2026. We have a few sponsorship spots remaining and wanted to make sure [Company] had the chance to be part of it.\n\nHappy to send a one-pager or jump on a quick call — whatever works best for you.\n\nBest,\nLaneea Love'},
-      postMeeting:{subject:'Great connecting — next steps',body:'Hi [Name],\n\nThank you so much for your time today. It was genuinely exciting to talk about [specific thing discussed].\n\nAs discussed, here are our partnership tiers:\n— [Tier 1]: [Deliverable]\n— [Tier 2]: [Deliverable]\n\nI\'ll follow up [DATE] unless I hear from you first.\n\nWith gratitude,\nLaneea Love'},
-    },
-    objections:{
-      budget:{q:'We don\'t have budget for this.',a:'Totally understand — and this doesn\'t have to be cash. Product placement, a gifted item, or a co-branded social post all count as partnership. We are flexible on structure.'},
-      audience:{q:'Your audience is too small.',a:'Amelia\'s TikTok has 95K followers — currently dormant and relaunching for the competition. Her Instagram is 1.4K and growing fast. More importantly, her audience is highly engaged and values-aligned with sustainability brands. Quality over quantity.'},
-      pageant:{q:'We don\'t typically sponsor pageants.',a:'This isn\'t a typical pageant partnership. Amelia is an engineer with a policy platform — SB 100, SB 707, EPR legislation. Your brand isn\'t sponsoring a crown. It\'s backing a climate advocate on a national stage.'},
-      timing:{q:'The timing isn\'t right.',a:'The competition is July 10-12 — that\'s our deadline too. We\'re offering early partners the best placement and the most lead time for co-created content. The window is real.'},
-      notFit:{q:'I\'m not sure it\'s a fit for us.',a:'Tell me more about what a good fit looks like for you. We\'ve built this partnership to be flexible — we can find an angle that works whether your priority is brand awareness, social content, community goodwill, or something else entirely.'},
-    },
-    meetingChecklist:[
-      {id:1,text:'Research company — recent news, sustainability angle, decision maker name',done:false},
-      {id:2,text:'Print or send pitch deck in advance',done:false},
-      {id:3,text:'Prepare Amelia\'s one-liner for this specific sponsor',done:false},
-      {id:4,text:'Know their ask range — what tier fits their budget',done:false},
-      {id:5,text:'Have contract / LOI ready to send same day',done:false},
-      {id:6,text:'Follow up within 24 hours',done:false},
-      {id:7,text:'Log outcome in Sponsor Tracker',done:false},
-    ]
-  });
-
-  var saved=lsGet('chq-pitch',null);
-  if(saved) pitchData=Object.assign(pitchData,saved);
-
-  var deckKeys=['general','energy','fashion','local'];
-  var emailKeys=['cold','followUp','postMeeting'];
-  var objKeys=['budget','audience','pageant','timing','notFit'];
-
-  inject(
-    '<div class="ph"><div><div class="ph-tag">Laneea & Amelia</div><div class="ph-title"><em>Pitch</em> HQ</div></div>' +
-    '<div class="ph-acts"><button class="btn bc" onclick="savePitch()">Save All</button></div></div>' +
-    '<div class="pb">' +
-
-    // MAIN POINTS
-    '<div class="card" style="margin-bottom:.85rem;border-left:4px solid var(--tz3)">' +
-    '<div class="cl">The Overarching Pitch — Main Points</div>' +
-    '<textarea id="pitch-main" placeholder="The three things every sponsor needs to hear..." style="width:100%;min-height:90px;border:none;outline:none;font-family:var(--fd);font-size:.95rem;font-style:italic;color:var(--ink);line-height:1.8;resize:vertical;background:transparent">'+( pitchData.mainPoints||'')+'</textarea>' +
-    '</div>' +
-
-    // PITCH DECKS
-    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">Pitch Decks</div>' +
-    '<div class="g2" style="margin-bottom:.85rem">' +
-    deckKeys.map(function(k){
-      var d=pitchData.decks[k];
-      return '<div class="card" style="border-top:3px solid '+d.color+';padding:.85rem">' +
-        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">' +
-        '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:2px;color:'+d.color+';text-transform:uppercase">'+d.name+'</div>' +
-        '<label class="btn bp" style="cursor:pointer;font-size:.55rem;padding:.25rem .65rem">Upload PDF<input type="file" accept=".pdf,application/pdf" style="display:none" class="deck-upload" data-key="'+k+'"></label>' +
-        '</div>' +
-        '<div id="deck-file-'+k+'" style="font-family:var(--fm);font-size:.55rem;color:var(--wg);margin-bottom:.45rem;min-height:18px">'+(pitchData.decks[k].fileName?'📄 '+pitchData.decks[k].fileName:'No PDF uploaded')+'</div>' +
-        '<textarea class="deck-notes" data-key="'+k+'" placeholder="Key talking points for this deck..." style="width:100%;min-height:70px;border:1.5px dashed var(--du);border-radius:3px;padding:.55rem .7rem;font-family:var(--fb);font-size:.75rem;color:var(--st);line-height:1.7;resize:vertical;outline:none;background:var(--ch5)">'+( d.notes||'')+'</textarea>' +
-        (pitchData.decks[k].pdf?'<button class="btn bg" style="font-size:.55rem;margin-top:.4rem" onclick="viewDeckPDF(\''+k+'\')">View PDF</button>':'') +
-        '</div>';
-    }).join('') +
-    '</div>' +
-
-    // FOLLOW-UP TRACKER
-    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">Follow-Up Tracker</div>' +
-    '<div class="card" style="margin-bottom:.85rem;padding:0;overflow:hidden">' +
-    '<table style="width:100%;border-collapse:collapse">' +
-    '<thead><tr>' +
-    '<th style="font-family:var(--fm);font-size:.48rem;letter-spacing:2px;color:var(--wg);text-transform:uppercase;padding:.5rem .75rem;text-align:left;border-bottom:2px solid var(--ch6);background:var(--ch5)">Company</th>' +
-    '<th style="font-family:var(--fm);font-size:.48rem;letter-spacing:2px;color:var(--wg);text-transform:uppercase;padding:.5rem .75rem;text-align:left;border-bottom:2px solid var(--ch6);background:var(--ch5)">Contact</th>' +
-    '<th style="font-family:var(--fm);font-size:.48rem;letter-spacing:2px;color:var(--wg);text-transform:uppercase;padding:.5rem .75rem;text-align:left;border-bottom:2px solid var(--ch6);background:var(--ch5)">Last Touch</th>' +
-    '<th style="font-family:var(--fm);font-size:.48rem;letter-spacing:2px;color:var(--wg);text-transform:uppercase;padding:.5rem .75rem;text-align:left;border-bottom:2px solid var(--ch6);background:var(--ch5)">Follow-Up Date</th>' +
-    '<th style="font-family:var(--fm);font-size:.48rem;letter-spacing:2px;color:var(--wg);text-transform:uppercase;padding:.5rem .75rem;text-align:left;border-bottom:2px solid var(--ch6);background:var(--ch5)">Status</th>' +
-    '<th style="background:var(--ch5);border-bottom:2px solid var(--ch6)"></th>' +
-    '</tr></thead>' +
-    '<tbody id="followup-rows">' +
-    (pitchData.followUps&&pitchData.followUps.length?pitchData.followUps.map(function(f,i){return renderFollowUpRow(f,i);}).join(''):'') +
-    '</tbody></table>' +
-    '<div style="padding:.65rem .75rem;border-top:1px solid var(--ch4)">' +
-    '<button class="btn bp" style="font-size:.6rem" onclick="addFollowUp()">+ Add Company</button>' +
-    '</div>' +
-    '</div>' +
-
-    // EMAIL TEMPLATES
-    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">Email Templates</div>' +
-    '<div style="display:flex;flex-direction:column;gap:.65rem;margin-bottom:.85rem">' +
-    emailKeys.map(function(k){
-      var e=pitchData.emails[k];
-      var labels={cold:'Cold Outreach',followUp:'Follow-Up',postMeeting:'Post-Meeting'};
-      var colors={cold:'var(--tz3)',followUp:'var(--ch2)',postMeeting:'var(--sg2)'};
-      return '<div class="card" style="border-left:3px solid '+colors[k]+';padding:.85rem">' +
-        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">' +
-        '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:2px;color:'+colors[k]+';text-transform:uppercase">'+labels[k]+'</div>' +
-        '<button class="btn bg" style="font-size:.55rem;padding:.2rem .6rem" onclick="copyPitchEmail(\'email-body-'+k+'\',this)">Copy</button>' +
-        '</div>' +
-        '<div style="font-family:var(--fm);font-size:.5rem;color:var(--wg);margin-bottom:.3rem">Subject</div>' +
-        '<input class="email-subj" data-key="'+k+'" value="'+e.subject.replace(/"/g,'&quot;')+'" style="width:100%;border:1px solid var(--du);border-radius:3px;padding:.35rem .65rem;font-family:var(--fb);font-size:.75rem;color:var(--ink);background:var(--wh);outline:none;margin-bottom:.5rem">' +
-        '<div style="font-family:var(--fm);font-size:.5rem;color:var(--wg);margin-bottom:.3rem">Body</div>' +
-        '<textarea class="email-body" id="email-body-'+k+'" data-key="'+k+'" style="width:100%;min-height:110px;border:1px solid var(--du);border-radius:3px;padding:.5rem .65rem;font-family:var(--fb);font-size:.75rem;color:var(--st);line-height:1.75;resize:vertical;outline:none;background:var(--wh)">'+e.body+'</textarea>' +
-        '</div>';
-    }).join('') +
-    '</div>' +
-
-    // OBJECTION RESPONSES
-    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">When They Say No — Objection Responses</div>' +
-    '<div style="display:flex;flex-direction:column;gap:.5rem;margin-bottom:.85rem">' +
-    objKeys.map(function(k){
-      var o=pitchData.objections[k];
-      return '<div class="card" style="padding:.85rem">' +
-        '<div style="font-family:var(--fm);font-size:.5rem;letter-spacing:2px;color:var(--bl2);text-transform:uppercase;margin-bottom:.3rem">They say</div>' +
-        '<div style="font-family:var(--fd);font-style:italic;font-size:.88rem;color:var(--ink);margin-bottom:.55rem;border-left:2px solid var(--bl);padding-left:.65rem">'+o.q+'</div>' +
-        '<div style="font-family:var(--fm);font-size:.5rem;letter-spacing:2px;color:var(--sg2);text-transform:uppercase;margin-bottom:.3rem">You say</div>' +
-        '<textarea class="obj-response" data-key="'+k+'" style="width:100%;min-height:60px;border:1.5px solid var(--ch4);border-radius:3px;padding:.5rem .65rem;font-family:var(--fb);font-size:.75rem;color:var(--st);line-height:1.7;resize:vertical;outline:none;background:var(--ch5)">'+o.a+'</textarea>' +
-        '</div>';
-    }).join('') +
-    '</div>' +
-
-    // MEETING CHECKLIST
-    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">Meeting Prep Checklist</div>' +
-    '<div class="card" style="margin-bottom:.85rem" id="meeting-checklist">' +
-    pitchData.meetingChecklist.map(function(t,i){
-      return '<div class="todo-item" id="mc-'+t.id+'">' +
-        '<div class="todo-cb '+(t.done?'done':'')+'" onclick="toggleMC('+t.id+',this)"></div>' +
-        '<span class="todo-txt '+(t.done?'done':'')+'">'+t.text+'</span>' +
-        '</div>';
-    }).join('') +
-    '<div class="todo-add-row" style="margin-top:.5rem">' +
-    '<input class="todo-inp" id="mc-inp" placeholder="Add checklist item...">' +
-    '<button class="btn bp" style="font-size:.6rem;padding:.3rem .75rem" onclick="addMCItem()">+ Add</button>' +
-    '</div>' +
-    '</div>' +
-
-    // BRAINSTORM
-    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">Brainstorm — Working Space</div>' +
-    '<div class="card" style="margin-bottom:1.5rem">' +
-    '<textarea id="pitch-brainstorm" placeholder="Dump everything here. Ideas, leads, strategy, random thoughts..." style="width:100%;min-height:200px;border:none;outline:none;font-family:var(--fb);font-size:.82rem;color:var(--st);line-height:1.85;resize:vertical;background:transparent">'+( pitchData.brainstorm||'')+'</textarea>' +
-    '</div>' +
-
-    '</div>' // close pb
-  );
-
-  // PDF upload handlers
-  document.querySelectorAll('.deck-upload').forEach(function(inp){
-    inp.addEventListener('change',function(){
-      var key=inp.dataset.key;
-      var file=inp.files[0];if(!file)return;
-      var r=new FileReader();
-      r.onload=function(ev){
-        var pd=lsGet('chq-pitch',{});
-        if(!pd.decks)pd.decks={};
-        if(!pd.decks[key])pd.decks[key]={};
-        pd.decks[key].pdf=ev.target.result;
-        pd.decks[key].fileName=file.name;
-        lsSave('chq-pitch',pd);
-        var lbl=document.getElementById('deck-file-'+key);
-        if(lbl)lbl.textContent='📄 '+file.name;
-        showToast('PDF uploaded');
-      };
-      r.readAsDataURL(file);
-    });
-  });
-}
-
-function renderFollowUpRow(f,i){
-  var today=new Date().toISOString().split('T')[0];
-  var overdue=f.followUpDate&&f.followUpDate<today&&f.status!=='closed';
-  var sc={new:'var(--tz3)',contacted:'var(--ch2)',meeting:'var(--sg2)',closed:'var(--sg2)',overdue:'var(--bl2)'};
-  return '<tr id="fu-'+f.id+'" style="'+(overdue?'background:rgba(136,120,184,.06)':'')+'">' +
-    '<td style="padding:.55rem .75rem;border-bottom:1px solid var(--ch4)"><input style="border:none;outline:none;font-family:var(--fb);font-size:.77rem;font-weight:600;color:var(--ink);background:transparent;width:100%" value="'+(f.company||'').replace(/"/g,'&quot;')+'" onblur="updateFU('+f.id+',\'company\',this.value)" placeholder="Company"></td>' +
-    '<td style="padding:.55rem .75rem;border-bottom:1px solid var(--ch4)"><input style="border:none;outline:none;font-family:var(--fb);font-size:.75rem;color:var(--st);background:transparent;width:100%" value="'+(f.contact||'').replace(/"/g,'&quot;')+'" onblur="updateFU('+f.id+',\'contact\',this.value)" placeholder="Name / email"></td>' +
-    '<td style="padding:.55rem .75rem;border-bottom:1px solid var(--ch4)"><input style="border:none;outline:none;font-family:var(--fb);font-size:.75rem;color:var(--st);background:transparent;width:100%" value="'+(f.lastTouch||'').replace(/"/g,'&quot;')+'" onblur="updateFU('+f.id+',\'lastTouch\',this.value)" placeholder="e.g. Emailed Mar 20"></td>' +
-    '<td style="padding:.55rem .75rem;border-bottom:1px solid var(--ch4)"><input type="date" style="border:none;outline:none;font-family:var(--fm);font-size:.72rem;color:'+(overdue?'var(--bl2)':'var(--st)')+';background:transparent" value="'+(f.followUpDate||'')+'" onchange="updateFU('+f.id+',\'followUpDate\',this.value)"></td>' +
-    '<td style="padding:.55rem .75rem;border-bottom:1px solid var(--ch4)"><select style="border:none;outline:none;font-family:var(--fm);font-size:.65rem;color:'+(sc[f.status]||'var(--wg)')+';background:transparent;cursor:pointer" onchange="updateFU('+f.id+',\'status\',this.value)">' +
-    ['new','contacted','meeting','closed'].map(function(s){return '<option value="'+s+'" '+(f.status===s?'selected':'')+'>'+s.charAt(0).toUpperCase()+s.slice(1)+'</option>';}).join('') +
-    '</select></td>' +
-    '<td style="padding:.55rem .75rem;border-bottom:1px solid var(--ch4)"><button onclick="removeFU('+f.id+')" style="background:none;border:none;color:var(--du);cursor:pointer;font-size:.9rem">×</button></td>' +
-    '</tr>';
-}
-
-function addFollowUp(){
-  var pd=lsGet('chq-pitch',{});
-  if(!pd.followUps)pd.followUps=[];
-  var id=Date.now();
-  var f={id:id,company:'',contact:'',lastTouch:'',followUpDate:'',status:'new'};
-  pd.followUps.push(f);
-  lsSave('chq-pitch',pd);
-  var tbody=document.getElementById('followup-rows');
-  if(tbody){
-    var tr=document.createElement('tr');
-    tr.id='fu-'+id;
-    tr.innerHTML=renderFollowUpRow(f,pd.followUps.length-1).replace(/^<tr[^>]*>/,'').replace(/<\/tr>$/,'');
-    tbody.appendChild(tr);
-  }
-}
-
-function updateFU(id,field,val){
-  var pd=lsGet('chq-pitch',{});
-  if(!pd.followUps)return;
-  var f=pd.followUps.find(function(x){return x.id===id;});
-  if(f){f[field]=val;lsSave('chq-pitch',pd);}
-}
-
-function removeFU(id){
-  var pd=lsGet('chq-pitch',{});
-  pd.followUps=(pd.followUps||[]).filter(function(x){return x.id!==id;});
-  lsSave('chq-pitch',pd);
-  var el=document.getElementById('fu-'+id);if(el)el.remove();
-}
-
-function toggleMC(id,el){
-  var pd=lsGet('chq-pitch',{});
-  if(!pd.meetingChecklist)return;
-  var item=pd.meetingChecklist.find(function(x){return x.id===id;});
-  if(item){item.done=!item.done;lsSave('chq-pitch',pd);}
-  el.classList.toggle('done',item&&item.done);
-  var txt=el.nextSibling;if(txt)txt.classList.toggle('done',item&&item.done);
-}
-
-function addMCItem(){
-  var inp=document.getElementById('mc-inp');
-  if(!inp||!inp.value.trim())return;
-  var pd=lsGet('chq-pitch',{});
-  if(!pd.meetingChecklist)pd.meetingChecklist=[];
-  var id=Date.now();
-  pd.meetingChecklist.push({id:id,text:inp.value.trim(),done:false});
-  lsSave('chq-pitch',pd);
-  var list=document.getElementById('meeting-checklist');
-  if(list){
-    var div=document.createElement('div');
-    div.className='todo-item';div.id='mc-'+id;
-    div.innerHTML='<div class="todo-cb" onclick="toggleMC('+id+',this)"></div><span class="todo-txt">'+inp.value.trim()+'</span>';
-    list.insertBefore(div,list.lastElementChild);
-  }
-  inp.value='';
-}
-
-function viewDeckPDF(key){
-  var pd=lsGet('chq-pitch',{});
-  if(!pd.decks||!pd.decks[key]||!pd.decks[key].pdf)return;
-  window.open(pd.decks[key].pdf,'_blank');
-}
-
-function copyPitchEmail(id,btn){
-  var el=document.getElementById(id);if(!el)return;
-  var subj=document.querySelector('.email-subj[data-key="'+el.dataset.key+'"]');
-  var text=(subj?'Subject: '+subj.value+'\n\n':'')+el.value;
-  navigator.clipboard.writeText(text);
-  btn.textContent='Copied!';
-  setTimeout(function(){btn.textContent='Copy';},2000);
-  showToast('Email copied');
-}
-
-function savePitch(){
-  var pd=lsGet('chq-pitch',{});
-  var bm=document.getElementById('pitch-brainstorm');
-  var mp=document.getElementById('pitch-main');
-  if(bm)pd.brainstorm=bm.value;
-  if(mp)pd.mainPoints=mp.value;
-  // deck notes
-  document.querySelectorAll('.deck-notes').forEach(function(el){
-    if(!pd.decks)pd.decks={};
-    if(!pd.decks[el.dataset.key])pd.decks[el.dataset.key]={};
-    pd.decks[el.dataset.key].notes=el.value;
-  });
-  // email subjects + bodies
-  document.querySelectorAll('.email-subj').forEach(function(el){
-    if(!pd.emails)pd.emails={};
-    if(!pd.emails[el.dataset.key])pd.emails[el.dataset.key]={};
-    pd.emails[el.dataset.key].subject=el.value;
-  });
-  document.querySelectorAll('.email-body').forEach(function(el){
-    if(!pd.emails)pd.emails={};
-    if(!pd.emails[el.dataset.key])pd.emails[el.dataset.key]={};
-    pd.emails[el.dataset.key].body=el.value;
-  });
-  // objection responses
-  document.querySelectorAll('.obj-response').forEach(function(el){
-    if(!pd.objections)pd.objections={};
-    if(!pd.objections[el.dataset.key])pd.objections[el.dataset.key]={};
-    pd.objections[el.dataset.key].a=el.value;
-  });
-  lsSave('chq-pitch',pd);
-  showToast('Pitch HQ saved');
-}
-
-
-// ═══ BOARD (TRELLO STYLE) ════════════════════════════════════
-function bBoard(){
-  var fallbackBoard={
-    columns:[
-      {id:'sponsors',title:'Sponsor Outreach',color:'var(--ch2)',cards:[]},
-      {id:'competition',title:'Competition Prep',color:'var(--tz3)',cards:[]},
-      {id:'general',title:'General / Notes',color:'var(--bl2)',cards:[]},
-    ]
-  };
-  var rawBoard=lsGet('chq-board',fallbackBoard)||fallbackBoard;
-  var boardData={
-    columns:Array.isArray(rawBoard.columns)&&rawBoard.columns.length?rawBoard.columns.map(function(col,i){
-      var fb=fallbackBoard.columns[i]||{id:'col_'+i,title:'Column',color:'var(--tz4)',cards:[]};
-      return {
-        id:(col&&col.id)||fb.id,
-        title:(col&&col.title)||fb.title,
-        color:(col&&col.color)||fb.color,
-        cards:Array.isArray(col&&col.cards)?col.cards:[]
-      };
-    }):fallbackBoard.columns.slice()
-  };
-  lsWriteLocal('chq-board',boardData);
-
-  inject(
-    '<div class="ph"><div><div class="ph-tag">Team Workspace</div><div class="ph-title"><em>Discussion</em></div></div>' +
-    '<div class="ph-acts"><button class="btn bp" onclick="addBoardCard()">+ Add Card</button><button class="btn bc" onclick="addBoardColumn()">+ Column</button></div></div>' +
-    '<div class="board-strip">' +
-    boardData.columns.map(function(col){
-      return '<div class="board-col" id="bcol-'+col.id+'" data-col="'+col.id+'" style="min-width:240px;max-width:240px;flex-shrink:0">' +
-        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.55rem">' +
-        '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;text-transform:uppercase;color:'+col.color+';font-weight:700">'+col.title+
-        ' <span style="background:'+col.color+'22;color:'+col.color+';border-radius:3px;padding:.05rem .35rem;font-size:.48rem">'+col.cards.length+'</span></div>' +
-        '<button onclick="addCardToCol(\''+col.id+'\')" style="background:none;border:none;color:var(--wg);cursor:pointer;font-size:1.1rem;line-height:1;padding:0 .2rem">+</button>' +
-        '</div>' +
-        '<div class="board-cards" id="bcards-'+col.id+'" style="display:flex;flex-direction:column;gap:.45rem;min-height:60px">' +
-        col.cards.map(function(card){return renderBoardCard(card,col.id);}).join('') +
-        '</div>' +
-        '</div>';
-    }).join('') +
-    '</div>'
-  );
-}
-
-function renderBoardCard(card,colId){
-  var tagColors={sponsor:'var(--ch2)',event:'var(--sg2)',content:'var(--bl2)',urgent:'var(--bl2)',idea:'var(--tz3)'};
-  return '<div class="board-card" id="bcard-'+card.id+'" style="background:var(--wh);border-radius:3px;padding:.75rem;box-shadow:0 2px 8px rgba(46,37,96,.08);border-left:3px solid var(--du);cursor:pointer" onclick="editBoardCard(\''+card.id+'\',\''+colId+'\')">' +
-    (card.tag?'<span style="font-family:var(--fm);font-size:.44rem;letter-spacing:2px;text-transform:uppercase;color:'+(tagColors[card.tag]||'var(--wg)')+';background:'+(tagColors[card.tag]||'var(--wg)')+'22;padding:.1rem .4rem;border-radius:3px;display:inline-block;margin-bottom:.35rem">'+card.tag+'</span>':'') +
-    '<div class="board-card-title" style="font-size:.82rem;font-weight:600;color:var(--ink);margin-bottom:'+(card.body?'.3rem':'0')+'">'+card.title+'</div>' +
-    (card.body?'<div style="font-size:.72rem;color:var(--wg);line-height:1.5;white-space:pre-wrap">'+card.body.substring(0,80)+(card.body.length>80?'...':'')+'</div>':'') +
-    (card.due?'<div style="font-family:var(--fm);font-size:.5rem;color:var(--ch2);margin-top:.35rem">📅 '+card.due+'</div>':'') +
-    (card.who?'<div style="font-family:var(--fm);font-size:.5rem;color:var(--wg);margin-top:.15rem">👤 '+card.who+'</div>':'') +
-    '</div>';
-}
-
-function addCardToCol(colId){
-  var title=prompt('Card title:');
-  if(!title)return;
-  var bd=lsGet('chq-board',{columns:[]});
-  var col=bd.columns.find(function(c){return c.id===colId;});
-  if(!col)return;
-  var card={id:Date.now(),title:title,body:'',tag:'',due:'',who:''};
-  col.cards.push(card);
-  lsSave('chq-board',bd);
-  var container=document.getElementById('bcards-'+colId);
-  if(container){
-    var div=document.createElement('div');
-    div.innerHTML=renderBoardCard(card,colId);
-    container.appendChild(div.firstChild);
-  }
-  // update count
-  var colEl=document.getElementById('bcol-'+colId);
-  if(colEl){var cnt=colEl.querySelector('span');if(cnt)cnt.textContent=col.cards.length;}
-}
-
-function addBoardCard(){
-  var bd=lsGet('chq-board',{columns:[]});
-  if(!bd.columns||!bd.columns.length)return;
-  addCardToCol(bd.columns[0].id);
-}
-
-function addBoardColumn(){
-  var title=prompt('Column name:');
-  if(!title)return;
-  var bd=lsGet('chq-board',{columns:[]});
-  var id='col_'+Date.now();
-  bd.columns.push({id:id,title:title,color:'var(--tz4)',cards:[]});
-  lsSave('chq-board',bd);
-  bBoard();
-}
-
-function editBoardCard(cardId,colId){
-  var bd=lsGet('chq-board',{columns:[]});
-  var col=bd.columns.find(function(c){return c.id===colId;});
-  if(!col)return;
-  var card=col.cards.find(function(x){return String(x.id)===String(cardId);});
-  if(!card)return;
-
-  // Inline modal
-  var tags=['sponsor','event','content','urgent','idea',''];
-  var assignees=['Amelia','Laneea','Hair & MU','Donovan',''];
-  var cols=bd.columns.map(function(c){return '<option value="'+c.id+'" '+(c.id===colId?'selected':'')+'>'+c.title+'</option>';}).join('');
-  var ov=document.createElement('div');
-  ov.className='ov on';ov.id='board-card-ov';
-  ov.innerHTML='<div class="modal" style="max-width:420px">' +
-    '<h3 style="margin-bottom:.75rem">Edit Card</h3>' +
-    '<div class="fg"><label>Title</label><input class="fi" id="bc-title" value="'+card.title.replace(/"/g,'&quot;')+'"></div>' +
-    '<div class="fg"><label>Notes</label><textarea class="ft" id="bc-body" style="min-height:80px">'+( card.body||'')+'</textarea></div>' +
-    '<div class="fg-row">' +
-    '<div class="fg"><label>Tag</label><select class="fs" id="bc-tag">' +
-    tags.map(function(t){return '<option value="'+t+'" '+(card.tag===t?'selected':'')+'>'+( t||'None')+'</option>';}).join('')+
-    '</select></div>' +
-    '<div class="fg"><label>Move to</label><select class="fs" id="bc-col">'+cols+'</select></div>' +
-    '</div>' +
-    '<div class="fg-row">' +
-    '<div class="fg"><label>Due Date</label><input class="fi" type="date" id="bc-due" value="'+(card.due||'')+'"></div>' +
-    '<div class="fg"><label>Assigned to</label><input class="fi" id="bc-who" value="'+(card.who||'').replace(/"/g,'&quot;')+'" placeholder="Laneea / Amelia"></div>' +
-    '</div>' +
-    '<div class="m-acts">' +
-    '<button class="btn bg" onclick="document.getElementById(\'board-card-ov\').remove()">Cancel</button>' +
-    '<button class="btn bd" onclick="deleteBoardCard(\''+cardId+'\',\''+colId+'\')">Delete</button>' +
-    '<button class="btn bp" onclick="saveBoardCard(\''+cardId+'\',\''+colId+'\')">Save</button>' +
-    '</div></div>';
-  document.body.appendChild(ov);
-  ov.addEventListener('click',function(e){if(e.target===ov)ov.remove();});
-}
-
-function saveBoardCard(cardId,colId){
-  var bd=lsGet('chq-board',{columns:[]});
-  var newColId=document.getElementById('bc-col').value;
-  var oldCol=bd.columns.find(function(c){return c.id===colId;});
-  var newCol=bd.columns.find(function(c){return c.id===newColId;});
-  if(!oldCol||!newCol)return;
-  var idx=oldCol.cards.findIndex(function(x){return String(x.id)===String(cardId);});
-  if(idx<0)return;
-  var card=oldCol.cards[idx];
-  card.title=document.getElementById('bc-title').value;
-  card.body=document.getElementById('bc-body').value;
-  card.tag=document.getElementById('bc-tag').value;
-  card.due=document.getElementById('bc-due').value;
-  card.who=document.getElementById('bc-who').value;
-  if(newColId!==colId){
-    oldCol.cards.splice(idx,1);
-    newCol.cards.push(card);
-  }
-  lsSave('chq-board',bd);
-  var ov=document.getElementById('board-card-ov');if(ov)ov.remove();
-  bBoard();
-}
-
-function deleteBoardCard(cardId,colId){
-  if(!confirm('Delete this card?'))return;
-  var bd=lsGet('chq-board',{columns:[]});
-  var col=bd.columns.find(function(c){return c.id===colId;});
-  if(col)col.cards=col.cards.filter(function(x){return String(x.id)!==String(cardId);});
-  lsSave('chq-board',bd);
-  var ov=document.getElementById('board-card-ov');if(ov)ov.remove();
-  bBoard();
-}
-
-// ═══ LOOKBOOK (PUBLIC) ═══════════════════════════════════════
-function bLookbook(){
-  var published=getPublishedPosts().slice(0,4);
-  var links=getLookbookLinks();
-  var meta=getLookbookMeta();
-  var heroSrc=getPortfolioHeroSrc();
-  inject(
-    '<div class="ph"><div><div class="ph-tag">Public · Portfolio</div><div class="ph-title"><em>Editorial Portfolio</em></div></div>' +
-    '<div class="ph-acts">' +
-    '<button class="btn bg" onclick="previewLookbook()">Preview Public Page</button>' +
-    '<button class="btn bg" onclick="openPublicPortfolioRoute()">Open Public Route</button>' +
-    '<label class="btn bp" style="cursor:pointer">+ Upload Look<input type="file" accept="image/*" multiple style="display:none" onchange="addLookbookImg(event)"></label>' +
-    '</div></div>' +
-    '<div class="pb">' +
-    '<div class="portfolio-hero-card" style="margin-bottom:1.1rem">' +
-    '<div class="portfolio-hero-copy">' +
-    '<div class="lib-front-kicker">Editorial Portfolio</div>' +
-    '<div class="lib-front-title">A more professional portfolio built around image, writing, and platform.</div>' +
-    '<div class="portfolio-hero-subtitle">'+meta.subtitle+'</div>' +
-    '<div class="lib-front-sub">This is the only forward-facing portfolio page now. It carries the visual story, your core bio, social links, and selected published essays in one cohesive presentation.</div>' +
-    '<div class="portfolio-link-row">' +
-    '<button class="pc-link" onclick="window.open(\''+links.ig+'\',\'_blank\')">Instagram</button>' +
-    '<button class="pc-link" onclick="window.open(\''+links.yt+'\',\'_blank\')">YouTube</button>' +
-    '<button class="pc-link" onclick="window.open(\''+links.gh+'\',\'_blank\')">GitHub</button>' +
-    '<button class="pc-link" onclick="window.open(\''+links.tech+'\',\'_blank\')">Technical Portfolio</button>' +
-    '</div></div>' +
-    '<div class="portfolio-hero-image">'+(heroSrc?'<img src="'+heroSrc+'" alt="Portfolio hero">':'')+'</div>' +
-    '</div>' +
-
-    // CURATED LOOKS
-    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">Curated Looks — Upload Your Photos</div>' +
-    '<div class="mb-grid" id="lb-grid" style="margin-bottom:1.5rem">' +
-    getLookbookImgs().map(function(m,i){
-      return '<div class="mb-item" style="aspect-ratio:2/3">' +
-        '<img src="'+m.src+'" alt="'+m.caption+'">' +
-        '<div class="mb-lbl">'+m.caption+'</div>' +
-        '<button class="mb-rm" onclick="removeLookbookImg('+i+')">×</button>' +
-        '</div>';
-    }).join('') +
-    '<label class="mb-item mb-add" style="aspect-ratio:2/3">' +
-    '<input type="file" accept="image/*" multiple style="display:none" onchange="addLookbookImg(event)">' +
-    '<div style="font-size:1.3rem;color:var(--wg)">+</div>' +
-    '<span style="font-family:var(--fm);font-size:.52rem;color:var(--wg);letter-spacing:1px;text-transform:uppercase">Add Photo</span>' +
-    '</label>' +
-    '</div>' +
-
-    // SOCIAL LINKS
-    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">Profile And Portfolio Links</div>' +
-    '<div class="g3" style="margin-bottom:1.5rem">' +
-    '<div class="card">' +
-    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:2px;color:var(--tz3);text-transform:uppercase;margin-bottom:.5rem">📸 Instagram</div>' +
-    '<input class="fi" id="lb-ig" value="'+links.ig+'" placeholder="https://instagram.com/ameliavarabe">' +
-    '<div style="font-family:var(--fm);font-size:.5rem;color:var(--wg);margin-top:.35rem">Sponsors will see a direct link to your profile</div>' +
-    '</div>' +
-    '<div class="card">' +
-    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:2px;color:var(--bl2);text-transform:uppercase;margin-bottom:.5rem">▶️ YouTube</div>' +
-    '<input class="fi" id="lb-yt" value="'+links.yt+'" placeholder="https://youtube.com/@ameliavarabe">' +
-    '<div style="font-family:var(--fm);font-size:.5rem;color:var(--wg);margin-top:.35rem">Sponsors will see a direct link to your channel</div>' +
-    '</div>' +
-    '<div class="card">' +
-    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:2px;color:var(--sg2);text-transform:uppercase;margin-bottom:.5rem">⌘ GitHub</div>' +
-    '<input class="fi" id="lb-gh" value="'+links.gh+'" placeholder="https://github.com/ameliavarabe">' +
-    '<div style="font-family:var(--fm);font-size:.5rem;color:var(--wg);margin-top:.35rem">For the engineering side of the portfolio</div>' +
-    '</div>' +
-    '<div class="card">' +
-    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:2px;color:var(--ch3);text-transform:uppercase;margin-bottom:.5rem">⌁ Technical Portfolio</div>' +
-    '<input class="fi" id="lb-tech" value="'+links.tech+'" placeholder="https://yourdomain.com">' +
-    '<div style="font-family:var(--fm);font-size:.5rem;color:var(--wg);margin-top:.35rem">Primary link for your official engineering portfolio site</div>' +
-    '</div>' +
-    '</div>' +
-
-    // PORTFOLIO SUBTITLE
-    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">Portfolio Subtitle</div>' +
-    '<div class="card" style="margin-bottom:1.5rem">' +
-    '<input class="fi" id="lb-subtitle" value="'+meta.subtitle.replace(/"/g,'&quot;')+'" placeholder="Student Engineer · Net-Zero Hardware · Cellist · Policy Advocate">' +
-    '<div style="font-family:var(--fm);font-size:.5rem;color:var(--wg);margin-top:.35rem">Short professional line under your name in the portfolio hero</div>' +
-    '</div>' +
-
-    // BIO FOR SPONSORS
-    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">Sponsor-Facing Bio</div>' +
-    '<div class="card" style="margin-bottom:1.5rem">' +
-    '<textarea id="lb-bio" style="width:100%;min-height:90px;border:none;outline:none;font-family:var(--fd);font-size:.95rem;font-style:italic;color:var(--ink);line-height:1.8;resize:vertical;background:transparent" placeholder="What sponsors read when they open the lookbook...">'+(lsGet('chq-lb-bio','')||'Amelia Arabe is a Filipina-American student engineer, cellist, and Miss Temecula USA 2026 candidate based in San Diego. Her platform is clean energy and textile accountability policy. She competes not for a crown — but for a microphone.')+'</textarea>' +
-    '</div>' +
-    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">Published Essays In Portfolio</div>' +
-    '<div class="lib-grid" style="margin-bottom:1.5rem">' +
-    published.map(function(p){
-      var cat=libCats[p.cat]||{lbl:p.tag,bg:'var(--tz5)'};
-      return '<div class="lib-card" '+(S.role==='amelia'?'onclick="editPost('+p.id+')"':'')+'>' +
-        '<div class="lib-cover" style="background:'+cat.bg+'">' +
-        (p.cover?'<img src="'+p.cover+'">':'') +
-        '<div class="lib-overlay"></div>' +
-        '<div class="lib-cover-text"><div class="lib-cat">'+p.tag+'</div><div class="lib-title-sm">'+p.title+'</div></div>' +
-        '</div>' +
-        '<div class="lib-meta"><span class="lib-date">'+fdate(p.date)+'</span><span class="lib-status ls-p">Essay</span></div>' +
-        '</div>';
-    }).join('') +
-    '</div>' +
-    '<button class="btn bp" onclick="saveLookbookData()">Save Portfolio</button>' +
-    '</div>'
-  );
-}
-
-function getLookbookImgs(){
-  var imgs=lsGet('chq-lb-imgs',[]);
-  return Array.isArray(imgs)?imgs:[];
-}
-function getLookbookLinks(){
-  var links=lsGet('chq-lb-links',{})||{};
-  return {
-    ig:links.ig||'https://instagram.com/ameliavarabe',
-    yt:links.yt||'https://youtube.com/@ameliavarabe',
-    gh:links.gh||'https://github.com/ameliavarabe',
-    tech:links.tech||'https://github.com/ameliavarabe'
-  };
-}
-function getLookbookMeta(){
-  var meta=lsGet('chq-lb-meta',{})||{};
-  return {
-    subtitle:meta.subtitle||'Student Engineer · Net-Zero Hardware · Cellist · Policy Advocate'
-  };
-}
-function getPortfolioHeroSrc(){
-  if(window.location&&window.location.origin&&window.location.origin.indexOf('http')===0){
-    return window.location.origin+'/assets/portfolio-hero.jpeg';
-  }
-  return 'assets/portfolio-hero.jpeg';
-}
-
-function addLookbookImg(e){
-  var imgs=getLookbookImgs();
-  Array.from(e.target.files).forEach(function(file){
-    var r=new FileReader();
-    r.onload=function(ev){
-      imgs.push({src:ev.target.result,caption:file.name.split('.')[0].replace(/[-_]/g,' ')});
-      lsSave('chq-lb-imgs',imgs);
-      var grid=document.getElementById('lb-grid');
-      if(grid){
-        var m=imgs[imgs.length-1];var i=imgs.length-1;
-        var div=document.createElement('div');
-        div.className='mb-item';div.style.cssText='aspect-ratio:2/3';
-        div.innerHTML='<img src="'+m.src+'"><div class="mb-lbl">'+m.caption+'</div><button class="mb-rm" onclick="removeLookbookImg('+i+')">×</button>';
-        grid.insertBefore(div,grid.lastElementChild);
-      }
-      showToast('Photo added');
-    };
-    r.readAsDataURL(file);
-  });
-}
-
-function removeLookbookImg(i){
-  var imgs=getLookbookImgs();
-  imgs.splice(i,1);
-  lsSave('chq-lb-imgs',imgs);
-  bLookbook();
-}
-
-function saveLookbookData(){
-  var igEl=document.getElementById('lb-ig');
-  var ytEl=document.getElementById('lb-yt');
-  var ghEl=document.getElementById('lb-gh');
-  var techEl=document.getElementById('lb-tech');
-  var subtitleEl=document.getElementById('lb-subtitle');
-  var bioEl=document.getElementById('lb-bio');
-  if(igEl&&ytEl&&ghEl&&techEl) lsSave('chq-lb-links',{ig:igEl.value,yt:ytEl.value,gh:ghEl.value,tech:techEl.value});
-  if(subtitleEl) lsSave('chq-lb-meta',{subtitle:subtitleEl.value});
-  if(bioEl) lsSave('chq-lb-bio',bioEl.value);
-  showToast('Portfolio saved');
-}
-
-function buildPublicPortfolioHTML(){
-  var imgs=getLookbookImgs();
-  var links=getLookbookLinks();
-  var meta=getLookbookMeta();
-  var bio=lsGet('chq-lb-bio','Amelia Arabe is a Filipina-American student engineer, cellist, and Miss Temecula USA 2026 candidate based in San Diego.');
-  var essays=getPublishedPosts().slice(0,6);
-  var heroSrc=getPortfolioHeroSrc();
-
-  var html='<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
-    '<title>Amelia Arabe — Editorial Portfolio</title>' +
-    '<link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;1,300;1,400&family=Plus+Jakarta+Sans:wght@300;400;500&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">' +
-    '<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#1A1340;color:#F0EEF8;font-family:"Plus Jakarta Sans",sans-serif;min-height:100vh}' +
-    '.hero{padding:0;text-align:left;display:grid;grid-template-columns:1.1fr .9fr;min-height:78vh;background:linear-gradient(135deg,#140f34 0%,#1A1340 48%,#2E2560 100%)}' +
-    '.hero-copy{padding:4.2rem 2.2rem 3.2rem;display:flex;flex-direction:column;justify-content:center}' +
-    '.hero-visual{min-height:420px;position:relative;background:#2E2560}' +
-    '.hero-visual img{width:100%;height:100%;object-fit:cover;display:block}' +
-    '.hero-tag{font-family:"DM Mono",monospace;font-size:.55rem;letter-spacing:6px;color:rgba(240,216,152,.4);text-transform:uppercase;margin-bottom:1rem}' +
-    '.hero-name{font-family:"Cormorant",serif;font-size:clamp(3rem,8vw,5.5rem);font-style:italic;font-weight:300;color:#D8D4EC;line-height:1;margin-bottom:.5rem}' +
-    '.hero-sub{font-family:"DM Mono",monospace;font-size:.6rem;letter-spacing:4px;color:rgba(240,216,152,.3);text-transform:uppercase;margin-bottom:2rem}' +
-    '.hero-bio{font-family:"Cormorant",serif;font-size:1.1rem;font-style:italic;color:rgba(216,212,236,.7);max-width:600px;margin:0 0 2rem;line-height:1.75}' +
-    '.social-links{display:flex;gap:1rem;justify-content:flex-start;flex-wrap:wrap}' +
-    '.slink{font-family:"DM Mono",monospace;font-size:.58rem;letter-spacing:2px;padding:.45rem 1.25rem;border-radius:3px;border:1px solid rgba(240,216,152,.2);color:rgba(240,216,152,.6);text-decoration:none;text-transform:uppercase;transition:all .2s}' +
-    '.slink:hover{border-color:rgba(240,216,152,.5);color:rgba(240,216,152,.9);background:rgba(240,216,152,.05)}' +
-    '.section{padding:3rem 2rem;max-width:1100px;margin:0 auto}' +
-    '.section-label{font-family:"DM Mono",monospace;font-size:.52rem;letter-spacing:5px;color:rgba(216,212,236,.3);text-transform:uppercase;margin-bottom:1.5rem;text-align:center}' +
-    '.section-title{font-family:"Cormorant",serif;font-size:clamp(1.7rem,4vw,2.8rem);font-style:italic;color:#F0EEF8;text-align:center;line-height:1.1;margin-bottom:.65rem}' +
-    '.section-intro{font-size:.92rem;color:rgba(216,212,236,.62);text-align:center;max-width:760px;margin:0 auto 1.8rem;line-height:1.8}' +
-    '.look-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem}' +
-    '.look-item{border-radius:3px;overflow:hidden;aspect-ratio:2/3;position:relative}' +
-    '.look-item img{width:100%;height:100%;object-fit:cover;transition:transform .4s}' +
-    '.look-item:hover img{transform:scale(1.03)}' +
-    '.look-cap{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(20,16,50,.8));padding:1rem .75rem .6rem;font-family:"DM Mono",monospace;font-size:.5rem;letter-spacing:2px;color:rgba(254,252,247,.7);text-transform:uppercase}' +
-    '.essay-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1rem}' +
-    '.essay-card{background:rgba(255,255,255,.04);border:1px solid rgba(216,212,236,.08);border-radius:3px;overflow:hidden;display:block;width:100%;text-align:left;cursor:pointer;transition:transform .25s,border-color .25s,box-shadow .25s}' +
-    '.essay-card:hover{transform:translateY(-3px);border-color:rgba(240,216,152,.22);box-shadow:0 16px 30px rgba(10,8,30,.22)}' +
-    '.essay-cover{height:160px;position:relative;background:#2E2560;display:flex;align-items:flex-end}' +
-    '.essay-cover img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}' +
-    '.essay-overlay{position:absolute;inset:0;background:linear-gradient(transparent 35%,rgba(20,16,50,.82))}' +
-    '.essay-copy{padding:1rem}' +
-    '.essay-tag{font-family:"DM Mono",monospace;font-size:.48rem;letter-spacing:3px;color:rgba(240,216,152,.48);text-transform:uppercase;margin-bottom:.45rem}' +
-    '.essay-title{font-family:"Cormorant",serif;font-size:1.35rem;font-style:italic;color:#F0EEF8;line-height:1.15;margin-bottom:.45rem}' +
-    '.essay-meta{font-family:"DM Mono",monospace;font-size:.52rem;color:rgba(216,212,236,.48);letter-spacing:2px;text-transform:uppercase}' +
-    '.essay-lightbox{position:fixed;inset:0;background:rgba(10,8,28,.82);backdrop-filter:blur(6px);display:none;align-items:flex-start;justify-content:center;padding:2rem 1.1rem;z-index:9999;overflow:auto}' +
-    '.essay-lightbox.open{display:flex}' +
-    '.essay-dialog{width:min(940px,100%);background:linear-gradient(180deg,#160f36 0%,#1C1546 100%);border:1px solid rgba(216,212,236,.08);border-radius:10px;box-shadow:0 30px 70px rgba(8,6,24,.45);overflow:hidden}' +
-    '.essay-dialog-top{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;padding:1.1rem 1.1rem 0}' +
-    '.essay-dialog-kicker{font-family:"DM Mono",monospace;font-size:.52rem;letter-spacing:4px;color:rgba(240,216,152,.48);text-transform:uppercase}' +
-    '.essay-dialog-close{border:1px solid rgba(240,216,152,.18);background:rgba(255,255,255,.03);color:rgba(240,216,152,.72);font-family:"DM Mono",monospace;font-size:.58rem;letter-spacing:2px;text-transform:uppercase;border-radius:999px;padding:.5rem .9rem;cursor:pointer}' +
-    '.essay-dialog-close:hover{border-color:rgba(240,216,152,.42);color:#F0D898}' +
-    '.essay-dialog-head{padding:1rem 1.5rem 0}' +
-    '.essay-dialog-title{font-family:"Cormorant",serif;font-size:clamp(2.2rem,5vw,4.4rem);font-style:italic;color:#F0EEF8;line-height:1.02;margin-bottom:.45rem}' +
-    '.essay-dialog-meta{font-family:"DM Mono",monospace;font-size:.54rem;color:rgba(216,212,236,.42);letter-spacing:2px;text-transform:uppercase;margin-bottom:1.2rem}' +
-    '.essay-dialog-cover{max-height:420px;overflow:hidden;background:#2E2560}' +
-    '.essay-dialog-cover img{display:block;width:100%;height:100%;object-fit:cover}' +
-    '.essay-body{background:rgba(255,255,255,.04);border-top:1px solid rgba(216,212,236,.06);padding:1.6rem 1.7rem 1.9rem}' +
-    '.essay-body .mag-hero{font-family:"Cormorant",serif;font-size:clamp(2rem,4vw,3.4rem);font-weight:300;line-height:1.02;color:#F0EEF8;margin-bottom:.45rem}' +
-    '.essay-body .mag-hero em{font-style:italic;color:#D4CEF0}' +
-    '.essay-body .mag-byline{font-family:"DM Mono",monospace;font-size:.58rem;letter-spacing:4px;color:rgba(216,212,236,.46);text-transform:uppercase;margin-bottom:1.5rem;padding-bottom:.9rem;border-bottom:1px solid rgba(216,212,236,.12)}' +
-    '.essay-body .mag-drop,.essay-body p{font-family:"Cormorant",serif;font-size:1.05rem;line-height:1.9;color:rgba(240,238,248,.88)}' +
-    '.essay-body .mag-drop::first-letter{font-size:3.5rem;float:left;line-height:.82;margin:.08rem .4rem 0 0;color:#F0EEF8}' +
-    '.essay-body .mag-pq{font-family:"Cormorant",serif;font-size:1.25rem;font-style:italic;color:#F0EEF8;border-left:3px solid rgba(212,206,240,.4);padding:.85rem 1.15rem;margin:1.5rem 0;line-height:1.55;background:rgba(212,206,240,.08)}' +
-    '.essay-body .mag-img{margin:1.25rem 0;background:rgba(255,255,255,.03);border-radius:3px;overflow:hidden}' +
-    '.essay-body .mag-img img{display:block;width:100%}' +
-    '.essay-body .mag-cap{font-family:"DM Mono",monospace;font-size:.54rem;color:rgba(216,212,236,.5);padding:.45rem .65rem;letter-spacing:1px;text-transform:uppercase}' +
-    '.essay-body .mag-2col{display:grid;grid-template-columns:1fr 1fr;gap:.65rem;margin:1.25rem 0}' +
-    '.essay-body .mag-br{text-align:center;color:rgba(212,206,240,.55);font-family:"Cormorant",serif;font-size:1.35rem;margin:1.5rem 0;letter-spacing:.45rem}' +
-    '.footer{text-align:center;padding:3rem;font-family:"DM Mono",monospace;font-size:.5rem;letter-spacing:3px;color:rgba(240,216,152,.2);text-transform:uppercase}' +
-    '@media(max-width:760px){.hero{grid-template-columns:1fr}.hero-copy{padding:2.5rem 1.1rem 2rem}.hero-visual{min-height:320px}.essay-body{padding:1.1rem}.essay-body .mag-2col{grid-template-columns:1fr}.essay-dialog-head{padding:1rem 1.1rem 0}}@media(max-width:600px){.look-grid,.essay-grid{grid-template-columns:1fr 1fr}.hero-name{font-size:2.8rem}.essay-lightbox{padding:0}.essay-dialog{border-radius:0;min-height:100vh}.essay-dialog-top{padding:1rem 1rem 0}}' +
-    '</style></head><body>' +
-    '<div class="hero">' +
-    '<div class="hero-copy">' +
-    '<div class="hero-tag">Editorial Portfolio</div>' +
-    '<div class="hero-name">Amelia Arabe</div>' +
-    '<div class="hero-sub">'+meta.subtitle+'</div>' +
-    '<div class="hero-bio">'+bio+'</div>' +
-    '<div class="social-links">' +
-    '<a class="slink" href="'+links.ig+'" target="_blank">📸 Instagram</a>' +
-    '<a class="slink" href="'+links.yt+'" target="_blank">▶️ YouTube</a>' +
-    '<a class="slink" href="'+links.gh+'" target="_blank">⌘ GitHub</a>' +
-    '<a class="slink" href="'+links.tech+'" target="_blank">⌁ Technical Portfolio</a>' +
-    '</div></div>' +
-    '<div class="hero-visual">'+(heroSrc?'<img src="'+heroSrc+'" alt="Amelia Arabe portfolio hero">':'')+'</div>' +
-    '</div>' +
-    (imgs.length?
-      '<div class="section"><div class="section-label">Visual Portfolio</div><div class="section-title">Competition Looks</div><div class="section-intro">Selected imagery from the visual side of the portfolio, designed to sit beside the essays and policy work rather than apart from them.</div>' +
-      '<div class="look-grid">' +
-      imgs.map(function(m){return '<div class="look-item"><img src="'+m.src+'" alt="'+m.caption+'"><div class="look-cap">'+m.caption+'</div></div>';}).join('') +
-      '</div></div>':''
-    ) +
-    (essays.length?
-      '<div class="section"><div class="section-label">Library of Morenita</div><div class="section-title">Published Essays</div><div class="section-intro">Writing from the public-facing Library, folded into the same editorial portfolio so sponsors and readers can understand the full world Amelia is building.</div>' +
-      '<div class="essay-grid">' +
-      essays.map(function(p){
-        return '<button class="essay-card" type="button" onclick="openEssay('+p.id+')">' +
-          '<div class="essay-cover">' +
-          (p.cover?'<img src="'+p.cover+'" alt="'+p.title+'">':'') +
-          '<div class="essay-overlay"></div>' +
-          '</div>' +
-          '<div class="essay-copy"><div class="essay-tag">'+p.tag+'</div><div class="essay-title">'+p.title+'</div><div class="essay-meta">'+(p.date||'')+'</div></div>' +
-          '</button>';
-      }).join('') +
-      '</div></div>':''
-    ) +
-    '<div class="essay-lightbox" id="essay-lightbox" onclick="if(event.target===this)closeEssay()">' +
-    '<div class="essay-dialog">' +
-    '<div class="essay-dialog-top"><div class="essay-dialog-kicker">Editorial Reader</div><button class="essay-dialog-close" type="button" onclick="closeEssay()">Close</button></div>' +
-    '<div class="essay-dialog-head"><div class="essay-dialog-title" id="essay-lightbox-title"></div><div class="essay-dialog-meta" id="essay-lightbox-meta"></div></div>' +
-    '<div class="essay-dialog-cover" id="essay-lightbox-cover" style="display:none"></div>' +
-    '<div class="essay-body" id="essay-lightbox-body"></div>' +
-    '</div></div>' +
-    '<div class="footer">Amelia Arabe · Miss California USA 2026 · San Diego · Represented by Laneea Love</div>' +
-    '<script>var ESSAYS='+JSON.stringify(essays)+';function openEssay(id){var p=ESSAYS.find(function(x){return String(x.id)===String(id);});if(!p)return;var ov=document.getElementById("essay-lightbox");var title=document.getElementById("essay-lightbox-title");var meta=document.getElementById("essay-lightbox-meta");var cover=document.getElementById("essay-lightbox-cover");var body=document.getElementById("essay-lightbox-body");if(title)title.textContent=p.title||"";if(meta)meta.textContent=((p.date||"")+(p.date?" · ":"")+"Library of Morenita"+(p.tag?" · "+p.tag:""));if(cover){cover.style.display=p.cover?"block":"none";cover.innerHTML=p.cover?\'<img src="\'+p.cover+\'" alt="\'+(p.title||"Essay")+\'">\':"";}if(body)body.innerHTML=p.body||"";if(ov){ov.classList.add("open");document.body.style.overflow="hidden";window.scrollTo({top:0,behavior:"smooth"});}}function closeEssay(){var ov=document.getElementById("essay-lightbox");if(ov)ov.classList.remove("open");document.body.style.overflow="";}document.addEventListener("keydown",function(e){if(e.key==="Escape")closeEssay();});</script>' +
-    '</body></html>';
-
-  return html;
-}
-
-function previewLookbook(){
-  var blob=new Blob([buildPublicPortfolioHTML()],{type:'text/html'});
-  var url=URL.createObjectURL(blob);
-  window.open(url,'_blank');
-}
-
-function getPublicPortfolioURL(){
-  var base=window.location.pathname||'';
-  return base+'?view=portfolio';
-}
-
-function openPublicPortfolioRoute(){
-  window.open(getPublicPortfolioURL(),'_blank');
-}
-
-function isPublicPortfolioRoute(){
-  try{
-    var qp=new URLSearchParams(window.location.search||'');
-    var view=(qp.get('view')||'').toLowerCase();
-    var hash=(window.location.hash||'').replace(/^#/,'').toLowerCase();
-    return view==='portfolio'||hash==='portfolio';
-  }catch(e){
-    return false;
-  }
-}
-
-function renderPublicPortfolioRoute(){
-  var login=g('login');
-  var app=g('app');
-  if(login)login.style.display='none';
-  if(app)app.style.display='none';
-  seed();
-  loadFromSupabase().then(function(){
-    document.open();
-    document.write(buildPublicPortfolioHTML());
-    document.close();
-  });
-}
-
-
-
-// ═══ SOCIAL MEDIA STRATEGY ═══════════════════════════════════
-function bSocial(){
-  var defaults={
-    strategy:{ig:'',yt:'',substack:'',tiktok:''},
-    pillars:['Clean Energy & Policy','Fashion Accountability','Personal Story','Behind the Scenes','Library of Morenita'],
-    cadence:{ig:'3x per week',yt:'1x per week',substack:'1x per week',tiktok:'Paused — relaunching for competition'},
-    metrics:{ig_followers:'1.4K',ig_goal:'100K',yt_followers:'0',yt_goal:'5K',substack_subs:'0',substack_goal:'1K'},
-    calendar:[],
-    videos:[
-      {id:1,title:'Why I Entered a Pageant',platform:'YouTube',status:'planned',notes:'Walk and talk, ocean background. No script, just talking points. Film this week.'},
-      {id:2,title:'SB 707 Explained',platform:'YouTube',status:'planned',notes:'Desk setup. Policy explainer. Text overlays for the numbers.'},
-      {id:3,title:'What Keel Labs Is Doing With Algae',platform:'YouTube',status:'planned',notes:'Nature location. Engineer meets innovator energy.'},
-      {id:4,title:'The Supply Chain of What You Are Wearing',platform:'YouTube',status:'planned',notes:'B-roll heavy. Investigative tone.'},
-      {id:5,title:'Cello, Engineering, and Why I Need Both',platform:'YouTube',status:'planned',notes:'Film at home. Cello in frame. Most personal video.'},
-      {id:6,title:'San Diego as a Clean Fashion Capital',platform:'YouTube',status:'planned',notes:'Film around SD. City + ocean + tech. Local pride.'},
-    ]
-  };
-  var saved=lsGet('chq-social',null)||{};
-  var sd={
-    strategy:Object.assign({},defaults.strategy,saved.strategy||{}),
-    pillars:Array.isArray(saved.pillars)&&saved.pillars.length?saved.pillars:defaults.pillars.slice(),
-    cadence:Object.assign({},defaults.cadence,saved.cadence||{}),
-    metrics:Object.assign({},defaults.metrics,saved.metrics||{}),
-    calendar:Array.isArray(saved.calendar)?saved.calendar:defaults.calendar.slice(),
-    videos:Array.isArray(saved.videos)&&saved.videos.length?saved.videos:defaults.videos.slice()
-  };
-  var socialStrategy=sd.strategy&&typeof sd.strategy==='object'?sd.strategy:defaults.strategy;
-  var socialPillars=Array.isArray(sd.pillars)?sd.pillars:defaults.pillars.slice();
-  var socialCadence=sd.cadence&&typeof sd.cadence==='object'?sd.cadence:defaults.cadence;
-  var socialMetrics=sd.metrics&&typeof sd.metrics==='object'?sd.metrics:defaults.metrics;
-  var socialVideos=Array.isArray(sd.videos)?sd.videos:defaults.videos.slice();
-  lsWriteLocal('chq-social',{
-    strategy:socialStrategy,
-    pillars:socialPillars,
-    cadence:socialCadence,
-    metrics:socialMetrics,
-    calendar:Array.isArray(sd.calendar)?sd.calendar:[],
-    videos:socialVideos
-  });
-
-  var statColors={ig:'var(--lv2)',yt:'var(--bl2)',substack:'var(--ch2)',tiktok:'var(--sg2)'};
-  var platforms=['ig','yt','substack'];
-  var platformLabels={ig:'Instagram',yt:'YouTube',substack:'Substack'};
-
-  inject(
-    '<div class="ph"><div><div class="ph-tag">Platform</div><div class="ph-title"><em>Social Media</em></div></div>' +
-    '<div class="ph-acts"><button class="btn bc" onclick="saveSocial()">Save</button></div></div>' +
-    '<div class="pb">' +
-
-    // METRICS
-    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">Growth Tracker</div>' +
-    '<div class="g4" style="margin-bottom:1.25rem">' +
-    '<div class="stat st-lv"><div class="sn" id="sm-ig-f">'+socialMetrics.ig_followers+'</div><div class="sl">Instagram</div><div class="prog"><div class="pf" style="background:var(--lv2);width:'+Math.min(100,Math.round((parseFloat(socialMetrics.ig_followers)||0)/(parseFloat(socialMetrics.ig_goal)||100)*100))+'%"></div></div><div class="pl">Goal: '+socialMetrics.ig_goal+'</div></div>' +
-    '<div class="stat st-bl"><div class="sn" id="sm-yt-f">'+socialMetrics.yt_followers+'</div><div class="sl">YouTube</div><div class="prog"><div class="pf" style="background:var(--bl2);width:'+Math.min(100,Math.round((parseFloat(socialMetrics.yt_followers)||0)/(parseFloat(socialMetrics.yt_goal)||5000)*100))+'%"></div></div><div class="pl">Goal: '+socialMetrics.yt_goal+'</div></div>' +
-    '<div class="stat st-ch"><div class="sn" id="sm-sub-f">'+socialMetrics.substack_subs+'</div><div class="sl">Substack</div><div class="prog"><div class="pf pf-c" style="width:'+Math.min(100,Math.round((parseFloat(socialMetrics.substack_subs)||0)/(parseFloat(socialMetrics.substack_goal)||1000)*100))+'%"></div></div><div class="pl">Goal: '+socialMetrics.substack_goal+'</div></div>' +
-    '<div class="stat st-tz"><div class="sn">'+((parseFloat(socialMetrics.ig_followers)||0)+(parseFloat(socialMetrics.yt_followers)||0)+'').replace(/\B(?=(\d{3})+(?!\d))/g,',')+'</div><div class="sl">Total Reach</div></div>' +
-    '</div>' +
-
-    // UPDATE METRICS
-    '<div class="card" style="margin-bottom:1.25rem">' +
-    '<div class="cl">Update Numbers</div>' +
-    '<div class="g4">' +
-    ['ig_followers','yt_followers','substack_subs'].map(function(k){
-      var labels={ig_followers:'IG Followers',yt_followers:'YT Subscribers',substack_subs:'Substack Subs'};
-      return '<div class="fg" style="margin-bottom:0"><label>'+labels[k]+'</label><input class="fi" id="sm-inp-'+k+'" value="'+socialMetrics[k]+'" style="font-size:.8rem" oninput="updateSocialMetric(\''+k+'\',this.value)"></div>';
-    }).join('') +
-    '</div></div>' +
-
-    // CONTENT PILLARS
-    '<div class="g2" style="margin-bottom:1.25rem">' +
-    '<div class="card">' +
-    '<div class="cl">Content Pillars</div>' +
-    socialPillars.map(function(p,i){
-      return '<div style="display:flex;align-items:center;gap:.5rem;padding:.3rem 0;border-bottom:1px solid var(--ch4)">' +
-        '<div style="width:6px;height:6px;border-radius:50%;background:var(--tz3);flex-shrink:0"></div>' +
-        '<span style="font-size:.8rem;color:var(--ink);flex:1">'+p+'</span>' +
-        '</div>';
-    }).join('') +
-    '</div>' +
-
-    '<div class="card">' +
-    '<div class="cl">Posting Cadence</div>' +
-    Object.keys(socialCadence).map(function(k){
-      var labels={ig:'Instagram',yt:'YouTube',substack:'Substack',tiktok:'TikTok'};
-      return '<div style="display:flex;align-items:center;gap:.5rem;padding:.35rem 0;border-bottom:1px solid var(--ch4)">' +
-        '<div style="font-family:var(--fm);font-size:.5rem;letter-spacing:1px;color:var(--wg);min-width:70px">'+labels[k]+'</div>' +
-        '<input style="border:none;outline:none;font-size:.78rem;color:var(--st);background:transparent;flex:1" value="'+socialCadence[k]+'" onblur="updateSocialCadence(\''+k+'\',this.value)">' +
-        '</div>';
-    }).join('') +
-    '</div>' +
-    '</div>' +
-
-    // PLATFORM STRATEGY
-    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">Platform Strategy</div>' +
-    '<div style="display:flex;flex-direction:column;gap:.65rem;margin-bottom:1.25rem">' +
-    platforms.map(function(k){
-      var tips={ig:'Visual platform. Aesthetic consistency. Reels get reach. Carousels get saves. Stories get intimacy. Link in bio drives everything else.',yt:'Long-form essay videos. 8-15 minutes. SEO matters here — title and description. Each video is a Library of Morenita article brought to life.',substack:'Your most loyal audience. Write like you talk. One exclusive paragraph per post that is not in the app or on IG. Build the list before you need it.'};
-      return '<div class="card" style="border-left:3px solid '+statColors[k]+';padding:.85rem">' +
-        '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:2px;color:'+statColors[k]+';text-transform:uppercase;margin-bottom:.4rem">'+platformLabels[k]+'</div>' +
-        '<div style="font-family:var(--fm);font-size:.55rem;color:var(--wg);margin-bottom:.45rem;line-height:1.6">'+tips[k]+'</div>' +
-        '<textarea class="social-strategy" data-key="'+k+'" placeholder="Your specific strategy notes for '+platformLabels[k]+'..." style="width:100%;min-height:65px;border:1.5px dashed var(--du);border-radius:3px;padding:.5rem .65rem;font-family:var(--fb);font-size:.75rem;color:var(--st);line-height:1.7;resize:vertical;outline:none;background:var(--ch5)">'+( socialStrategy[k]||'')+'</textarea>' +
-        '</div>';
-    }).join('') +
-    '</div>' +
-
-    // VIDEO PRODUCTION PIPELINE
-    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">YouTube Video Pipeline</div>' +
-    '<div style="display:flex;flex-direction:column;gap:.45rem;margin-bottom:1.25rem" id="video-pipeline">' +
-    socialVideos.map(function(v,i){
-      var sc={planned:'var(--du)',filming:'var(--ch2)',editing:'var(--lv2)',published:'var(--sg2)'};
-      return '<div class="card" style="padding:.75rem;border-left:3px solid '+(sc[v.status]||'var(--du)')+'">' +
-        '<div style="display:flex;align-items:center;gap:.65rem;flex-wrap:wrap">' +
-        '<div style="font-family:var(--fm);font-size:.5rem;color:var(--wg);min-width:18px">'+(i+1)+'</div>' +
-        '<div style="flex:1;font-size:.82rem;font-weight:600;color:var(--ink)">'+v.title+'</div>' +
-        '<select onchange="updateVideoStatus('+v.id+',this.value)" style="font-family:var(--fm);font-size:.55rem;border:1px solid var(--du);border-radius:3px;padding:.2rem .45rem;background:var(--wh);color:'+(sc[v.status]||'var(--du)')+';outline:none">' +
-        ['planned','filming','editing','published'].map(function(s){return '<option value="'+s+'" '+(v.status===s?'selected':'')+'>'+s.charAt(0).toUpperCase()+s.slice(1)+'</option>';}).join('') +
-        '</select>' +
-        '</div>' +
-        '<div style="font-size:.72rem;color:var(--wg);margin-top:.25rem;padding-left:1.35rem">'+v.notes+'</div>' +
-        '</div>';
-    }).join('') +
-    '</div>' +
-
-    // CROSS-POST SYSTEM
-    '<div class="card" style="margin-bottom:1.25rem;border-top:3px solid var(--tz3)">' +
-    '<div class="cl">Cross-Post System</div>' +
-    '<div style="display:grid;grid-template-columns:1fr auto auto auto auto;gap:.5rem;align-items:center;font-family:var(--fm);font-size:.5rem;color:var(--wg);text-transform:uppercase;padding:.35rem 0;border-bottom:2px solid var(--ch4);margin-bottom:.35rem">' +
-    '<div>Content</div><div>Library</div><div>Substack</div><div>YouTube</div><div>IG Reel</div>' +
-    '</div>' +
-    [
-      {title:'Why I Entered a Pageant',lib:true,sub:true,yt:true,ig:true},
-      {title:'SB 707 Explained',lib:true,sub:true,yt:true,ig:true},
-      {title:'Keel Labs & Algae',lib:true,sub:true,yt:true,ig:false},
-      {title:'Supply Chain Story',lib:true,sub:true,yt:true,ig:true},
-      {title:'Cello & Engineering',lib:true,sub:true,yt:true,ig:true},
-      {title:'SD Clean Fashion Capital',lib:true,sub:true,yt:true,ig:false},
-    ].map(function(r){
-      return '<div style="display:grid;grid-template-columns:1fr auto auto auto auto;gap:.5rem;align-items:center;padding:.3rem 0;border-bottom:1px solid var(--ch4)">' +
-        '<div style="font-size:.75rem;color:var(--st)">'+r.title+'</div>' +
-        '<div style="text-align:center">'+(r.lib?'✓':'—')+'</div>' +
-        '<div style="text-align:center">'+(r.sub?'✓':'—')+'</div>' +
-        '<div style="text-align:center">'+(r.yt?'✓':'—')+'</div>' +
-        '<div style="text-align:center">'+(r.ig?'✓':'—')+'</div>' +
-        '</div>';
-    }).join('') +
-    '</div>' +
-
-    // FILMING TIPS
-    '<div class="card" style="margin-bottom:1.5rem;background:var(--tz);border-radius:3px">' +
-    '<div style="font-family:var(--fm);font-size:.5rem;letter-spacing:3px;color:rgba(240,216,152,.3);text-transform:uppercase;margin-bottom:.65rem">iPhone Filming Setup</div>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.85rem">' +
-    [
-      {label:'Settings',text:'4K 24fps. Lock exposure before recording. ProRes if your phone supports it.'},
-      {label:'Audio',text:'Bluetooth mic always on. Test before every shoot. Audio makes or breaks it.'},
-      {label:'Locations',text:'Ocean for materials/sustainability. Desk for policy. Walking for personal essays.'},
-      {label:'Aesthetic',text:'Natural light only. Golden hour or overcast. Tanzanite + champagne wardrobe tones.'},
-    ].map(function(t){
-      return '<div><div style="font-family:var(--fm);font-size:.48rem;letter-spacing:2px;color:rgba(240,216,152,.4);text-transform:uppercase;margin-bottom:.2rem">'+t.label+'</div>' +
-        '<div style="font-size:.75rem;color:rgba(216,212,236,.7);line-height:1.6">'+t.text+'</div></div>';
-    }).join('') +
-    '</div></div>' +
-
-    // BRAND ASSETS
-    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">Brand Assets</div>' +
-    '<div class="g2" style="margin-bottom:1.5rem">' +
-    Object.entries(DA).map(function(entry){
-      var k=entry[0],a=entry[1];
-      return '<div class="card" style="padding:.85rem">' +
-        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem">' +
-        '<div style="font-family:var(--fm);font-size:.5rem;letter-spacing:2px;color:var(--wg);text-transform:uppercase">'+a.title+'</div>' +
-        '<button class="btn bg" style="font-size:.52rem;padding:.18rem .5rem" onclick="copyAsset(\'sba-'+k+'\',this)">Copy</button>' +
-        '</div>' +
-        '<textarea class="ba-ta" id="sba-'+k+'" oninput="S.brand[\''+k+'\']=this.value" style="min-height:55px;font-size:.75rem">'+(S.brand[k]||a.text)+'</textarea>' +
-        '</div>';
-    }).join('') +
-    '<div class="card" style="padding:.85rem;grid-column:1/-1">' +
-    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem">' +
-    '<div style="font-family:var(--fm);font-size:.5rem;letter-spacing:2px;color:var(--wg);text-transform:uppercase">Voice Principles</div>' +
-    '<button class="btn bg" style="font-size:.52rem;padding:.18rem .5rem" onclick="copyAsset(\'sba-voice\',this)">Copy</button>' +
-    '</div>' +
-    '<textarea class="ba-ta" id="sba-voice" oninput="S.brand[\'voice\']=this.value" style="min-height:45px;font-size:.75rem">'+(S.brand.voice||'Name the number. Name the bill. State, do not apologize. Curious, never preachy. Not for a crown, but for a microphone.')+'</textarea>' +
-    '</div>' +
-    '</div>' +
-
-    '</div>' // close pb
-  );
-
-  // Wire up strategy textareas
-  document.querySelectorAll('.social-strategy').forEach(function(el){
-    el.addEventListener('blur',function(){
-      var sd2=lsGet('chq-social',{strategy:{}});
-      if(!sd2.strategy)sd2.strategy={};
-      sd2.strategy[el.dataset.key]=el.value;
-      lsSave('chq-social',sd2);
-    });
-  });
-}
-
-function updateSocialMetric(key,val){
-  var sd=lsGet('chq-social',{metrics:{}});
-  if(!sd.metrics)sd.metrics={};
-  sd.metrics[key]=val;
-  lsSave('chq-social',sd);
-}
-
-function updateSocialCadence(key,val){
-  var sd=lsGet('chq-social',{cadence:{}});
-  if(!sd.cadence)sd.cadence={};
-  sd.cadence[key]=val;
-  lsSave('chq-social',sd);
-}
-
-function updateVideoStatus(id,status){
-  var sd=lsGet('chq-social',{videos:[]});
-  if(!sd.videos)return;
-  var v=sd.videos.find(function(x){return x.id===id;});
-  if(v){v.status=status;lsSave('chq-social',sd);}
-}
-
-function saveSocial(){
-  var sd=lsGet('chq-social',{strategy:{}});
-  document.querySelectorAll('.social-strategy').forEach(function(el){
-    if(!sd.strategy)sd.strategy={};
-    sd.strategy[el.dataset.key]=el.value;
-  });
-  lsSave('chq-social',sd);
-  showToast('Social strategy saved');
-}
-
-
-
-// ═══ MORNING BRIEF HELPERS ═══════════════════════════════════
-function getMorningGreeting(){
-  var h=new Date().getHours();
-  var days=Math.ceil((new Date('2026-07-10')-new Date())/(1000*60*60*24));
-  if(h<12) return 'Good morning, Amelia. '+days+' days to crown.';
-  if(h<17) return 'Good afternoon, Amelia. '+days+' days to crown.';
-  return 'Good evening, Amelia. '+days+' days to crown.';
-}
-
-function getBriefAlerts(){
-  var alerts=[];
-  var today=new Date().toISOString().split('T')[0];
-
-  // Overdue todos
-  var myTodos=(S.todos&&S.todos.amelia)||[];
-  var overdue=myTodos.filter(function(t){return !t.done;}).length;
-  if(overdue>0) alerts.push('<div style="background:rgba(155,142,216,.15);border:1px solid rgba(155,142,216,.25);border-radius:3px;padding:.25rem .65rem;font-family:var(--fm);font-size:.52rem;color:var(--ch)">'+overdue+' tasks open</div>');
-
-  // Today events
-  var todayEvs=(Array.isArray(S.calEvents)?S.calEvents:[]).filter(function(e){return e.date===today;});
-  if(todayEvs.length>0) alerts.push('<div style="background:rgba(200,168,76,.12);border:1px solid rgba(200,168,76,.2);border-radius:3px;padding:.25rem .65rem;font-family:var(--fm);font-size:.52rem;color:var(--ch)">'+todayEvs.length+' event'+(todayEvs.length>1?'s':'')+' today</div>');
-
-  // Unread inbox
-  var inbox=lsGet('chq-inbox',[]);
-  var unread=inbox.filter(function(m){return !m.readBy||m.readBy.indexOf('amelia')<0;});
-  if(unread.length>0) alerts.push('<div style="background:rgba(136,120,184,.15);border:1px solid rgba(136,120,184,.25);border-radius:3px;padding:.25rem .65rem;font-family:var(--fm);font-size:.52rem;color:var(--ch)" onclick="showPanel(\'inbox\')" style="cursor:pointer">'+unread.length+' new in inbox</div>');
-
-  // Competition countdown urgency
-  var days=Math.ceil((new Date('2026-07-10')-new Date())/(1000*60*60*24));
-  if(days<=30) alerts.push('<div style="background:rgba(212,132,122,.2);border:1px solid rgba(212,132,122,.3);border-radius:3px;padding:.25rem .65rem;font-family:var(--fm);font-size:.52rem;color:var(--ch);animation:pulse 2s infinite">'+days+' days left</div>');
-
-  return alerts.join('');
-}
-
-// ═══ SEARCH ══════════════════════════════════════════════════
-function toggleSearch(){
-  var ov=document.getElementById('search-overlay');
-  if(!ov)return;
-  var isOpen=ov.style.display==='flex';
-  ov.style.display=isOpen?'none':'flex';
-  if(!isOpen){
-    var inp=document.getElementById('search-input');
-    if(inp){inp.value='';inp.focus();}
-    document.getElementById('search-results').innerHTML='';
-  }
-}
-
-function runSearch(q){
-  q=q.toLowerCase().trim();
-  var res=document.getElementById('search-results');
-  if(!res)return;
-  if(!q){res.innerHTML='';return;}
-
-  var results=[];
-
-  // Sponsors
-  S.sponsors.forEach(function(s){
-    if(s.name.toLowerCase().indexOf(q)>=0||( s.notes&&s.notes.toLowerCase().indexOf(q)>=0)){
-      results.push({type:'Sponsor',icon:'💰',title:s.name,sub:s.status+' · '+s.ask,action:"window._spTab='tracker';showPanel('sponsors');toggleSearch()"});
-    }
-  });
-
-  // Library
-  S.posts.forEach(function(p){
-    if(p.title.toLowerCase().indexOf(q)>=0||(p.tag&&p.tag.toLowerCase().indexOf(q)>=0)){
-      results.push({type:'Article',icon:'📚',title:p.title,sub:p.tag+' · '+p.status,action:(S.role==='amelia'?"editPost("+p.id+")":"showPanel('lookbook')")+";toggleSearch()"});
-    }
-  });
-
-  // Calendar
-  S.calEvents.forEach(function(e){
-    if(e.title.toLowerCase().indexOf(q)>=0||(e.who&&e.who.toLowerCase().indexOf(q)>=0)){
-      results.push({type:'Event',icon:'📅',title:e.title,sub:e.date+(e.who?' · '+e.who:''),action:"showPanel('calendar');toggleSearch()"});
-    }
-  });
-
-  // Board cards
-  var bd=lsGet('chq-board',{columns:[]});
-  (bd.columns||[]).forEach(function(col){
-    (col.cards||[]).forEach(function(card){
-      if(card.title.toLowerCase().indexOf(q)>=0||(card.body&&card.body.toLowerCase().indexOf(q)>=0)){
-        results.push({type:'Board',icon:'🗂',title:card.title,sub:col.title+(card.who?' · '+card.who:''),action:"showPanel('board');toggleSearch()"});
-      }
-    });
-  });
-
-  // Inbox
-  var inbox=lsGet('chq-inbox',[]);
-  inbox.forEach(function(m){
-    if(m.text.toLowerCase().indexOf(q)>=0){
-      results.push({type:'Inbox',icon:'📬',title:m.text.substring(0,60)+(m.text.length>60?'...':''),sub:m.from+' · '+m.time,action:"showPanel('inbox');toggleSearch()"});
-    }
-  });
-
-  if(!results.length){
-    res.innerHTML='<div style="font-family:var(--fd);font-style:italic;font-size:.9rem;color:rgba(216,212,236,.4);text-align:center;padding:2rem">Nothing found for "'+q+'"</div>';
-    return;
-  }
-
-  res.innerHTML=results.slice(0,12).map(function(r){
-    return '<div onclick="'+r.action+'" style="display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;background:rgba(255,255,255,.05);border-radius:3px;cursor:pointer;border:1px solid rgba(216,212,236,.08);transition:background .15s" onmouseover="this.style.background=\'rgba(255,255,255,.1)\'" onmouseout="this.style.background=\'rgba(255,255,255,.05)\'">' +
-      '<div style="font-size:1.1rem">'+r.icon+'</div>' +
-      '<div style="flex:1"><div style="font-size:.82rem;font-weight:600;color:var(--ch)">'+r.title+'</div><div style="font-family:var(--fm);font-size:.52rem;color:rgba(216,212,236,.4);margin-top:.1rem">'+r.type+' · '+r.sub+'</div></div>' +
-      '<div style="font-family:var(--fm);font-size:.5rem;color:rgba(216,212,236,.3)">↵</div>' +
-      '</div>';
-  }).join('');
-}
-
-// Close search on ESC
-document.addEventListener('keydown',function(e){
-  if(e.key==='Escape'){
-    var so=document.getElementById('search-overlay');
-    var qo=document.getElementById('qc-overlay');
-    if(so&&so.style.display==='flex') toggleSearch();
-    if(qo&&qo.style.display==='flex') toggleQC();
-  }
-});
-
-// ═══ QUICK CAPTURE ════════════════════════════════════════════
-function toggleQC(){
-  var ov=document.getElementById('qc-overlay');
-  if(!ov)return;
-  var isOpen=ov.style.display==='flex';
-  ov.style.display=isOpen?'none':'flex';
-  if(!isOpen){
-    var ta=document.getElementById('qc-text');
-    if(ta){ta.value='';ta.focus();}
-  }
-}
-
-function submitQC(){
-  var ta=document.getElementById('qc-text');
-  var dest=document.getElementById('qc-dest');
-  if(!ta||!ta.value.trim())return;
-  var text=ta.value.trim();
-  var destination=dest?dest.value:'inbox';
-
-  if(destination==='inbox'){
-    var inbox=lsGet('chq-inbox',[]);
-    inbox.push({id:Date.now(),from:S.role,text:text,time:new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}),date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}),readBy:[S.role],tag:'',link:''});
-    lsSave('chq-inbox',inbox);
-  } else if(destination==='todo'){
-    if(!S.todos[S.role])S.todos[S.role]=[];
-    S.todos[S.role].push({id:Date.now(),text:text,done:false});
-    lsSave('chq-td',S.todos);
-  } else if(destination.indexOf('board-')===0){
-    var colId=destination.replace('board-','');
-    var bd=lsGet('chq-board',{columns:[]});
-    var col=bd.columns.find(function(c){return c.id===colId;});
-    if(col){col.cards.push({id:Date.now(),title:text,body:'',tag:'',due:'',who:S.role==='amelia'?'Amelia':'Laneea'});}
-    lsSave('chq-board',bd);
-  }
-
-  showToast('Captured!');
-  toggleQC();
-}
-
-// ═══ SHARED INBOX ═════════════════════════════════════════════
-function bInbox(){
-  var inbox=lsGet('chq-inbox',[]);
-  var tagColors={link:'var(--tz3)',idea:'var(--ch2)',sponsor:'var(--sg2)',urgent:'var(--bl2)',fyi:'var(--wg)'};
-
-  inject(
-    '<div class="ph"><div><div class="ph-tag">Amelia & Laneea</div><div class="ph-title"><em>Shared Inbox</em></div></div>' +
-    '<div class="ph-acts">' +
-    '<button class="btn bp" onclick="toggleQC()">+ Drop Something</button>' +
-    '</div></div>' +
-    '<div class="pb">' +
-
-    // COMPOSE
-    '<div class="card" style="margin-bottom:.85rem">' +
-    '<div style="display:flex;gap:.5rem;align-items:flex-start">' +
-    '<div class="tb-av" style="background:var(--ch);color:var(--ink);flex-shrink:0;margin-top:.15rem">'+( S.role==='amelia'?'AA':'LL')+'</div>' +
-    '<div style="flex:1">' +
-    '<textarea id="inbox-compose" placeholder="Drop a link, idea, update, or question for the team..." style="width:100%;min-height:70px;border:1.5px solid var(--du);border-radius:3px;padding:.55rem .75rem;font-family:var(--fb);font-size:.82rem;color:var(--ink);line-height:1.7;resize:none;outline:none;background:var(--ch6)"></textarea>' +
-    '<div style="display:flex;gap:.35rem;margin-top:.35rem;flex-wrap:wrap">' +
-    ['link','idea','sponsor','urgent','fyi'].map(function(t){
-      return '<button class="inbox-tag-btn" data-tag="'+t+'" onclick="toggleInboxTag(this)" style="font-family:var(--fm);font-size:.48rem;letter-spacing:1px;padding:.15rem .5rem;border-radius:3px;border:1px solid var(--du);background:transparent;color:var(--wg);cursor:pointer;text-transform:uppercase">'+t+'</button>';
-    }).join('') +
-    '<button onclick="sendInbox()" style="margin-left:auto;background:var(--tz);color:var(--ch);border:none;border-radius:3px;padding:.3rem .9rem;font-family:var(--fb);font-size:.67rem;font-weight:600;cursor:pointer">Send</button>' +
-    '</div>' +
-    '</div>' +
-    '</div>' +
-    '</div>' +
-
-    // FEED
-    '<div style="display:flex;flex-direction:column;gap:.5rem" id="inbox-feed">' +
-    (inbox.length?
-    inbox.slice().reverse().map(function(m){
-      var isMe=m.from===S.role;
-      var isUnread=!m.readBy||m.readBy.indexOf(S.role)<0;
-      return '<div id="inm-'+m.id+'" style="background:var(--wh);border-radius:3px;padding:.85rem 1rem;border-left:3px solid '+(isMe?'var(--tz3)':'var(--ch3)')+';box-shadow:0 1px 6px rgba(46,37,96,.06);'+(isUnread?'border-right:3px solid var(--tz4)':'') +'">' +
-        '<div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem">' +
-        '<div class="tb-av" style="background:'+(isMe?'var(--ch)':'var(--lv)')+';color:var(--ink);width:20px;height:20px;font-size:.48rem">'+(m.from==='amelia'?'AA':'LL')+'</div>' +
-        '<div style="font-size:.75rem;font-weight:600;color:var(--ink)">'+(m.from==='amelia'?'Amelia':'Laneea')+'</div>' +
-        (m.tag?'<span style="font-family:var(--fm);font-size:.44rem;letter-spacing:1px;text-transform:uppercase;color:'+(tagColors[m.tag]||'var(--wg)')+';background:'+(tagColors[m.tag]||'var(--wg)')+'22;padding:.1rem .35rem;border-radius:3px">'+m.tag+'</span>':'') +
-        '<div style="margin-left:auto;font-family:var(--fm);font-size:.5rem;color:var(--wg)">'+m.date+' '+m.time+'</div>' +
-        '</div>' +
-        '<div style="font-size:.82rem;color:var(--st);line-height:1.65;word-break:break-word">'+linkify(m.text)+'</div>' +
-        (!isMe?'<button onclick="markInboxRead('+m.id+')" style="margin-top:.4rem;background:none;border:none;font-family:var(--fm);font-size:.48rem;color:var(--wg);cursor:pointer;letter-spacing:1px;text-transform:uppercase">Mark read</button>':'') +
-        '</div>';
-    }).join(''):
-    '<div style="text-align:center;padding:3rem;font-family:var(--fd);font-style:italic;color:var(--wg)">The inbox is empty — drop something in to get started</div>'
-    ) +
-    '</div>' +
-    '</div>'
-  );
-
-  // Mark all as read on open
-  var inbox2=lsGet('chq-inbox',[]);
-  inbox2.forEach(function(m){
-    if(!m.readBy)m.readBy=[];
-    if(m.readBy.indexOf(S.role)<0)m.readBy.push(S.role);
-  });
-  lsSave('chq-inbox',inbox2);
-}
-
-function linkify(text){
-  return text.replace(/(https?:\/\/[^\s]+)/g,'<a href="$1" target="_blank" style="color:var(--tz3);text-decoration:underline">$1</a>');
-}
-
-var _inboxTag='';
-function toggleInboxTag(btn){
-  var tag=btn.dataset.tag;
-  document.querySelectorAll('.inbox-tag-btn').forEach(function(b){
-    b.style.background='transparent';b.style.color='var(--wg)';b.style.borderColor='var(--du)';
-  });
-  if(_inboxTag===tag){_inboxTag='';return;}
-  _inboxTag=tag;
-  btn.style.background=btn.style.background||'var(--tz3)';
-  btn.style.color='var(--tz)';
-  btn.style.borderColor='var(--tz3)';
-}
-
-function sendInbox(){
-  var ta=document.getElementById('inbox-compose');
-  if(!ta||!ta.value.trim())return;
-  var inbox=lsGet('chq-inbox',[]);
-  var msg={id:Date.now(),from:S.role,text:ta.value.trim(),time:new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}),date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}),readBy:[S.role],tag:_inboxTag};
-  inbox.push(msg);
-  lsSave('chq-inbox',inbox);
-  _inboxTag='';
-  ta.value='';
-  bInbox();
-}
-
-function markInboxRead(id){
-  var inbox=lsGet('chq-inbox',[]);
-  var m=inbox.find(function(x){return x.id===id;});
-  if(m){if(!m.readBy)m.readBy=[];if(m.readBy.indexOf(S.role)<0)m.readBy.push(S.role);}
-  lsSave('chq-inbox',inbox);
-  var el=document.getElementById('inm-'+id);
-  if(el)el.style.borderRight='none';
-}
-
-
-
-// ═══ PEACE PAGE ══════════════════════════════════════════════
-var _medTimer=null;
-var _medSecs=0;
-var _medRunning=false;
-var _breathPhase=0;
-var _breathTimer=null;
-
-var _quotes=[
-  {text:'Out beyond ideas of wrongdoing and rightdoing, there is a field. I will meet you there.',author:'Rumi'},
-  {text:'You are not a drop in the ocean. You are the entire ocean in a drop.',author:'Rumi'},
-  {text:'The wound is the place where the light enters you.',author:'Rumi'},
-  {text:'I am deliberate and afraid of nothing.',author:'Audre Lorde'},
-  {text:'When I dare to be powerful, to use my strength in the service of my vision, then it becomes less and less important whether I am afraid.',author:'Audre Lorde'},
-  {text:'You are enough. You have always been enough.',author:'Unknown'},
-  {text:'She remembered who she was and the game changed.',author:'Lalah Delia'},
-  {text:'The most courageous act is still to think for yourself. Aloud.',author:'Coco Chanel'},
-  {text:'I am not afraid of storms, for I am learning how to sail my ship.',author:'Louisa May Alcott'},
-  {text:'You carry so much love in your heart. Give some to yourself.',author:'Unknown'},
-];
-
-function bPeace(){
-  var defaults={
-    gratitude:{},
-    journal:{},
-    sleep:{},
-    quitDate:'',
-    copy:{
-      gratitudeTitle:'Three Things',
-      gratitudePrompt:'Name three things that softened, strengthened, or surprised you today.',
-      gratitudePlaceholder:'I am grateful for...',
-      journalTitle:'Journal',
-      journalPrompt:'Let the page hold what your body is still trying to say.',
-      journalPlaceholder:'This space is yours. No one else reads this.',
-      windDownTitle:'Wind Down',
-      windDownPrompt:'Build a softer landing into sleep.',
-      windDownItems:[
-        'No screens 30 min before bed',
-        'Magnesium supplement',
-        'Light stretch or legs up the wall',
-        'Room cool and dark',
-        'Set tomorrow intention'
-      ]
-    }
-  };
-  var saved=lsGet('chq-peace',null)||{};
-  var pd={
-    gratitude:saved.gratitude&&typeof saved.gratitude==='object'?saved.gratitude:{},
-    journal:saved.journal&&typeof saved.journal==='object'?saved.journal:{},
-    sleep:saved.sleep&&typeof saved.sleep==='object'?saved.sleep:{},
-    quitDate:saved.quitDate||'',
-    copy:Object.assign({},defaults.copy,saved.copy&&typeof saved.copy==='object'?saved.copy:{})
-  };
-  if(!Array.isArray(pd.copy.windDownItems))pd.copy.windDownItems=defaults.copy.windDownItems.slice();
-  pd.copy.windDownItems=defaults.copy.windDownItems.map(function(item,idx){
-    return pd.copy.windDownItems[idx]||item;
-  });
-  lsWriteLocal('chq-peace',pd);
-
-  var today=new Date().toISOString().split('T')[0];
-  var todayGrat=Array.isArray(pd.gratitude&&pd.gratitude[today])?pd.gratitude[today]:['','',''];
-  var todayJournal=pd.journal&&pd.journal[today]||'';
-  var todaySleep=pd.sleep&&typeof pd.sleep[today]==='object'&&pd.sleep[today]?pd.sleep[today]:{};
-  var quoteIdx=new Date().getDate()%_quotes.length;
-  var quote=_quotes[quoteIdx];
-
-  // Days clean
-  var daysClean=0;
-  var fd=lsGet('chq-fitness',{});
-  if(fd.quit&&fd.quit.startDate){
-    daysClean=Math.floor((new Date()-new Date(fd.quit.startDate))/(1000*60*60*24));
-  }
-
-  inject(
-    '<div style="background:var(--tz);min-height:100%;padding:1.5rem 1.75rem;display:flex;flex-direction:column;gap:1.25rem">' +
-
-    // QUOTE
-    '<div style="background:rgba(255,255,255,.04);border-radius:3px;padding:1.5rem;border-left:3px solid rgba(240,216,152,.3);text-align:center">' +
-    '<div style="font-family:var(--fd);font-size:1.15rem;font-style:italic;color:var(--ch);line-height:1.75;margin-bottom:.65rem">'+quote.text+'</div>' +
-    '<div style="font-family:var(--fm);font-size:.5rem;letter-spacing:3px;color:rgba(240,216,152,.3);text-transform:uppercase">— '+quote.author+'</div>' +
-    '</div>' +
-
-    // CLARITY TRACKER
-    '<div style="background:rgba(255,255,255,.04);border-radius:3px;padding:1.25rem;text-align:center">' +
-    '<div style="font-family:var(--fm);font-size:.48rem;letter-spacing:4px;color:rgba(240,216,152,.3);text-transform:uppercase;margin-bottom:.35rem">Clarity</div>' +
-    '<div style="font-family:var(--fd);font-size:3rem;font-style:italic;color:'+(daysClean>0?'var(--sg)':'rgba(240,216,152,.3)')+';line-height:1">'+daysClean+'</div>' +
-    '<div style="font-family:var(--fm);font-size:.52rem;color:rgba(240,216,152,.3);text-transform:uppercase;margin-bottom:.65rem">days of clarity</div>' +
-    '<div style="font-size:.78rem;color:rgba(216,212,236,.5);font-style:italic;line-height:1.5">The waist you want is on the other side of this number growing.</div>' +
-    '</div>' +
-
-    // MEDITATION TIMER
-    '<div style="background:rgba(255,255,255,.04);border-radius:3px;padding:1.25rem">' +
-    '<div style="font-family:var(--fm);font-size:.48rem;letter-spacing:4px;color:rgba(240,216,152,.3);text-transform:uppercase;margin-bottom:.85rem;text-align:center">Meditation</div>' +
-    '<div style="display:flex;gap:.5rem;justify-content:center;margin-bottom:.85rem">' +
-    [5,10,20].map(function(m){
-      return '<button onclick="startMed('+m+')" style="background:rgba(255,255,255,.06);border:1px solid rgba(216,212,236,.15);border-radius:3px;padding:.45rem .9rem;font-family:var(--fm);font-size:.6rem;color:rgba(216,212,236,.6);cursor:pointer;letter-spacing:2px;text-transform:uppercase">'+m+' min</button>';
-    }).join('') +
-    '</div>' +
-    '<div id="med-display" style="text-align:center">' +
-    '<div id="med-circle" style="width:100px;height:100px;border-radius:50%;border:2px solid rgba(240,216,152,.2);margin:0 auto .85rem;display:flex;align-items:center;justify-content:center;transition:all 1s">' +
-    '<div id="med-time" style="font-family:var(--fd);font-size:1.5rem;font-style:italic;color:rgba(240,216,152,.6)">—</div>' +
-    '</div>' +
-    '<button id="med-btn" onclick="toggleMed()" style="background:transparent;border:1px solid rgba(216,212,236,.2);border-radius:3px;padding:.35rem .85rem;font-family:var(--fm);font-size:.55rem;color:rgba(216,212,236,.4);cursor:pointer;letter-spacing:2px;text-transform:uppercase">Start</button>' +
-    '</div>' +
-    '</div>' +
-
-    // BOX BREATHING
-    '<div style="background:rgba(255,255,255,.04);border-radius:3px;padding:1.25rem">' +
-    '<div style="font-family:var(--fm);font-size:.48rem;letter-spacing:4px;color:rgba(240,216,152,.3);text-transform:uppercase;margin-bottom:.65rem;text-align:center">Box Breathing — 4 counts each</div>' +
-    '<div style="display:flex;align-items:center;justify-content:center;gap:1.5rem;flex-wrap:wrap">' +
-    '<div id="breath-circle" style="width:120px;height:120px;border-radius:50%;border:2px solid rgba(200,192,232,.3);display:flex;align-items:center;justify-content:center;transition:all 4s;flex-shrink:0">' +
-    '<div id="breath-label" style="font-family:var(--fd);font-size:.95rem;font-style:italic;color:rgba(216,212,236,.5);text-align:center">Breathe</div>' +
-    '</div>' +
-    '<div style="display:flex;flex-direction:column;gap:.35rem">' +
-    ['Inhale — 4 counts','Hold — 4 counts','Exhale — 4 counts','Hold — 4 counts'].map(function(s,i){
-      return '<div style="font-family:var(--fm);font-size:.52rem;color:rgba(216,212,236,.3);letter-spacing:1px">'+s+'</div>';
-    }).join('') +
-    '</div>' +
-    '</div>' +
-    '<div style="text-align:center;margin-top:.65rem">' +
-    '<button onclick="startBreath()" id="breath-btn" style="background:transparent;border:1px solid rgba(216,212,236,.2);border-radius:3px;padding:.35rem .85rem;font-family:var(--fm);font-size:.55rem;color:rgba(216,212,236,.4);cursor:pointer;letter-spacing:2px;text-transform:uppercase">Begin</button>' +
-    '</div>' +
-    '</div>' +
-
-    // GRATITUDE
-    '<div style="background:linear-gradient(180deg,rgba(133,101,184,.2),rgba(82,56,128,.18));border:1px solid rgba(180,154,230,.16);border-radius:3px;padding:1.25rem;box-shadow:inset 0 0 0 1px rgba(255,255,255,.02)">' +
-    '<div style="font-family:var(--fm);font-size:.48rem;letter-spacing:4px;color:rgba(222,202,255,.6);text-transform:uppercase;margin-bottom:.3rem"><span data-e="peace:copy:gratitudeTitle">'+pd.copy.gratitudeTitle+'</span> — '+new Date().toLocaleDateString('en-US',{month:'long',day:'numeric'})+'</div>' +
-    '<div style="font-size:.75rem;color:rgba(229,220,248,.68);font-style:italic;line-height:1.7;margin-bottom:.7rem" data-e="peace:copy:gratitudePrompt">'+pd.copy.gratitudePrompt+'</div>' +
-    [0,1,2].map(function(i){
-      return '<div style="display:flex;gap:.5rem;align-items:flex-start;margin-bottom:.45rem">' +
-        '<div style="font-family:var(--fd);font-size:1.1rem;font-style:italic;color:rgba(222,202,255,.58);flex-shrink:0;margin-top:2px">'+(i+1)+'.</div>' +
-        '<input id="grat-'+i+'" value="'+( todayGrat[i]||'')+'" placeholder="'+pd.copy.gratitudePlaceholder.replace(/"/g,'&quot;')+'" style="background:transparent;border:none;border-bottom:1px solid rgba(208,188,244,.18);outline:none;font-family:var(--fd);font-size:.9rem;font-style:italic;color:rgba(244,239,255,.9);width:100%;padding:.25rem 0" onblur="saveGratitude('+i+',this.value)">' +
-        '</div>';
-    }).join('') +
-    '<div style="margin-top:.35rem;font-size:.68rem;color:rgba(202,183,234,.55)" data-e="peace:copy:gratitudePlaceholder">'+pd.copy.gratitudePlaceholder+'</div>' +
-    '</div>' +
-
-    // JOURNAL
-    '<div style="background:linear-gradient(180deg,rgba(120,86,180,.24),rgba(70,42,112,.2));border:1px solid rgba(180,154,230,.16);border-radius:3px;padding:1.25rem;box-shadow:inset 0 0 0 1px rgba(255,255,255,.02)">' +
-    '<div style="font-family:var(--fm);font-size:.48rem;letter-spacing:4px;color:rgba(222,202,255,.6);text-transform:uppercase;margin-bottom:.3rem" data-e="peace:copy:journalTitle">'+pd.copy.journalTitle+'</div>' +
-    '<div style="font-size:.75rem;color:rgba(229,220,248,.68);font-style:italic;line-height:1.7;margin-bottom:.7rem" data-e="peace:copy:journalPrompt">'+pd.copy.journalPrompt+'</div>' +
-    '<textarea id="peace-journal" placeholder="'+pd.copy.journalPlaceholder.replace(/"/g,'&quot;')+'" style="width:100%;min-height:150px;background:rgba(255,255,255,.02);border:1px solid rgba(208,188,244,.12);outline:none;font-family:var(--fd);font-size:.9rem;font-style:italic;color:rgba(244,239,255,.82);line-height:1.85;resize:none;padding:.7rem .8rem;border-radius:3px" onblur="saveJournal(this.value)">'+todayJournal+'</textarea>' +
-    '<div style="margin-top:.45rem;font-size:.68rem;color:rgba(202,183,234,.55)" data-e="peace:copy:journalPlaceholder">'+pd.copy.journalPlaceholder+'</div>' +
-    '</div>' +
-
-    // SLEEP CHECKLIST
-    '<div style="background:linear-gradient(180deg,rgba(108,78,162,.24),rgba(61,38,104,.22));border:1px solid rgba(180,154,230,.16);border-radius:3px;padding:1.25rem;box-shadow:inset 0 0 0 1px rgba(255,255,255,.02)">' +
-    '<div style="font-family:var(--fm);font-size:.48rem;letter-spacing:4px;color:rgba(222,202,255,.6);text-transform:uppercase;margin-bottom:.3rem" data-e="peace:copy:windDownTitle">'+pd.copy.windDownTitle+'</div>' +
-    '<div style="font-size:.75rem;color:rgba(229,220,248,.68);font-style:italic;line-height:1.7;margin-bottom:.7rem" data-e="peace:copy:windDownPrompt">'+pd.copy.windDownPrompt+'</div>' +
-    pd.copy.windDownItems.map(function(item,i){
-      var done=todaySleep[i];
-      return '<div onclick="toggleSleep('+i+')" style="display:flex;align-items:center;gap:.55rem;padding:.35rem 0;border-bottom:1px solid rgba(216,212,236,.07);cursor:pointer">' +
-        '<div style="width:15px;height:15px;border-radius:50%;border:1px solid rgba(216,212,236,'+(done?'.75':'.28')+');background:'+(done?'rgba(170,130,236,.34)':'transparent')+';flex-shrink:0"></div>' +
-        '<div style="font-size:.78rem;color:rgba(236,228,250,'+(done?'.84':'.54')+')" data-e="peace:wind:'+i+':label">'+item+'</div>' +
-        '</div>';
-    }).join('') +
-    '</div>' +
-
-    '</div>'
-  );
-}
-
-function startMed(mins){
-  _medSecs=mins*60;
-  _medRunning=false;
-  var el=document.getElementById('med-time');
-  if(el){var m=Math.floor(_medSecs/60),s=_medSecs%60;el.textContent=m+':'+(s<10?'0':'')+s;}
-  var btn=document.getElementById('med-btn');
-  if(btn)btn.textContent='Start';
-}
-
+function saveFitnessDay(key){var fd=lsGet('chq-fitness',{days:{}});if(!fd.days)fd.days={};if(!fd.days[key])fd.days[key]={done:false};fd.days[key].done=!fd.days[key].done;lsSave('chq-fitness',fd);rerenderKeepScroll(bBody);}
+function saveFitnessNutrition(key){var fd=lsGet('chq-fitness',{nutrition:{}});if(!fd.nutrition)fd.nutrition={};fd.nutrition[key]=!fd.nutrition[key];lsSave('chq-fitness',fd);rerenderKeepScroll(bBody);}
+function saveFitnessRitual(key,idx){var fd=lsGet('chq-fitness',{rituals:{}});if(!fd.rituals)fd.rituals={};if(!fd.rituals[key])fd.rituals[key]={};fd.rituals[key][idx]=!fd.rituals[key][idx];lsSave('chq-fitness',fd);rerenderKeepScroll(bBody);}
+function saveFitnessQuit(val){var fd=lsGet('chq-fitness',{quit:{}});if(!fd.quit)fd.quit={};fd.quit.startDate=val;lsSave('chq-fitness',fd);rerenderKeepScroll(bBody);}
+function saveFitnessLog(){showToast('Saved \u2713');}
+
+function saveGratitude(idx,val){var pd=lsGet('chq-peace',{gratitude:{}});var today=new Date().toISOString().split('T')[0];if(!pd.gratitude)pd.gratitude={};if(!pd.gratitude[today])pd.gratitude[today]=['','',''];pd.gratitude[today][idx]=val;lsSave('chq-peace',pd);}
+function saveJournal(val){var pd=lsGet('chq-peace',{journal:{}});var today=new Date().toISOString().split('T')[0];if(!pd.journal)pd.journal={};pd.journal[today]=val;lsSave('chq-peace',pd);}
+function toggleSleep(idx){var pd=lsGet('chq-peace',{sleep:{}});var today=new Date().toISOString().split('T')[0];if(!pd.sleep)pd.sleep={};if(!pd.sleep[today])pd.sleep[today]={};pd.sleep[today][idx]=!pd.sleep[today][idx];lsSave('chq-peace',pd);rerenderKeepScroll(bBody);}
+
+// Meditation timer
+function startMed(mins){_medTotal=mins*60;_medLeft=mins*60;_medRunning=false;toggleMed();}
 function toggleMed(){
-  if(_medSecs<=0)return;
   _medRunning=!_medRunning;
-  var btn=document.getElementById('med-btn');
-  if(btn)btn.textContent=_medRunning?'Pause':'Resume';
-  if(_medRunning){
-    _medTimer=setInterval(function(){
-      _medSecs--;
-      var el=document.getElementById('med-time');
-      if(el){var m=Math.floor(_medSecs/60),s=_medSecs%60;el.textContent=m+':'+(s<10?'0':'')+s;}
-      var circ=document.getElementById('med-circle');
-      if(circ){var pct=Math.sin(Date.now()/3000)*15;circ.style.transform='scale('+(1+pct/100)+')';}
-      if(_medSecs<=0){
-        clearInterval(_medTimer);_medRunning=false;
-        var el2=document.getElementById('med-time');if(el2)el2.textContent='✓';
-        var btn2=document.getElementById('med-btn');if(btn2)btn2.textContent='Done';
-        showToast('Session complete');
-      }
-    },1000);
-  } else {
-    clearInterval(_medTimer);
-  }
+  var btn=document.getElementById('med-btn');if(btn)btn.textContent=_medRunning?'Pause':'Resume';
+  if(!_medRunning){clearInterval(_medTimer);return;}
+  clearInterval(_medTimer);
+  _medTimer=setInterval(function(){
+    if(!_medRunning){clearInterval(_medTimer);return;}
+    _medLeft--;
+    var m=Math.floor(_medLeft/60),s=_medLeft%60;
+    var t=document.getElementById('med-time');if(t)t.textContent=m+':'+(s<10?'0':'')+s;
+    var c=document.getElementById('med-circle');
+    if(c){var pct=_medLeft/_medTotal;c.style.borderColor='rgba(139,74,47,'+(0.2+pct*0.6)+')';}
+    if(_medLeft<=0){clearInterval(_medTimer);_medRunning=false;var t2=document.getElementById('med-time');if(t2)t2.textContent='Done';showToast('Meditation complete \u2713');}
+  },1000);
 }
 
-var _breathPhases=['Inhale','Hold','Exhale','Hold'];
-var _breathIdx=0;
-var _breathCount=0;
-var _breathRunning=false;
-
+// Box breathing
 function startBreath(){
   _breathRunning=!_breathRunning;
   var btn=document.getElementById('breath-btn');
   if(btn)btn.textContent=_breathRunning?'Stop':'Begin';
-  if(!_breathRunning){clearInterval(_breathTimer);return;}
+  if(!_breathRunning){clearInterval(_breathTimer);var c=document.getElementById('breath-circle');if(c){c.style.transform='';c.style.borderColor='var(--iv3)';}return;}
   _breathIdx=0;_breathCount=0;
   runBreathPhase();
   _breathTimer=setInterval(function(){
@@ -4535,45 +3203,16 @@ function startBreath(){
     if(_breathCount>=4){_breathCount=0;_breathIdx=(_breathIdx+1)%4;runBreathPhase();}
   },1000);
 }
-
 function runBreathPhase(){
   var lbl=document.getElementById('breath-label');
   var circ=document.getElementById('breath-circle');
   if(!lbl||!circ)return;
   var phase=_breathPhases[_breathIdx];
   lbl.textContent=phase;
-  if(phase==='Inhale'){circ.style.transform='scale(1.35)';circ.style.borderColor='rgba(200,192,232,.6)';}
-  else if(phase==='Exhale'){circ.style.transform='scale(0.85)';circ.style.borderColor='rgba(200,192,232,.2)';}
-  else{circ.style.transform='scale(1.1)';circ.style.borderColor='rgba(240,216,152,.3)';}
+  if(phase==='Inhale'){circ.style.transform='scale(1.35)';circ.style.borderColor='var(--sil)';}
+  else if(phase==='Exhale'){circ.style.transform='scale(0.85)';circ.style.borderColor='var(--iv3)';}
+  else{circ.style.transform='scale(1.1)';circ.style.borderColor='var(--go)';}
 }
-
-function saveGratitude(idx,val){
-  var pd=lsGet('chq-peace',{gratitude:{}});
-  var today=new Date().toISOString().split('T')[0];
-  if(!pd.gratitude)pd.gratitude={};
-  if(!pd.gratitude[today])pd.gratitude[today]=['','',''];
-  pd.gratitude[today][idx]=val;
-  lsSave('chq-peace',pd);
-}
-
-function saveJournal(val){
-  var pd=lsGet('chq-peace',{journal:{}});
-  var today=new Date().toISOString().split('T')[0];
-  if(!pd.journal)pd.journal={};
-  pd.journal[today]=val;
-  lsSave('chq-peace',pd);
-}
-
-function toggleSleep(idx){
-  var pd=lsGet('chq-peace',{sleep:{}});
-  var today=new Date().toISOString().split('T')[0];
-  if(!pd.sleep)pd.sleep={};
-  if(!pd.sleep[today])pd.sleep[today]={};
-  pd.sleep[today][idx]=!pd.sleep[today][idx];
-  lsSave('chq-peace',pd);
-  rerenderKeepScroll(bPeace);
-}
-
 
 function bPlaceholder(id){
 
@@ -4730,7 +3369,6 @@ document.querySelectorAll('.ov').forEach(function(o){
 if(isPublicPortfolioRoute()){
   renderPublicPortfolioRoute();
 }
-
 
 
 // ═══════════════════════════════════════════════════════════════
@@ -5062,7 +3700,7 @@ function emailInvoice(i){
     (inv.notes?'Payment instructions: '+inv.notes+'\n\n':'')+
     'Thank you for your partnership and support of the Miss California USA 2026 campaign.\n\n'+
     'With gratitude,\nAmelia Arabe\n'+
-    'Miss Temecula USA 2026 · Competing for Miss California USA\n'+
+    'Miss Temecula Valley USA 2026 · Competing for Miss California USA\n'+
     'missameliava@gmail.com'
   );
   window.location = 'mailto:'+(inv.email||'')+
@@ -5108,7 +3746,7 @@ body{font-family:'Figtree',sans-serif;color:#1C1714;background:white;padding:3re
 <div class="header">
   <div class="logo-area">
     <h1>Amelia Arabe</h1>
-    <p>Miss Temecula USA 2026 · Competing for Miss California USA<br>missameliava@gmail.com · Riverside, CA</p>
+    <p>Miss Temecula Valley USA 2026 · Competing for Miss California USA<br>missameliava@gmail.com · Riverside, CA</p>
   </div>
   <div class="inv-meta">
     <div class="inv-num">${inv.number}</div>
@@ -5123,7 +3761,7 @@ body{font-family:'Figtree',sans-serif;color:#1C1714;background:white;padding:3re
   <div>
     <div class="bill-label">From</div>
     <div class="bill-name">Amelia Arabe</div>
-    <div class="bill-detail">Miss Temecula USA 2026<br>Riverside, California<br>missameliava@gmail.com</div>
+    <div class="bill-detail">Miss Temecula Valley USA 2026<br>Riverside, California<br>missameliava@gmail.com</div>
   </div>
   <div>
     <div class="bill-label">Bill To</div>
@@ -5178,7 +3816,7 @@ ${inv.notes?'<div class="notes"><strong style="font-size:10px;letter-spacing:2px
 var PROFILE_KEY = 'chq-profiles';
 
 var CATEGORY_LABELS = {
-  'amelia':    'Miss Temecula USA 2026',
+  'amelia':    'Miss Temecula Valley USA 2026',
   'laneea':    'Styling & Fashion',
   'trainer':   'Fitness & Training',
   'hmu':       'Hair & Makeup',
@@ -5425,59 +4063,114 @@ function uploadProfilePhoto(e){
 
 var _adminEditingKey = null;
 
+// ── viewAs state ──────────────────────────────────────────────
+var _viewAsRole = null;
+var _viewAsName = null;
+var _ameliaNav  = null; // saved so we can restore
+
+function enterViewAs(role, displayName){
+  if(S.role !== 'amelia') return;
+  var r = ROLES[role];
+  if(!r) return;
+  // Save Amelia's state
+  _viewAsRole = role;
+  _viewAsName = displayName || r.name;
+  _ameliaNav  = ROLES.amelia.nav;
+  // Swap nav to target role
+  buildSB(r.nav);
+  // Show viewAs banner in topbar
+  var tb = g('tb-un');
+  if(tb) tb.textContent = 'Viewing: ' + _viewAsName;
+  var av = g('tb-av');
+  if(av){ av.style.background = r.color; av.textContent = String(_viewAsName).split(' ').map(function(x){return x.charAt(0);}).join('').slice(0,2).toUpperCase(); }
+  // Add exit button to topbar if not already there
+  var existing = g('view-as-exit-btn');
+  if(!existing){
+    var btn = document.createElement('button');
+    btn.id = 'view-as-exit-btn';
+    btn.className = 'tb-btn';
+    btn.textContent = '← Exit View';
+    btn.style.background = 'rgba(201,168,76,.15)';
+    btn.style.color = 'rgba(201,168,76,.85)';
+    btn.style.borderColor = 'rgba(201,168,76,.3)';
+    btn.onclick = exitViewAs;
+    var tbr = g('tb-r');
+    if(tbr) tbr.insertBefore(btn, tbr.firstChild);
+  }
+  showPanel(r.nav[0].id);
+}
+
+function exitViewAs(){
+  if(!_viewAsRole) return;
+  _viewAsRole = null; _viewAsName = null;
+  // Restore Amelia nav
+  buildSB(ROLES.amelia.nav);
+  var tb = g('tb-un'); if(tb) tb.textContent = ROLES.amelia.name;
+  var av = g('tb-av'); if(av){ av.style.background = ROLES.amelia.color; av.textContent = 'AA'; }
+  var exitBtn = g('view-as-exit-btn');
+  if(exitBtn) exitBtn.remove();
+  showPanel('team-admin');
+}
+
 function bTeamAdmin(){
   if(S.role !== 'amelia'){ inject('<div style="padding:2rem;color:var(--wg)">Access restricted.</div>'); return; }
+  _adminEditingKey = null;
+
+  // Role → display info map
+  var roleInfo = {
+    amelia:  { label:'Candidate',          color:'var(--si)'  },
+    laneea:  { label:'Campaign Mgr · Stylist', color:'var(--lv)'  },
+    trainer: { label:'Fitness Coach',      color:'var(--sg2)' },
+    finance: { label:'Finance & Operations',color:'var(--go)'  },
+    hmu:     { label:'Hair & Makeup',      color:'var(--bl)'  },
+    sponsor: { label:'Sponsor Portal',     color:'var(--si)'  },
+    contributor:{ label:'Contributor',     color:'var(--go)'  },
+  };
 
   var profiles = getAllProfiles();
   var keys = Object.keys(profiles);
-
-  // If editing a specific profile, show edit view
-  if(_adminEditingKey){
-    return bTeamAdminEdit(_adminEditingKey);
-  }
 
   var rows = keys.map(function(key){
     var p = profiles[key];
     if(!p || !p.name) return '';
     var initials = String(p.name||'?').split(' ').map(function(x){return x.charAt(0);}).join('').slice(0,2).toUpperCase();
+    var ri = roleInfo[key] || roleInfo[p.role] || { label: p.roleLabel||p.category||'', color:'var(--si)' };
     var photoHtml = p.photo
-      ? '<div style="width:40px;height:40px;border-radius:50%;background:url('+p.photo+') center/cover;border:1.5px solid var(--ch4);flex-shrink:0"></div>'
-      : '<div style="width:40px;height:40px;border-radius:50%;background:rgba(240,216,152,.12);border:1.5px solid var(--ch4);display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-style:italic;color:var(--ch);font-size:.95rem;flex-shrink:0">'+initials+'</div>';
-    var pubBadge = p.displayOnPublic !== false
-      ? '<span style="font-size:.58rem;padding:.2rem .5rem;background:rgba(100,180,100,.15);color:#6DC06D;border-radius:3px;letter-spacing:1px">PUBLIC</span>'
-      : '<span style="font-size:.58rem;padding:.2rem .5rem;background:rgba(180,100,100,.1);color:#C06D6D;border-radius:3px;letter-spacing:1px">HIDDEN</span>';
-    return '<div style="display:flex;align-items:center;gap:.85rem;padding:.85rem 1rem;border-bottom:1px solid rgba(240,216,152,.07);cursor:pointer;transition:background .15s" ' +
-      'onmouseover="this.style.background=\'rgba(240,216,152,.04)\'" onmouseout="this.style.background=\'\'" ' +
-      'onclick="openTeamAdminEdit(\''+key+'\')">' +
+      ? '<div style="width:44px;height:44px;border-radius:50%;background:url('+p.photo+') center/cover;border:2px solid var(--iv3);flex-shrink:0"></div>'
+      : '<div style="width:44px;height:44px;border-radius:50%;background:'+ri.color+';border:2px solid var(--iv3);display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:.6rem;font-weight:700;color:white;flex-shrink:0">'+initials+'</div>';
+    var pubBadge = p.displayOnPublic!==false
+      ? '<span style="font-family:var(--fm);font-size:.46rem;padding:.18rem .45rem;background:var(--sgp);color:var(--sg);border-radius:3px;letter-spacing:1px">Public</span>'
+      : '<span style="font-family:var(--fm);font-size:.46rem;padding:.18rem .45rem;background:var(--iv2);color:var(--muted);border-radius:3px;letter-spacing:1px">Hidden</span>';
+    // Can we enter this role's dashboard?
+    var canEnter = ROLES[key] && key !== 'amelia';
+    return '<div style="display:flex;align-items:center;gap:.85rem;padding:.85rem 1rem;border-bottom:0.5px solid var(--iv3);background:var(--wh)">' +
       photoHtml +
       '<div style="flex:1;min-width:0">' +
-        '<div style="font-size:.88rem;font-weight:600;color:var(--wh);margin-bottom:.1rem">'+escHtml(p.name)+'</div>' +
-        '<div style="font-size:.72rem;color:var(--wg)">'+escHtml(p.roleLabel||p.category||'')+'</div>' +
+        '<div style="font-size:.85rem;font-weight:600;color:var(--ink);margin-bottom:.1rem">'+escHtml(p.name)+'</div>' +
+        '<div style="font-size:.7rem;color:var(--muted)">'+escHtml(ri.label)+'</div>' +
       '</div>' +
       pubBadge +
-      '<div style="font-size:.7rem;color:var(--ch);letter-spacing:1px;margin-left:.5rem">Edit →</div>' +
+      '<div style="display:flex;gap:.4rem;margin-left:.5rem">' +
+        (canEnter ? '<button class="btn bg" style="font-size:.52rem;padding:.22rem .65rem;min-height:28px" onclick="enterViewAs(\''+key+'\',\''+escHtml(p.name)+'\')">Enter Dashboard</button>' : '') +
+        '<button class="btn bg" style="font-size:.52rem;padding:.22rem .65rem;min-height:28px" onclick="openTeamAdminEdit(\''+key+'\')">Edit Profile</button>' +
+      '</div>' +
     '</div>';
   }).filter(Boolean).join('');
 
   inject(
-    '<div style="padding:1.5rem 1.75rem">' +
-    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;text-transform:uppercase;color:var(--ch2);margin-bottom:.3rem">Team Admin</div>' +
-    '<div style="font-family:var(--fd);font-size:1.6rem;font-style:italic;color:var(--ch);margin-bottom:.25rem">Team Profiles</div>' +
-    '<div style="font-size:.76rem;color:var(--st);margin-bottom:1.5rem">View and edit every team member\'s public profile. Changes reflect on the campaign site immediately.</div>' +
-
-    '<div class="card" style="padding:0;overflow:hidden">' +
-      (rows || '<div style="padding:1.5rem;font-size:.8rem;color:var(--wg)">No profiles found yet. Team members need to log in and save their profiles first.</div>') +
+    '<div class="ph"><div><div class="ph-tag">Team Admin</div><div class="ph-title">Team <em>Roster</em></div></div></div>' +
+    '<div class="pb">' +
+    '<div style="font-size:.78rem;color:var(--muted);margin-bottom:1rem;line-height:1.6">' +
+      'Enter any team member\'s dashboard to see exactly what they see. Edit their profile to update what appears on the public campaign site.' +
     '</div>' +
-
-    // Public site preview note
-    '<div style="margin-top:1rem;padding:.85rem 1rem;background:rgba(240,216,152,.05);border:1px solid rgba(240,216,152,.1);border-radius:8px">' +
-      '<div style="font-size:.72rem;color:var(--wg);line-height:1.7">' +
-        '&#9432; Changes here update the public campaign site team section immediately. ' +
-        'Team members marked <strong style="color:#6DC06D">PUBLIC</strong> appear on the site. ' +
-        'Those marked <strong style="color:#C06D6D">HIDDEN</strong> do not.' +
+    '<div class="card" style="padding:0;overflow:hidden;margin-bottom:1rem">' +
+      (rows || '<div style="padding:1.5rem;font-size:.8rem;color:var(--muted)">No profiles yet. Team members need to log in first.</div>') +
+    '</div>' +
+    '<div style="padding:.85rem 1rem;background:var(--sip);border-radius:8px;border:0.5px solid var(--sil)">' +
+      '<div style="font-size:.72rem;color:var(--si);line-height:1.7">' +
+        '<strong>Public site syncs live.</strong> Team members marked Public appear on the campaign site Team section. Their photo, name, role, and bio update immediately when saved.' +
       '</div>' +
     '</div>' +
-
     '</div>'
   );
 }
@@ -5586,142 +4279,4 @@ function adminUploadPhoto(e, key){
   reader.readAsDataURL(file);
 }
 
-
-// ═══════════════════════════════════════════════════════════════
-// FINANCE & OPERATIONS — Kathy's Dashboard
-// ═══════════════════════════════════════════════════════════════
-var FIN_KEY='chq-finance';
-function getFinanceData(){return lsGet(FIN_KEY,{expenses:[],invoices:[],budget:{total:10000,categories:{'Competition Fees':2000,'Wardrobe':3000,'Hair & Makeup':1500,'Photography':1000,'Marketing':800,'Training':600,'Travel & Hotel':800,'Miscellaneous':300}}});}
-function saveFinanceData(data){lsSave(FIN_KEY,data);showToast('Saved ✓');}
-
-function bFinanceDash(){
-  var fin=getFinanceData();
-  var expenses=fin.expenses||[];
-  var invoices=fin.invoices||[];
-  var totalExpenses=expenses.reduce(function(a,e){return a+(parseFloat(e.amount)||0);},0);
-  var totalPaid=invoices.filter(function(i){return i.status==='paid';}).reduce(function(a,i){return a+(parseFloat(i.amount)||0);},0);
-  var totalPending=invoices.filter(function(i){return i.status==='sent'||i.status==='overdue';}).reduce(function(a,i){return a+(parseFloat(i.amount)||0);},0);
-  var budget=fin.budget&&fin.budget.total?fin.budget.total:10000;
-  var remaining=budget-totalExpenses;
-  var tab=window._finTab||'expenses';
-  inject(
-    '<div class="ph"><div><div class="ph-tag">Finance & Operations</div><div class="ph-title">Campaign <em>Finances</em></div></div>'+
-    '<div class="ph-acts">'+
-    (tab==='expenses'?'<button class="btn bp" onclick="openAddExpense()">+ Expense</button>':'')+
-    (tab==='invoices'?'<button class="btn bp" onclick="openCreateInvoice()">+ Invoice</button>':'')+
-    '</div></div>'+
-    '<div class="fin-stat-grid" style="padding:1.1rem 1.75rem 0">'+
-    '<div class="fin-stat expense"><div class="fin-n">$'+totalExpenses.toFixed(0)+'</div><div class="fin-l">Total Expenses</div></div>'+
-    '<div class="fin-stat income"><div class="fin-n">$'+totalPaid.toFixed(0)+'</div><div class="fin-l">Sponsorships Paid</div></div>'+
-    '<div class="fin-stat pending"><div class="fin-n">$'+totalPending.toFixed(0)+'</div><div class="fin-l">Pending</div></div>'+
-    '<div class="fin-stat balance" style="border-top-color:'+( remaining>=0?'var(--sg2)':'var(--si)')+'"><div class="fin-n" style="color:'+( remaining>=0?'var(--sg2)':'var(--si)')+'">$'+Math.abs(remaining).toFixed(0)+( remaining<0?' over':'')+'</div><div class="fin-l">'+( remaining>=0?'Remaining':'Over Budget')+'</div></div>'+
-    '</div>'+
-    '<div class="sp-tabbar">'+
-    [{k:'expenses',l:'Expenses'},{k:'invoices',l:'Invoices'},{k:'budget',l:'Budget'}].map(function(t){return '<button class="sp-tab '+( tab===t.k?'on':'')+'" onclick="window._finTab=\''+t.k+'\';bFinanceDash()">'+t.l+'</button>';}).join('')+
-    '</div>'+
-    '<div class="pb" style="padding-top:1.1rem">'+
-    (tab==='expenses'?renderExpenses(expenses):'')+
-    (tab==='invoices'?renderInvoices(invoices):'')+
-    (tab==='budget'?renderBudget(fin,totalExpenses):'')+
-    '</div>'
-  );
-}
-
-function renderExpenses(expenses){
-  if(!expenses.length)return '<div style="text-align:center;padding:3rem;font-family:var(--fd);font-size:1.1rem;font-style:italic;color:var(--muted)">No expenses logged yet.</div>';
-  return '<div class="card" style="padding:0;overflow:hidden">'+
-    '<div style="padding:.65rem 1rem;background:var(--iv2);border-bottom:0.5px solid var(--iv3);display:flex;align-items:center;justify-content:space-between"><div style="font-family:var(--fm);font-size:.48rem;letter-spacing:2px;text-transform:uppercase;color:var(--muted)">All Expenses</div><button class="btn bg" style="font-size:.56rem;padding:.25rem .65rem;min-height:28px" onclick="exportExpensesCSV()">Export CSV</button></div>'+
-    expenses.slice().reverse().map(function(e,ri){var i=expenses.length-1-ri;return '<div class="exp-row" style="padding:.65rem 1rem"><div class="exp-cat">'+escHtml(e.category||'Other')+'</div><div style="flex:1"><div class="exp-desc">'+escHtml(e.description)+'</div>'+( e.vendor?'<div style="font-size:.65rem;color:var(--muted)">'+escHtml(e.vendor)+'</div>':'')+'</div><div class="exp-date">'+escHtml(e.date||'')+'</div><div class="exp-amt">$'+parseFloat(e.amount||0).toFixed(2)+'</div><button onclick="deleteExpense('+i+')" style="border:none;background:none;color:var(--faint);cursor:pointer;font-size:.85rem">&times;</button></div>';}).join('')+
-    '</div>';
-}
-
-function renderInvoices(invoices){
-  if(!invoices.length)return '<div style="text-align:center;padding:3rem;font-family:var(--fd);font-size:1.1rem;font-style:italic;color:var(--muted)">No invoices yet.</div>';
-  return '<div class="card" style="padding:0;overflow:hidden">'+
-    invoices.slice().reverse().map(function(inv,ri){var i=invoices.length-1-ri;var sc={draft:'inv-draft',sent:'inv-sent',paid:'inv-paid',overdue:'inv-overdue'}[inv.status]||'inv-draft';return '<div class="inv-row" style="padding:.7rem 1rem"><div class="inv-num">#'+String(inv.number||i+1).padStart(3,'0')+'</div><div style="flex:1"><div class="inv-to">'+escHtml(inv.to)+'</div>'+( inv.description?'<div style="font-size:.68rem;color:var(--muted)">'+escHtml(inv.description.slice(0,50))+'</div>':'')+'</div><div class="inv-date">'+escHtml(inv.date||'')+'</div><div class="inv-amt">$'+parseFloat(inv.amount||0).toFixed(2)+'</div><div class="inv-status '+sc+'">'+inv.status+'</div><div style="display:flex;gap:.25rem;margin-left:.5rem"><button onclick="printInvoice('+i+')" style="border:0.5px solid var(--iv3);background:transparent;color:var(--muted);cursor:pointer;font-size:.58rem;padding:.2rem .5rem;border-radius:4px;font-family:var(--fm)">PDF</button><button onclick="cycleInvoiceStatus('+i+')" style="border:0.5px solid var(--iv3);background:transparent;color:var(--muted);cursor:pointer;font-size:.58rem;padding:.2rem .5rem;border-radius:4px;font-family:var(--fm)">Status</button><button onclick="deleteInvoice('+i+')" style="border:none;background:none;color:var(--faint);cursor:pointer;font-size:.85rem">&times;</button></div></div>';}).join('')+
-    '</div>';
-}
-
-function renderBudget(fin,totalExpenses){
-  var budget=fin.budget||{};var total=budget.total||10000;var cats=budget.categories||{};var expenses=fin.expenses||[];
-  var spent={};expenses.forEach(function(e){spent[e.category]=(spent[e.category]||0)+(parseFloat(e.amount)||0);});
-  return '<div class="g2"><div class="card"><div class="cl">Total Budget</div><input id="budget-total" value="'+total+'" type="number" style="font-family:var(--fd);font-size:1.6rem;font-style:italic;color:var(--ink);border:none;outline:none;background:transparent;width:120px" onblur="saveBudgetTotal(this.value)"><div style="height:3px;background:var(--iv3);border-radius:2px;overflow:hidden;margin-top:.5rem"><div style="height:100%;width:'+Math.min(100,(totalExpenses/total)*100)+'%;background:'+( totalExpenses>total?'var(--si)':'var(--sg2)')+';border-radius:2px;transition:width .6s"></div></div><div style="font-size:.68rem;color:var(--muted);margin-top:.3rem">$'+totalExpenses.toFixed(0)+' of $'+total.toLocaleString()+'</div></div>'+
-    '<div class="card"><div class="cl">By Category</div>'+Object.keys(cats).map(function(cat){var b=cats[cat]||0;var u=spent[cat]||0;var p=b>0?Math.min(100,(u/b)*100):0;return '<div style="margin-bottom:.55rem"><div style="display:flex;justify-content:space-between;margin-bottom:.15rem"><div style="font-size:.72rem;color:var(--ink)">'+cat+'</div><div style="font-family:var(--fm);font-size:.6rem;color:var(--muted)">$'+u.toFixed(0)+' / $'+b.toLocaleString()+'</div></div><div style="height:2px;background:var(--iv3);border-radius:1px;overflow:hidden"><div style="height:100%;width:'+p+'%;background:var(--si);border-radius:1px;opacity:.7"></div></div></div>';}).join('')+'</div></div>';
-}
-
-function openAddExpense(){
-  inject('<div class="ph"><div><div class="ph-tag">Finance</div><div class="ph-title">Add <em>Expense</em></div></div></div><div class="pb"><div style="max-width:520px"><div class="fg"><label>Description</label><input class="fi" id="exp-desc" placeholder="e.g. Competition entry fee"></div><div class="fg-row"><div class="fg"><label>Amount ($)</label><input class="fi" id="exp-amt" type="number" step="0.01" placeholder="0.00"></div><div class="fg"><label>Date</label><input class="fi" id="exp-date" type="date" value="'+new Date().toISOString().slice(0,10)+'"></div></div><div class="fg-row"><div class="fg"><label>Category</label><select class="fs" id="exp-cat">'+['Competition Fees','Wardrobe','Hair & Makeup','Photography','Marketing','Training','Travel & Hotel','Miscellaneous'].map(function(c){return '<option>'+c+'</option>';}).join('')+'</select></div><div class="fg"><label>Vendor</label><input class="fi" id="exp-vendor" placeholder="optional"></div></div><div class="fg"><label>Notes</label><textarea class="ft" id="exp-notes" style="min-height:55px"></textarea></div><div style="display:flex;gap:.5rem"><button class="btn bp" onclick="saveExpense()">Save</button><button class="btn bg" onclick="window._finTab=\'expenses\';bFinanceDash()">Cancel</button></div></div></div>');
-}
-
-function saveExpense(){
-  var desc=(document.getElementById('exp-desc').value||'').trim();var amt=document.getElementById('exp-amt').value;
-  if(!desc||!amt){showToast('Required fields missing');return;}
-  var fin=getFinanceData();
-  fin.expenses.push({id:Date.now(),description:desc,amount:parseFloat(amt),date:document.getElementById('exp-date').value,category:document.getElementById('exp-cat').value,vendor:(document.getElementById('exp-vendor').value||'').trim(),notes:(document.getElementById('exp-notes').value||'').trim()});
-  saveFinanceData(fin);window._finTab='expenses';bFinanceDash();
-}
-
-function deleteExpense(i){if(!confirm('Delete this expense?'))return;var fin=getFinanceData();fin.expenses.splice(i,1);saveFinanceData(fin);bFinanceDash();}
-
-function exportExpensesCSV(){
-  var fin=getFinanceData();
-  var rows=[['Date','Category','Description','Vendor','Amount']];
-  fin.expenses.forEach(function(e){rows.push([e.date||'',e.category||'',e.description||'',e.vendor||'',e.amount||0]);});
-  var csv=rows.map(function(r){return r.map(function(v){return '"'+String(v).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
-  var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='expenses-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
-}
-
-function openCreateInvoice(){
-  var fin=getFinanceData();var nextNum=fin.invoices.length+1;
-  inject('<div class="ph"><div><div class="ph-tag">Finance</div><div class="ph-title">Create <em>Invoice</em></div></div></div><div class="pb"><div style="max-width:560px"><div class="fg-row"><div class="fg"><label>Invoice #</label><input class="fi" id="inv-num" value="'+String(nextNum).padStart(3,'0')+'"></div><div class="fg"><label>Date</label><input class="fi" id="inv-date" type="date" value="'+new Date().toISOString().slice(0,10)+'"></div></div><div class="fg"><label>Bill To</label><input class="fi" id="inv-to" placeholder="Sponsor company name"></div><div class="fg"><label>Contact Name</label><input class="fi" id="inv-contact" placeholder="Contact name"></div><div class="fg"><label>Contact Email</label><input class="fi" id="inv-email" type="email" placeholder="billing@company.com"></div><div class="fg"><label>Description</label><textarea class="ft" id="inv-desc" placeholder="e.g. Title Sponsorship — Miss California USA 2026" style="min-height:75px"></textarea></div><div class="fg-row"><div class="fg"><label>Amount ($)</label><input class="fi" id="inv-amt" type="number" step="0.01"></div><div class="fg"><label>Due Date</label><input class="fi" id="inv-due" type="date"></div></div><div class="fg"><label>Payment Instructions</label><input class="fi" id="inv-payment" placeholder="e.g. Zelle: missameliava@gmail.com"></div><div style="display:flex;gap:.5rem"><button class="btn bp" onclick="saveInvoice()">Save Invoice</button><button class="btn bg" onclick="window._finTab=\'invoices\';bFinanceDash()">Cancel</button></div></div></div>');
-}
-
-function saveInvoice(){
-  var to=(document.getElementById('inv-to').value||'').trim();var amt=document.getElementById('inv-amt').value;
-  if(!to||!amt){showToast('Required fields missing');return;}
-  var fin=getFinanceData();
-  fin.invoices.push({id:Date.now(),number:document.getElementById('inv-num').value,to:to,contact:(document.getElementById('inv-contact').value||'').trim(),email:(document.getElementById('inv-email').value||'').trim(),description:(document.getElementById('inv-desc').value||'').trim(),amount:parseFloat(amt),date:document.getElementById('inv-date').value,due:document.getElementById('inv-due').value,payment:(document.getElementById('inv-payment').value||'').trim(),status:'draft'});
-  saveFinanceData(fin);window._finTab='invoices';bFinanceDash();showToast('Invoice saved — click PDF to print');
-}
-
-function cycleInvoiceStatus(i){var fin=getFinanceData();var inv=fin.invoices[i];if(!inv)return;var cycle={draft:'sent',sent:'paid',paid:'overdue',overdue:'draft'};inv.status=cycle[inv.status]||'draft';saveFinanceData(fin);bFinanceDash();}
-function deleteInvoice(i){if(!confirm('Delete this invoice?'))return;var fin=getFinanceData();fin.invoices.splice(i,1);saveFinanceData(fin);bFinanceDash();}
-function saveBudgetTotal(val){var fin=getFinanceData();if(!fin.budget)fin.budget={};fin.budget.total=parseFloat(val)||10000;saveFinanceData(fin);}
-
-function printInvoice(i){
-  var fin=getFinanceData();var inv=fin.invoices[i];if(!inv)return;
-  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Invoice #'+escHtml(String(inv.number||i+1))+'</title><style>@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Figtree:wght@300;400;500&display=swap");body{font-family:Figtree,sans-serif;color:#1C1714;background:white;margin:0;padding:0}.page{max-width:700px;margin:0 auto;padding:3rem 2.5rem}.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3rem;padding-bottom:1.5rem;border-bottom:1px solid #E5DDD2}.brand{font-family:"Cormorant Garamond",serif;font-size:2rem;font-style:italic;font-weight:300}.brand small{display:block;font-family:Figtree,sans-serif;font-size:.6rem;letter-spacing:3px;text-transform:uppercase;color:#B0A89F;font-style:normal;margin-top:.2rem}.inv-num{font-family:monospace;font-size:.8rem;color:#7A6F68}.inv-title{font-family:"Cormorant Garamond",serif;font-size:1.6rem;font-style:italic;color:#8B4A2F}.parties{display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-bottom:2.5rem}.party-label{font-size:.6rem;letter-spacing:2px;text-transform:uppercase;color:#B0A89F;margin-bottom:.5rem}.party-name{font-family:"Cormorant Garamond",serif;font-size:1.2rem;font-style:italic;color:#1C1714;margin-bottom:.15rem}.party-detail{font-size:.78rem;color:#7A6F68;line-height:1.6}table{width:100%;border-collapse:collapse;margin-bottom:2rem}thead th{font-size:.58rem;letter-spacing:2px;text-transform:uppercase;color:#B0A89F;padding:.5rem .75rem;text-align:left;border-bottom:1px solid #E5DDD2;background:#FAF7F2}tbody td{padding:.75rem;border-bottom:.5px solid #F0EBE3;font-size:.85rem;color:#3D3028}.total-row td{font-size:.95rem;font-weight:500;background:#FAF7F2;padding:1rem .75rem}.total-amount{font-family:"Cormorant Garamond",serif;font-size:1.6rem;font-style:italic;color:#8B4A2F;text-align:right}.footer{margin-top:3rem;padding-top:1.5rem;border-top:1px solid #E5DDD2;font-size:.75rem;color:#B0A89F;line-height:1.8}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><div class="page">'+
-    '<div class="header"><div class="brand">Library of Morenita<small>Amelia Arabe · Crown HQ</small></div><div><div class="inv-title">Invoice</div><div class="inv-num">#'+escHtml(String(inv.number||i+1).padStart(3,'0'))+'</div></div></div>'+
-    '<div class="parties"><div><div class="party-label">From</div><div class="party-name">Amelia Arabe</div><div class="party-detail">Miss Temecula USA 2026<br>missameliava@gmail.com<br>Riverside, California</div></div>'+
-    '<div><div class="party-label">Bill To</div><div class="party-name">'+escHtml(inv.to)+'</div><div class="party-detail">'+( inv.contact?escHtml(inv.contact)+'<br>':'')+( inv.email?escHtml(inv.email):'')+'</div></div></div>'+
-    '<table><thead><tr><th>Description</th><th>Date</th><th style="text-align:right">Amount</th></tr></thead><tbody>'+
-    '<tr><td>'+escHtml(inv.description||'Campaign Sponsorship')+'</td><td style="font-size:.75rem;color:#B0A89F">'+escHtml(inv.date||'')+'</td><td style="text-align:right;font-family:Cormorant Garamond,serif;font-size:1rem;font-style:italic">$'+parseFloat(inv.amount||0).toFixed(2)+'</td></tr>'+
-    '<tr class="total-row"><td colspan="2" style="color:#7A6F68;font-size:.78rem;text-transform:uppercase;letter-spacing:1px">Total Due</td><td class="total-amount">$'+parseFloat(inv.amount||0).toFixed(2)+'</td></tr></tbody></table>'+
-    ( inv.due?'<div style="font-size:.75rem;color:#7A6F68;margin-bottom:1rem"><strong>Due:</strong> '+escHtml(inv.due)+'</div>':'')+
-    ( inv.payment?'<div style="font-size:.78rem;color:#3D3028;background:#FAF7F2;padding:.85rem 1rem;border-radius:6px;border:.5px solid #E5DDD2"><strong>Payment:</strong> '+escHtml(inv.payment)+'</div>':'')+
-    '<div class="footer">Thank you for supporting the Library of Morenita campaign. Questions: missameliava@gmail.com</div>'+
-    '</div></body></html>';
-  var win=window.open('','_blank');win.document.write(html);win.document.close();setTimeout(function(){win.print();},500);
-}
-
-(function seedDefaultProfiles(){
-  var profiles = getAllProfiles();
-  var defaults = [
-    { key:'amelia',  name:'Amelia Arabe',  roleLabel:'Miss Temecula USA 2026',    bio:'Engineer, artist, cellist, and the force behind this campaign. Competing July 10.',                          sortOrder:1, category:'Miss Temecula USA 2026',  displayOnPublic:true  },
-    { key:'laneea',  name:'Laneea',        roleLabel:'Campaign Manager \u00b7 Stylist', bio:'Directing campaign strategy and curating every look from competition gown to interview day.',        sortOrder:2, category:'Styling & Fashion',        displayOnPublic:true  },
-    { key:'trainer', name:'Donovan',       roleLabel:'Fitness Coach',             bio:'Training program designed for competition performance \u2014 strength, posture, and stage presence.',      sortOrder:3, category:'Fitness & Training',        displayOnPublic:true  },
-    { key:'finance', name:'Kathy',         roleLabel:'Financial Manager',         bio:'Managing campaign budget, sponsor invoicing, and financial operations through competition day.',            sortOrder:4, category:'Finance & Operations',      displayOnPublic:true  },
-  ];
-  var changed = false;
-  defaults.forEach(function(d){
-    if(!profiles[d.key]){
-      profiles[d.key] = Object.assign({}, d, { photo:'', updatedAt: new Date().toISOString(), role: d.key, profileKey: d.key });
-      changed = true;
-    }
-  });
-  if(changed){
-    lsSave(PROFILE_KEY, profiles);
-    localStorage.setItem('chq-team-public', JSON.stringify(buildPublicTeamData()));
-  }
-})();
 
