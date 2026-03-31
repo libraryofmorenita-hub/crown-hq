@@ -630,12 +630,12 @@ button, input, select, textarea { font: inherit; }
 
 /* ── BOARD / KANBAN ─────────────────────────────────── */
 .board-strip { display: flex; gap: .85rem; overflow-x: auto; padding: .85rem 1.75rem; min-height: 60vh; align-items: flex-start; -webkit-overflow-scrolling: touch; }
-.board-col { min-width: 240px; max-width: 240px; background: var(--iv2); border-radius: var(--rl); border: 0.5px solid var(--iv3); overflow: hidden; }
+.board-col { min-width: 240px; max-width: 240px; background: var(--iv2); border-radius: 4px; border: 0.5px solid var(--iv3); overflow: hidden; }
 .board-col-head { padding: .75rem .95rem; border-bottom: 0.5px solid var(--iv3); display: flex; align-items: center; justify-content: space-between; background: var(--wh); }
 .board-col-title { font-family: var(--fm); font-size: .52rem; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
 .board-col-ct { font-family: var(--fm); font-size: .48rem; color: var(--faint); }
 .board-cards { padding: .6rem; display: flex; flex-direction: column; gap: .5rem; min-height: 80px; }
-.board-card { background: var(--wh); border-radius: var(--r); padding: .75rem; border: 0.5px solid var(--iv3); cursor: grab; transition: transform .15s, border-color .15s; }
+.board-card { background: var(--wh); border-radius: 3px; padding: .75rem; border: 0.5px solid var(--iv3); cursor: grab; transition: transform .15s, border-color .15s; }
 .board-card:hover { border-color: var(--sil); transform: translateY(-1px); }
 .board-card-title { font-size: .8rem; color: var(--ink); font-weight: 500; margin-bottom: .25rem; }
 .board-card-meta { font-size: .68rem; color: var(--muted); }

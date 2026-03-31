@@ -2663,6 +2663,7 @@ function removeLook(id){S.looks=S.looks.filter(function(x){return x.id!==id;});l
 // Single panel with three-tab toggle. All state in chq-fitness + chq-peace.
 
 var _bodyTab = 'fitness'; // 'fitness' | 'peace' | 'diet'
+var _openFitDays = {}; // tracks which day cards the user has manually opened
 var _dietWeek = 1;        // 1-4 rotation
 var _medTimer = null, _medRunning = false, _medTotal = 0, _medLeft = 0;
 var _breathRunning = false, _breathTimer = null, _breathIdx = 0, _breathCount = 0;
@@ -2810,7 +2811,8 @@ function renderFitnessTab(fd){
     html += '<div><div style="font-family:var(--fm);font-size:.44rem;letter-spacing:2px;color:'+(dayDone?'rgba(255,255,255,.55)':'var(--muted)')+';text-transform:uppercase">'+s.day+(isToday?' · TODAY':'')+'</div>';
     html += '<div style="font-family:var(--fd);font-size:.98rem;font-style:italic;color:'+(dayDone?'white':'var(--ink)')+'">'+s.focus+'</div></div></div>';
     html += '<div style="font-family:var(--fm);font-size:.46rem;color:'+(dayDone?'rgba(255,255,255,.45)':'var(--muted)')+'">'+doneCount+'/'+s.exercises.length+'</div></div>';
-    html += '<div id="fit-day-'+s.key+'" style="'+(isToday||dayDone?'':'display:none')+'">';
+    var dayOpen = (isToday||dayDone||_openFitDays[s.key]);
+    html += '<div id="fit-day-'+s.key+'" style="'+(dayOpen?'':'display:none')+'">';
     s.exercises.forEach(function(e,ei){
       var exDone=exChecks[ei];
       html += '<div onclick="saveFitnessEx(\''+s.key+'\','+ei+')" style="display:flex;gap:.6rem;padding:.42rem 1rem;border-bottom:0.5px solid var(--iv3);align-items:center;cursor:pointer;background:'+(exDone?'var(--sgp)':'transparent')+'">';
@@ -3103,7 +3105,10 @@ function printGroceryList(){
 // ─── SHARED HELPERS ────────────────────────────────────────────
 function toggleFitnessDay(key){
   var el=document.getElementById('fit-day-'+key);
-  if(el) el.style.display=el.style.display==='none'?'block':'none';
+  if(!el) return;
+  var opening=el.style.display==='none';
+  el.style.display=opening?'block':'none';
+  _openFitDays[key]=opening;
 }
 function saveFitnessEx(dayKey,exIdx){
   var fd=lsGet('chq-fitness',{});
