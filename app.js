@@ -573,7 +573,7 @@ function seedLibrary(){
 }
 
 // ═══ PASSWORDS ════════════════════════════════════════════════
-var PASSWORDS={amelia:'serph',laneea:'withlove',kathy:'finance2026'};
+var PASSWORDS=Object.assign({amelia:'serph',laneea:'withlove',kathy:'finance2026'},lsGet('chq-pw',{}));
 
 // ═══ UNIFIED LOGIN ═══════════════════════════════════════════
 // Single username/password login that routes to the right role
@@ -3939,6 +3939,25 @@ function bProfile(){
       '<button class="btn bp" onclick="saveProfileForm()" style="width:100%;padding:.7rem">Save Profile &rarr;</button>' +
     '</div>' +
 
+    // Change password
+    ((!_viewAsRole && (PASSWORDS[S.role] !== undefined || S.portalProfile)) ?
+    '<div class="card" style="margin-top:1.25rem">' +
+      '<div class="cl">Change Password</div>' +
+      '<div style="margin-bottom:.75rem">' +
+        '<div style="font-size:.68rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--wg);margin-bottom:.3rem">Current Password</div>' +
+        '<input id="pw-current" class="fi" type="password" style="width:100%" placeholder="Enter current password">' +
+      '</div>' +
+      '<div style="margin-bottom:.75rem">' +
+        '<div style="font-size:.68rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--wg);margin-bottom:.3rem">New Password</div>' +
+        '<input id="pw-new" class="fi" type="password" style="width:100%" placeholder="New password">' +
+      '</div>' +
+      '<div style="margin-bottom:1rem">' +
+        '<div style="font-size:.68rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--wg);margin-bottom:.3rem">Confirm New Password</div>' +
+        '<input id="pw-confirm" class="fi" type="password" style="width:100%" placeholder="Confirm new password">' +
+      '</div>' +
+      '<button class="btn bg" onclick="changePassword()" style="width:100%;padding:.65rem">Update Password</button>' +
+    '</div>' : '') +
+
     // Preview card
     '<div style="margin-top:1.25rem">' +
       '<div style="font-size:.68rem;letter-spacing:2px;text-transform:uppercase;color:var(--wg);margin-bottom:.6rem">Public preview</div>' +
@@ -3994,6 +4013,38 @@ function saveProfileForm(){
   // Update topbar name
   var un = document.getElementById('tb-un');
   if(un) un.textContent = patch.name;
+}
+
+function changePassword(){
+  var current=(g('pw-current').value||'').trim();
+  var next=(g('pw-new').value||'').trim();
+  var confirm=(g('pw-confirm').value||'').trim();
+  if(!current||!next||!confirm){showToast('Fill in all three fields');return;}
+  if(next!==confirm){showToast('New passwords don\'t match');return;}
+  if(next.length<4){showToast('Password must be at least 4 characters');return;}
+  // Verify current password
+  var ok=false;
+  if(S.portalProfile){
+    ok=(String(S.portalProfile.password||'')=== current);
+    if(ok){
+      S.portalProfile.password=next;
+      var profiles=getPortalProfiles();
+      var list=profiles[S.role]||[];
+      var item=list.find(function(x){return x.id===S.portalProfile.id;});
+      if(item){item.password=next;savePortalProfiles(profiles);}
+    }
+  } else {
+    ok=(PASSWORDS[S.role]===current);
+    if(ok){
+      PASSWORDS[S.role]=next;
+      var saved=lsGet('chq-pw',{});
+      saved[S.role]=next;
+      lsSave('chq-pw',saved);
+    }
+  }
+  if(!ok){showToast('Current password is incorrect');return;}
+  g('pw-current').value='';g('pw-new').value='';g('pw-confirm').value='';
+  showToast('Password updated \u2713');
 }
 
 function toggleProfilePublic(){
