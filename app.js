@@ -5056,23 +5056,14 @@ function toggleQC(){
 function submitQC(){
   var text=(g('qc-text').value||'').trim();
   if(!text)return;
-  var dest=g('qc-dest').value||'inbox';
-  if(dest==='inbox'){
-    var inbox=lsGet('chq-inbox',[]);
-    inbox.push({id:Date.now(),from:S.role,text:text,date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}),time:new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}),tag:null,readBy:[S.role]});
-    lsSave('chq-inbox',inbox);
-  } else if(dest==='todo'){
-    if(!S.todos[S.role])S.todos[S.role]=[];
-    S.todos[S.role].push({id:Date.now(),text:text,done:false});
-    lsSave('chq-td',S.todos);
-  } else {
-    var board=lsGet('chq-board',{});
-    var col=dest.replace('board-','');
-    if(!board[col])board[col]=[];
-    board[col].push({id:Date.now(),text:text});
-    lsSave('chq-board',board);
-  }
-  showToast('Captured!');
+  var board=lsGet('chq-board',{columns:[]});
+  if(!Array.isArray(board.columns)) board.columns=[];
+  var general=board.columns.find(function(c){return c.id==='general';});
+  if(!general){general={id:'general',title:'General / Notes',color:'var(--bl2)',cards:[]};board.columns.push(general);}
+  if(!Array.isArray(general.cards)) general.cards=[];
+  general.cards.push({id:Date.now(),text:text,author:S.role,date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'})});
+  lsSave('chq-board',board);
+  showToast('Added to Discussion →');
   toggleQC();
 }
 

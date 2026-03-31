@@ -146,6 +146,8 @@
         <div class="tb-av" id="tb-av">AA</div>
         <span class="tb-un" id="tb-un">Amelia</span>
       </div>
+      <button class="tb-btn" onclick="toggleSearch()">Search</button>
+      <button class="tb-btn" onclick="toggleQC()">+ Quick Add</button>
       <button id="em-btn" onclick="toggleEM()" style="display:none;font-family:var(--fm);font-size:.48rem;letter-spacing:2px;text-transform:uppercase;padding:.28rem .75rem;border-radius:20px;border:0.5px solid rgba(201,168,76,.25);background:transparent;color:rgba(201,168,76,.5);cursor:pointer;transition:all .18s" onmouseover="this.style.color='rgba(201,168,76,.9)';this.style.borderColor='rgba(201,168,76,.5)'" onmouseout="if(!this.classList.contains('on')){this.style.color='rgba(201,168,76,.5)';this.style.borderColor='rgba(201,168,76,.25)'}">Edit Mode</button>
       <button class="tb-btn" onclick="doSwitch()">Switch</button>
     </div>
@@ -248,14 +250,8 @@
   <div style="max-width:480px;margin:0 auto">
     <div style="font-family:var(--fd);font-size:1.4rem;font-style:italic;color:var(--ch);margin-bottom:.85rem;text-align:center">Quick Capture</div>
     <textarea id="qc-text" placeholder="Drop a thought, link, task, or idea..." style="width:100%;min-height:100px;background:rgba(255,255,255,.08);border:1px solid rgba(216,212,236,.2);border-radius:3px;padding:.85rem 1rem;font-family:var(--fb);font-size:.88rem;color:var(--ch);outline:none;resize:none;line-height:1.7"></textarea>
-    <div style="display:flex;gap:.5rem;margin-top:.65rem;flex-wrap:wrap">
-      <select id="qc-dest" style="flex:1;background:rgba(0,0,0,.3);border:1px solid rgba(216,212,236,.2);border-radius:3px;padding:.45rem .75rem;font-family:var(--fm);font-size:.65rem;color:var(--ch);outline:none">
-        <option value="inbox">→ Shared Inbox</option>
-        <option value="todo">→ My To-Do</option>
-        <option value="board-sponsors">→ Board: Sponsor Outreach</option>
-        <option value="board-competition">→ Board: Competition Prep</option>
-        <option value="board-general">→ Board: General</option>
-      </select>
+    <div style="font-family:var(--fm);font-size:.52rem;color:rgba(216,212,236,.35);margin-top:.45rem;margin-bottom:.65rem;letter-spacing:1px">→ drops into Discussion · General</div>
+    <div style="display:flex;gap:.5rem">
       <button onclick="submitQC()" style="background:var(--tz3);border:none;border-radius:3px;padding:.45rem 1.25rem;font-family:var(--fb);font-size:.75rem;font-weight:600;color:var(--ch);cursor:pointer">Capture</button>
       <button onclick="toggleQC()" style="background:none;border:1px solid rgba(216,212,236,.2);border-radius:3px;padding:.45rem .85rem;font-family:var(--fm);font-size:.6rem;color:rgba(216,212,236,.5);cursor:pointer">Cancel</button>
     </div>
@@ -318,6 +314,6 @@
   <button class="btn bg" style="margin-top:.5rem;font-size:.65rem;width:100%" onclick="addGoalRow()">+ Add Goal</button>
   <div class="m-acts"><button class="btn bg" onclick="closeM('m-goals')">Cancel</button><button class="btn bp" onclick="saveGoals()">Save All</button></div>
 </div></div>
-<script src="app.js?v=20260331c"></script>
+<script src="app.js?v=20260331d"></script>
 </body>
 </html>
