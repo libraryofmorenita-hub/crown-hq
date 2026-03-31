@@ -906,8 +906,7 @@ var ROLES={
       {ico:'📣',lbl:'Advocacy',id:'advocacy'},
       {ico:'🖼',lbl:'Mood Board',id:'moodboard'},
       {ico:'👗',lbl:'Looks',id:'looks'},
-      {ico:'💪',lbl:'Fitness',id:'fitness'},
-      {ico:'🕊',lbl:'Peace',id:'peace'},
+      {ico:'🌿',lbl:'Wellness',id:'fitness'},
       {ico:'📱',lbl:'Social Media',id:'social'},
       {ico:'📬',lbl:'Inbox',id:'inbox'},
       {ico:'🗂',lbl:'Discussion',id:'board'},
@@ -941,7 +940,7 @@ var ROLES={
   trainer:{name:'Donovan',abbr:'TR',color:'var(--sg)',
     nav:[
       {ico:'🏠',lbl:'Dashboard',id:'trainer-dash'},
-      {ico:'💪',lbl:'Training Plan',id:'fitness'},
+      {ico:'🌿',lbl:'Wellness',id:'fitness'},
       {ico:'👤',lbl:'My Profile',id:'profile'},
       {ico:'📅',lbl:'Calendar',id:'calendar'},
       {ico:'🗂',lbl:'Discussion',id:'board'},
@@ -1076,7 +1075,6 @@ function showPanel(id,navEl){
     'moodboard':        function(){ bMoodboard(); },
     'looks':            function(){ bLooks(); },
     'fitness':          function(){ bFitness(); },
-    'peace':            function(){ bPeace(); },
     'profile':          function(){ bProfile(); },
     'team-admin':       function(){ bTeamAdmin(); },
     'expenses':         function(){ bExpenses(); },
@@ -1102,15 +1100,18 @@ function g(id){return document.getElementById(id);}
 function inject(html){g('main').innerHTML=html;}
 function rerenderKeepScroll(renderFn){
   var main=g('main');
-  var top=main?main.scrollTop:0;
+  var pb=main?main.querySelector('.pb'):null;
+  var mainTop=main?main.scrollTop:0;
+  var pbTop=pb?pb.scrollTop:0;
   renderFn();
-  if(main && top>0){
-    main.scrollTop=top;
-    requestAnimationFrame(function(){
-      main.scrollTop=top;
-      requestAnimationFrame(function(){main.scrollTop=top;});
-    });
+  function restore(){
+    var newMain=g('main');
+    if(newMain&&mainTop>0) newMain.scrollTop=mainTop;
+    var newPb=newMain?newMain.querySelector('.pb'):null;
+    if(newPb&&pbTop>0) newPb.scrollTop=pbTop;
   }
+  restore();
+  requestAnimationFrame(function(){ restore(); requestAnimationFrame(restore); });
 }
 function openM(id){g(id).classList.add('on');}
 function closeM(id){g(id).classList.remove('on');}
@@ -2683,7 +2684,7 @@ function bBody(){
   var tabBar =
     '<div style="display:flex;border-bottom:0.5px solid var(--iv3);background:var(--wh);padding:0 1.75rem;flex-shrink:0">' +
     ['fitness','peace','diet'].map(function(t){
-      var labels = {fitness:'💪 Fitness', peace:'🕊 Peace', diet:'🥗 Diet'};
+      var labels = {fitness:'💪 Fitness', peace:'🕊 Peace & Mind', diet:'🥗 Diet'};
       var on = _bodyTab===t;
       return '<button onclick="_bodyTab=\''+t+'\';bBody()" style="font-family:var(--fm);font-size:.55rem;letter-spacing:2px;text-transform:uppercase;padding:.75rem 1rem;border:none;background:transparent;cursor:pointer;border-bottom:2px solid '+(on?'var(--si)':'transparent')+';color:'+(on?'var(--si)':'var(--muted)')+';transition:all .15s">'+labels[t]+'</button>';
     }).join('') +
@@ -2696,7 +2697,7 @@ function bBody(){
 
   inject(
     '<div style="display:flex;flex-direction:column;height:100%;min-height:0">' +
-    '<div class="ph" style="flex-shrink:0"><div><div class="ph-tag">Body &amp; Mind</div><div class="ph-title">The whole <em>system</em></div></div>' +
+    '<div class="ph" style="flex-shrink:0"><div><div class="ph-tag">Body &amp; Mind</div><div class="ph-title"><em>Wellness</em></div></div>' +
     (_bodyTab==='fitness'?'<div class="ph-acts"><button class="btn bc" onclick="saveFitnessLog()">Save check-ins</button></div>':'') +
     (_bodyTab==='diet'?'<div class="ph-acts"><button class="btn bg" onclick="printGroceryList()">🛒 Grocery list</button><button class="btn bc" onclick="_dietWeek=(_dietWeek%4)+1;bBody()">Week '+_dietWeek+' ↻</button></div>':'') +
     '</div>' +
