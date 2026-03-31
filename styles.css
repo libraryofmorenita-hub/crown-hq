@@ -110,13 +110,6 @@ button, input, select, textarea { font: inherit; }
   letter-spacing: 6px; color: rgba(250,247,242,.2); text-transform: uppercase;
   font-style: normal; margin-top: .6rem;
 }
-/* Legacy role buttons — hidden in new login but kept for JS compatibility */
-.login-roles { display: none; }
-.role-btn { display: none; }
-.pw-overlay { display: none !important; }
-.pw-overlay.show { display: none !important; }
-.pw-input { display: none; }
-.pw-cancel { display: none; }
 
 /* ── APP SHELL ──────────────────────────────────────── */
 #app { display: none; flex-direction: column; height: 100%; min-height: 100dvh; }

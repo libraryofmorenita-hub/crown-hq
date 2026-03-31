@@ -8,8 +8,6 @@
 <link rel="stylesheet" href="styles.css">
 
 </head>
-
-</head>
 <body>
 
 <!-- LOGIN -->
@@ -138,7 +136,7 @@
       <button class="hb" onclick="toggleSB()"><span></span><span></span><span></span></button>
       <div class="tb-logo">STARDOM <span style="font-family:var(--fm);font-size:.6rem;letter-spacing:2px;opacity:.5" id="logo-slot"><!-- LOGO --></span><span>✦ Amelia Arabe</span></div>
     </div>
-    <div class="tb-r">
+    <div class="tb-r" id="tb-r">
       <div class="tb-date" id="tb-date" style="font-family:var(--fm);font-size:.55rem;letter-spacing:2px;color:rgba(240,216,152,.25);text-transform:uppercase"></div>
       <div class="tb-sync idle" id="tb-sync" title="Supabase sync status">
         <span class="tb-sync-dot"></span>
@@ -148,9 +146,7 @@
         <div class="tb-av" id="tb-av">AA</div>
         <span class="tb-un" id="tb-un">Amelia</span>
       </div>
-      <button class="tb-btn" id="search-btn" onclick="toggleSearch()" style="font-size:1rem;padding:.2rem .5rem">🔍</button>
-      <button class="tb-btn" id="qc-btn" onclick="toggleQC()" style="font-size:1rem;padding:.2rem .5rem;background:var(--tz3);border-color:var(--tz3);color:var(--ch)">+</button>
-      <button class="em-btn" id="em-btn" onclick="toggleEM()">Edit Mode</button>
+      <button id="em-btn" onclick="toggleEM()" style="display:none;font-family:var(--fm);font-size:.48rem;letter-spacing:2px;text-transform:uppercase;padding:.28rem .75rem;border-radius:20px;border:0.5px solid rgba(201,168,76,.25);background:transparent;color:rgba(201,168,76,.5);cursor:pointer;transition:all .18s" onmouseover="this.style.color='rgba(201,168,76,.9)';this.style.borderColor='rgba(201,168,76,.5)'" onmouseout="if(!this.classList.contains('on')){this.style.color='rgba(201,168,76,.5)';this.style.borderColor='rgba(201,168,76,.25)'}">Edit Mode</button>
       <button class="tb-btn" onclick="doSwitch()">Switch</button>
     </div>
   </div>
@@ -322,6 +318,6 @@
   <button class="btn bg" style="margin-top:.5rem;font-size:.65rem;width:100%" onclick="addGoalRow()">+ Add Goal</button>
   <div class="m-acts"><button class="btn bg" onclick="closeM('m-goals')">Cancel</button><button class="btn bp" onclick="saveGoals()">Save All</button></div>
 </div></div>
-<script src="app.js"></script>
+<script src="app.js?v=20260331"></script>
 </body>
 </html>

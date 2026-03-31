@@ -147,7 +147,7 @@ function loadFromSupabase(){
     if(kv.contacts)lsWriteLocal('chq-contacts',kv.contacts);
     if(kv.portal_profiles)lsWriteLocal('chq-portal-profiles',kv.portal_profiles);
     SB_SYNC_SUSPENDED=false;
-  }).catch(function(e){SB_SYNC_SUSPENDED=false;console.log('Supabase load failed',e);});
+  }).catch(function(){SB_SYNC_SUSPENDED=false;});
 }
 function sbSaveSponsors(){sbReplace('sponsors',S.sponsors.map(function(s){return{id:s.id,name:s.name,cat:s.cat,ask:s.ask,status:s.status,amount:s.amount||0,notes:s.notes||'',link:s.link||'',updated_at:new Date().toISOString()};}));}
 function sbSaveEvents(){sbReplace('calendar_events',S.calEvents.map(function(e){return{id:e.id,title:e.title,date:e.date,time:e.time||'',dur:e.dur||1,type:e.type||'coach',who:e.who||'',updated_at:new Date().toISOString()};}));}
@@ -1047,15 +1047,10 @@ function toggleSB(){g('sidebar').classList.toggle('open');}
 function closeSB(){if(window.innerWidth<=768)g('sidebar').classList.remove('open');}
 
 // ═══ PANELS ═══════════════════════════════════════════════════
-var PANELS={
-  'dashboard':bDash,'laneea-dash':bLaneaDash,'hmu-dash':bHMUDash,
-  'sponsor-portal':bSponsorPortal,'sponsors':bSponsors,'calendar':bCalendar,
-  'library':bLibrary,'quiz':bQuiz,'brand':bBrand,'moodboard':bMoodboard,
-  'library-editor':bLibraryEditor,'profile':bProfile,'team-admin':bTeamAdmin,
-  'finance-dash':bFinanceDash,'expenses':bExpenses,'invoices':bInvoices,'trainer-dash':bTrainerDash,
-  'looks':bLooks,'fitness':bFitness,'messages':bMessages,'files':bFiles,
-  'deliverables':bDeliverables,'comp-progress':bCompProgress,'advocacy':bAdvocacy,'board':bBoard,'lookbook':bLookbook,'social':bSocial,'inbox':bInbox,'peace':bPeace,'contributor-dash':bContributorDash
-};
+// ── Remove duplicate dashboard functions defined earlier ──────
+// (bHMUDash, bSponsorPortal, bContributorDash were redefined)
+// The correct versions are further down — showPanel uses a lazy
+// lookup so forward references work fine.
 
 function showPanel(id,navEl){
   S.panel=id;
@@ -1063,7 +1058,40 @@ function showPanel(id,navEl){
   if(navEl) navEl.classList.add('on');
   else{var n=g('ni-'+id);if(n)n.classList.add('on');}
   g('main').innerHTML='';
-  if(PANELS[id]) PANELS[id]();
+  // Lazy panel lookup — functions resolved at call time not definition time
+  var panelFn = {
+    'dashboard':        function(){ bDash(); },
+    'laneea-dash':      function(){ bLaneaDash(); },
+    'hmu-dash':         function(){ bHMUDash(); },
+    'trainer-dash':     function(){ bTrainerDash(); },
+    'finance-dash':     function(){ bFinanceDash(); },
+    'sponsor-portal':   function(){ bSponsorPortal(); },
+    'contributor-dash': function(){ bContributorDash(); },
+    'sponsors':         function(){ bSponsors(); },
+    'calendar':         function(){ bCalendar(); },
+    'library':          function(){ bLibrary(); },
+    'library-editor':   function(){ bLibraryEditor(); },
+    'quiz':             function(){ bQuiz(); },
+    'brand':            function(){ bBrand(); },
+    'moodboard':        function(){ bMoodboard(); },
+    'looks':            function(){ bLooks(); },
+    'fitness':          function(){ bFitness(); },
+    'peace':            function(){ bPeace(); },
+    'profile':          function(){ bProfile(); },
+    'team-admin':       function(){ bTeamAdmin(); },
+    'expenses':         function(){ bExpenses(); },
+    'invoices':         function(){ bInvoices(); },
+    'messages':         function(){ bMessages(); },
+    'files':            function(){ bFiles(); },
+    'board':            function(){ bBoard(); },
+    'social':           function(){ bSocial(); },
+    'inbox':            function(){ bInbox(); },
+    'deliverables':     function(){ bDeliverables(); },
+    'comp-progress':    function(){ bCompProgress(); },
+    'advocacy':         function(){ bAdvocacy(); },
+    'lookbook':         function(){ bLookbook(); },
+  }[id];
+  if(panelFn) panelFn();
   else bPlaceholder(id);
   closeSB();
   if(S.emActive) setTimeout(applyEM,80);
@@ -1076,9 +1104,12 @@ function rerenderKeepScroll(renderFn){
   var main=g('main');
   var top=main?main.scrollTop:0;
   renderFn();
-  if(main){
+  if(main && top>0){
     main.scrollTop=top;
-    requestAnimationFrame(function(){main.scrollTop=top;});
+    requestAnimationFrame(function(){
+      main.scrollTop=top;
+      requestAnimationFrame(function(){main.scrollTop=top;});
+    });
   }
 }
 function openM(id){g(id).classList.add('on');}
@@ -1564,87 +1595,6 @@ function bContributorDash(){
     '</div>' +
 
     '</div></div>'
-  );
-}
-
-function bHMUDash(){
-  var rp=getRolePages().hmu;
-  var profile=S.portalProfile;
-  inject(
-    '<div style="padding:1.35rem 1.75rem">' +
-    '<div class="ph-ns"><div class="ph-ns-q">'+(profile?'"'+profile.name+' is on beauty direction for Amelia."':rp.quote)+'</div><div class="ph-ns-sub">'+(profile?(profile.company||'Hair & Makeup Portal'):ROLES.hmu.name)+'</div></div>' +
-    '<div class="g2">' +
-    '<div class="card" style="border-left:4px solid var(--bl2)">' +
-    '<div class="cl">Profile</div>' +
-    '<div style="font-family:var(--fd);font-size:1.15rem;font-style:italic;color:var(--tz);margin-bottom:.2rem">'+(profile?profile.name:'Hair & Makeup Team')+'</div>' +
-    '<div style="font-size:.78rem;color:var(--st);line-height:1.7">'+(profile&&profile.specialty?profile.specialty+' · ':'')+(profile&&profile.company?profile.company+' · ':'')+(profile&&profile.email?profile.email:'Shared beauty direction access')+'</div>' +
-    '<div style="display:flex;gap:.45rem;flex-wrap:wrap;margin-top:.75rem"><button class="btn bg" style="font-size:.58rem;padding:.28rem .7rem" onclick="changePortalUsername()">Change Username</button><button class="btn bg" style="font-size:.58rem;padding:.28rem .7rem" onclick="changePortalPassword()">Change Password</button></div>' +
-    '<div style="margin-top:.9rem;font-size:.74rem;color:var(--wg);line-height:1.7">Use Chat to message Amelia directly and Files to drop trial photos, inspiration boards, or run-of-show documents.</div>' +
-    '</div>' +
-    renderPortalGoalsCard('Beauty Goals') +
-    '</div>' +
-    '<div class="card" style="margin-top:.85rem;background:var(--tz);color:var(--wh)">' +
-    '<div class="cl" style="color:var(--ch)">Upcoming Direction</div>' +
-    rp.schedule.map(function(t,idx){
-      return '<div style="display:grid;grid-template-columns:56px 1fr;gap:.75rem;padding:.6rem 0;border-bottom:1px solid rgba(240,216,152,.07)">' +
-        '<span style="font-family:var(--fm);font-size:.58rem;color:var(--ch2)" data-e="rolepage:hmu:date'+idx+'">'+t.date+'</span>' +
-        '<div><div style="font-size:.82rem;font-weight:600;color:var(--wh)" data-e="rolepage:hmu:ev'+idx+'">'+t.ev+'</div><div style="font-size:.72rem;color:var(--ch)" data-e="rolepage:hmu:look'+idx+'">'+t.look+'</div></div></div>';
-    }).join('') +
-    '</div>' +
-    '</div>'
-  );
-}
-
-function bSponsorPortal(){
-  var profile=S.portalProfile;
-  var partnerName=profile?(profile.company||profile.name):'Sponsor Partner';
-  inject(
-    '<div style="padding:0">' +
-    '<div style="background:var(--tz);padding:2rem 1.75rem">' +
-    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:4px;color:rgba(240,216,152,.35);text-transform:uppercase;margin-bottom:.5rem">Sponsor Portal</div>' +
-    '<div style="font-family:var(--fd);font-size:1.8rem;font-style:italic;color:var(--ch);margin-bottom:.65rem">'+partnerName+' is not sponsoring a pageant.<br>'+partnerName+' is funding a platform.</div>' +
-    '<div style="font-size:.82rem;line-height:1.8;color:rgba(254,252,247,.6)">Thank you for investing in Amelia Arabe\'s Miss Temecula Valley USA 2026 campaign. Your support puts clean energy and fashion accountability policy on a national stage. We are honored to have '+partnerName+' in this room with us.</div>' +
-    '<div style="font-family:var(--fm);font-size:.55rem;color:rgba(240,216,152,.3);margin-top:.85rem">— Amelia Arabe & Laneea Love</div>' +
-    '</div>' +
-    '<div style="padding:1.35rem 1.75rem">' +
-    '<div class="g2">' +
-    '<div><div class="card" style="margin-bottom:.85rem;border-left:4px solid var(--ch2)"><div class="cl">Account</div><div style="font-size:.82rem;font-weight:600;color:var(--ink)">'+(profile?profile.name:'Sponsor Account')+'</div><div style="font-size:.74rem;color:var(--wg);line-height:1.7">'+(profile&&profile.email?profile.email+' · ':'')+(profile&&profile.notes?profile.notes:'Portal access for sponsor deliverables and competition updates')+'</div>' +
-    (profile?'<div style="display:flex;gap:.45rem;flex-wrap:wrap;margin-top:.75rem"><button class="btn bg" style="font-size:.58rem;padding:.28rem .7rem" onclick="changePortalUsername()">Change Username</button><button class="btn bg" style="font-size:.58rem;padding:.28rem .7rem" onclick="changePortalPassword()">Change Password</button></div>':'') +
-    '<div style="margin-top:.9rem;font-size:.74rem;color:var(--wg);line-height:1.7">Use Chat to message Amelia directly and Files to exchange logo files, invoices, decks, and deliverables.</div>' +
-    '</div><div class="cl">Your Deliverables</div>'+buildDelivCards()+'</div>' +
-    renderPortalGoalsCard('Sponsor Goals') +
-    '<div class="card"><div class="cl">Competition Progress</div>' +
-    [{label:'Entry Secured',done:true,note:'Miss Temecula Valley USA 2026'},{label:'Coach Engaged',done:true,note:'Weekly sessions'},{label:'Wardrobe In Progress',done:false,note:'With Laneea'},{label:'YouTube Channel Launch',done:false,note:'Starting from 0'},{label:'Competition Week',done:false,note:'July 10-12 · Grand Hyatt Indian Wells'}].map(function(p){
-      return '<div class="tl"><div class="tl-d" style="background:'+(p.done?'var(--sg2)':'var(--du)')+'"></div><div class="tl-t"><strong>'+p.label+'</strong>'+p.note+'</div></div>';
-    }).join('') +
-    '</div>' +
-    '</div>' +
-    '</div></div>'
-  );
-}
-
-function bContributorDash(){
-  var profile=S.portalProfile;
-  inject(
-    '<div style="padding:1.35rem 1.75rem">' +
-    '<div class="ph-ns"><div class="ph-ns-q">"This workspace is for sending Amelia photography, selects, and media assets quickly."</div><div class="ph-ns-sub">'+(profile?(profile.company||profile.name):ROLES.contributor.name)+'</div></div>' +
-    '<div class="g2">' +
-    '<div class="card" style="border-left:4px solid var(--tz4)">' +
-    '<div class="cl">Contributor Profile</div>' +
-    '<div style="font-family:var(--fd);font-size:1.15rem;font-style:italic;color:var(--tz);margin-bottom:.2rem">'+(profile?profile.name:'Contributor')+'</div>' +
-    '<div style="font-size:.78rem;color:var(--st);line-height:1.7">'+(profile&&profile.specialty?profile.specialty+' · ':'')+(profile&&profile.company?profile.company+' · ':'')+(profile&&profile.email?profile.email:'Upload photos and media here')+'</div>' +
-    '<div style="display:flex;gap:.45rem;flex-wrap:wrap;margin-top:.75rem"><button class="btn bg" style="font-size:.58rem;padding:.28rem .7rem" onclick="changePortalUsername()">Change Username</button><button class="btn bg" style="font-size:.58rem;padding:.28rem .7rem" onclick="changePortalPassword()">Change Password</button></div>' +
-    '<div style="margin-top:.9rem;font-size:.74rem;color:var(--wg);line-height:1.7">Use Files to upload galleries, selects, headshots, and stage photos. Use Chat for shot lists, delivery notes, and quick approvals.</div>' +
-    '</div>' +
-    renderPortalGoalsCard('Contributor Goals') +
-    '</div>' +
-    '<div class="card" style="margin-top:.85rem"><div class="cl">What To Send Here</div>' +
-    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.65rem;margin-top:.3rem">' +
-    '<div style="padding:.85rem;border:1px solid var(--ch4);border-radius:3px"><strong style="display:block;margin-bottom:.25rem">Headshots</strong><span style="font-size:.74rem;color:var(--wg);line-height:1.6">Official selects, retouched finals, and vertical crops.</span></div>' +
-    '<div style="padding:.85rem;border:1px solid var(--ch4);border-radius:3px"><strong style="display:block;margin-bottom:.25rem">Stage Photos</strong><span style="font-size:.74rem;color:var(--wg);line-height:1.6">Swimsuit, gown, interview, and behind-the-scenes coverage.</span></div>' +
-    '<div style="padding:.85rem;border:1px solid var(--ch4);border-radius:3px"><strong style="display:block;margin-bottom:.25rem">Media Notes</strong><span style="font-size:.74rem;color:var(--wg);line-height:1.6">Caption ideas, file descriptions, and delivery timing.</span></div>' +
-    '</div></div>' +
-    '</div>'
   );
 }
 
@@ -2692,6 +2642,7 @@ function bLooks(){
         '<div class="look-ev" data-e="look:'+l.id+':event">'+l.event+'</div>' +
         '<div class="look-title" data-e="look:'+l.id+':title">'+l.title+'</div>' +
         '<div class="look-desc" data-e="look:'+l.id+':desc">'+l.desc+'</div>' +
+        '<button onclick="if(confirm(\'Remove this look?\'))removeLook('+l.id+')" style="margin-top:.65rem;background:transparent;border:0.5px solid var(--iv4);border-radius:3px;padding:.22rem .6rem;font-family:var(--fm);font-size:.48rem;letter-spacing:1px;color:var(--muted);cursor:pointer;text-transform:uppercase">Remove</button>' +
         '</div></div>';
     }).join('') +
     '</div></div>'
@@ -3231,7 +3182,13 @@ function toggleEM(){
   S.emActive=!S.emActive;
   document.body.classList.toggle('em',S.emActive);
   var btn=g('em-btn');
-  if(btn){btn.classList.toggle('on',S.emActive);btn.textContent=S.emActive?'Exit Edit Mode':'Edit Mode';}
+  if(btn){
+    btn.classList.toggle('on',S.emActive);
+    btn.textContent=S.emActive?'Exit Edit':'Edit Mode';
+    btn.style.color      = S.emActive ? 'rgba(201,168,76,.95)' : 'rgba(201,168,76,.5)';
+    btn.style.borderColor= S.emActive ? 'rgba(201,168,76,.6)'  : 'rgba(201,168,76,.25)';
+    btn.style.background = S.emActive ? 'rgba(201,168,76,.08)' : 'transparent';
+  }
   if(S.emActive) applyEM();
 }
 
@@ -3366,7 +3323,7 @@ document.querySelectorAll('.ov').forEach(function(o){
   tick();
 })();
 
-if(isPublicPortfolioRoute()){
+if(typeof isPublicPortfolioRoute === 'function' && isPublicPortfolioRoute()){
   renderPublicPortfolioRoute();
 }
 
@@ -3819,6 +3776,7 @@ var CATEGORY_LABELS = {
   'amelia':    'Miss Temecula Valley USA 2026',
   'laneea':    'Styling & Fashion',
   'trainer':   'Fitness & Training',
+  'finance':   'Finance & Operations',
   'hmu':       'Hair & Makeup',
   'sponsor':   'Sponsor',
   'contributor':'Photography & Video',
@@ -3834,8 +3792,9 @@ var CATEGORY_LABELS = {
 
 // Get the profile key for the current user
 function getMyProfileKey(){
-  if(S.portalProfile) return 'portal:'+S.role+':'+S.portalProfile.id;
-  return S.role || '';
+  var effectiveRole = _viewAsRole || S.role;
+  if(S.portalProfile && !_viewAsRole) return 'portal:'+S.role+':'+S.portalProfile.id;
+  return effectiveRole || '';
 }
 
 // Load all profiles
@@ -3891,10 +3850,11 @@ function buildPublicTeamData(){
 // Render the profile panel
 function bProfile(){
   var profile = getMyProfile();
-  var r = ROLES[S.role] || {};
-  var displayName = S.portalProfile ? S.portalProfile.name : r.name;
-  var categoryLabel = CATEGORY_LABELS[S.role] || S.role || '';
-  if(S.portalProfile) categoryLabel = S.portalProfile.specialty || categoryLabel;
+  var effectiveRole = _viewAsRole || S.role;
+  var r = ROLES[effectiveRole] || {};
+  var displayName = (S.portalProfile && !_viewAsRole) ? S.portalProfile.name : r.name;
+  var categoryLabel = CATEGORY_LABELS[effectiveRole] || effectiveRole || '';
+  if(S.portalProfile && !_viewAsRole) categoryLabel = S.portalProfile.specialty || categoryLabel;
 
   // Seed defaults if first time
   if(!profile.name) profile.name = displayName;
@@ -4016,7 +3976,7 @@ function saveProfileForm(){
     roleLabel: (document.getElementById('prof-role').value||'').trim(),
     bio:       (document.getElementById('prof-bio').value||'').trim(),
     sortOrder: parseInt(document.getElementById('prof-order').value)||10,
-    category:  CATEGORY_LABELS[S.role] || S.role
+    category:  CATEGORY_LABELS[_viewAsRole || S.role] || (_viewAsRole || S.role)
   };
   if(!patch.name){ showToast('Name required'); return; }
   saveMyProfile(patch);
@@ -4279,4 +4239,891 @@ function adminUploadPhoto(e, key){
   reader.readAsDataURL(file);
 }
 
+
+
+
+// ═══ ORIGINAL CODEX PANEL FUNCTIONS ═════════════════════════
+
+// (from original app.js)
+function bMessages(){
+  var msgs=Array.isArray(S.messages)?S.messages:[];
+  var isPortal=!!S.portalProfile;
+  var channel=isPortal?getPortalWorkspaceKey():'';
+  if(isPortal){
+    msgs=msgs.filter(function(m){
+      return m.from===channel||m.to===channel||m.from===S.role||m.to===S.role||m.to==='team'||m.from==='team';
+    });
+  }
+  var avC={amelia:'var(--ch)',laneea:'var(--lv)',hmu:'var(--bl)',trainer:'var(--sg)',team:'var(--tz4)'};
+  if(isPortal)avC[channel]=ROLES[S.role].color;
+  inject(
+    '<div style="display:flex;flex-direction:column;height:100%">' +
+    '<div class="ph"><div><div class="ph-tag">'+(isPortal?'Direct':'Team')+'</div><div class="ph-title"><em>'+(isPortal?'Workspace Chat':'Messages')+'</em></div></div>' +
+    (isPortal?'':'<div class="ph-acts"><button class="btn bp" onclick="openM(\'m-msg\')">+ New</button></div>') +
+    '</div>' +
+    '<div class="pb" style="flex:1;overflow-y:auto">' +
+    '<div class="msg-l">' +
+    msgs.map(function(m){
+      var fromKey=m.from===channel?(S.portalProfile.name||ROLES[S.role].name):m.from;
+      var fromAbbr=m.from===channel?String(S.portalProfile.name||ROLES[S.role].name).split(' ').map(function(x){return x.charAt(0);}).join('').slice(0,2).toUpperCase():m.from.slice(0,2).toUpperCase();
+      return '<div class="msg '+((m.from===S.role||m.from===channel)?'me':'')+'">' +
+        '<div class="msg-av" style="background:'+(avC[m.from]||'var(--du)')+'">'+fromAbbr+'</div>' +
+        '<div><div class="msg-bub">'+m.text+'</div><div class="msg-meta">'+fromKey+' · '+m.time+'</div></div>' +
+        '</div>';
+    }).join('') +
+    '</div></div>' +
+    '<div class="msg-compose">' +
+    '<input class="msg-input" id="quick-msg" placeholder="'+(isPortal?'Message Amelia...':'Message the team...')+'" onkeydown="if(event.key===\'Enter\')quickSend()">' +
+    '<button class="msg-send" onclick="quickSend()">Send</button>' +
+    '</div></div>'
+  );
+}
+
+// (from original app.js)
+function bFiles(){
+  var isPortal=!!S.portalProfile;
+  var workspaceFolder=isPortal?getPortalWorkspaceLabel():'';
+  window._fileFolder=isPortal?workspaceFolder:(window._fileFolder||'All');
+  inject(
+    '<div class="ph"><div><div class="ph-tag">'+(isPortal?'Workspace':'Shared')+'</div><div class="ph-title"><em>'+(isPortal?'File Sharing':'Files')+'</em></div></div>' +
+    '<div class="ph-acts"><label class="btn bp" style="cursor:pointer">+ Upload<input type="file" multiple style="display:none" onchange="handleUpload(event)"></label></div></div>' +
+    '<div class="pb">' +
+    (isPortal?
+      '<div class="card" style="margin-bottom:1rem"><div class="cl">Shared Folder</div><div style="font-family:var(--fd);font-size:1.05rem;font-style:italic;color:var(--tz);margin-bottom:.25rem">'+workspaceFolder+'</div><div style="font-size:.76rem;color:var(--wg);line-height:1.7">Upload photos, PDFs, invoices, sponsor assets, call sheets, or selects for this workspace only.</div></div>'
+      :renderContactsCard()) +
+    '<label class="up-zone" style="margin-bottom:1.35rem;display:block;cursor:pointer">' +
+    '<input type="file" multiple style="display:none" onchange="handleUpload(event)">' +
+    '<div style="font-size:1.75rem;color:var(--wg);margin-bottom:.4rem">📁</div>' +
+    '<div style="font-family:var(--fd);font-style:italic;font-size:.95rem;color:var(--wg);margin-bottom:.2rem">Click to upload files</div>' +
+    '<div style="font-family:var(--fm);font-size:.57rem;color:var(--du);letter-spacing:1px;text-transform:uppercase">Images · PDFs · Audio · Video · Docs</div>' +
+    '</label>' +
+    '<div id="file-viewer" style="display:none;margin-bottom:1.35rem;background:var(--ink);border-radius:3px;overflow:hidden">' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;padding:.55rem .85rem;border-bottom:1px solid rgba(255,255,255,.07)">' +
+    '<span id="fv-name" style="font-family:var(--fm);font-size:.6rem;color:rgba(254,252,247,.45);letter-spacing:1px"></span>' +
+    '<button onclick="closeFileViewer()" style="background:none;border:none;color:rgba(254,252,247,.4);cursor:pointer;font-size:1.1rem;line-height:1">×</button>' +
+    '</div>' +
+    '<div id="fv-content" style="padding:.85rem;max-height:65vh;overflow:auto"></div>' +
+    '</div>' +
+    (isPortal?'':'<div style="display:flex;gap:.35rem;margin-bottom:.85rem;flex-wrap:wrap" id="folder-tabs">' +
+    ['All','Competition','Sponsors','Press','Looks','Personal'].map(function(f){
+      return '<button class="cal-tab '+(( window._fileFolder||'All')===f?'on':'')+'" onclick="window._fileFolder=\''+f+'\';renderFileList()">'+f+'</button>';
+    }).join('') +
+    '</div>') +
+    '<div id="uploaded-files"></div>' +
+    '</div>'
+  );
+  renderFileList();
+}
+
+// (from original app.js)
+function bBoard(){
+  var fallbackBoard={
+    columns:[
+      {id:'sponsors',title:'Sponsor Outreach',color:'var(--ch2)',cards:[]},
+      {id:'competition',title:'Competition Prep',color:'var(--tz3)',cards:[]},
+      {id:'general',title:'General / Notes',color:'var(--bl2)',cards:[]},
+    ]
+  };
+  var rawBoard=lsGet('chq-board',fallbackBoard)||fallbackBoard;
+  var boardData={
+    columns:Array.isArray(rawBoard.columns)&&rawBoard.columns.length?rawBoard.columns.map(function(col,i){
+      var fb=fallbackBoard.columns[i]||{id:'col_'+i,title:'Column',color:'var(--tz4)',cards:[]};
+      return {
+        id:(col&&col.id)||fb.id,
+        title:(col&&col.title)||fb.title,
+        color:(col&&col.color)||fb.color,
+        cards:Array.isArray(col&&col.cards)?col.cards:[]
+      };
+    }):fallbackBoard.columns.slice()
+  };
+  lsWriteLocal('chq-board',boardData);
+
+  inject(
+    '<div class="ph"><div><div class="ph-tag">Team Workspace</div><div class="ph-title"><em>Discussion</em></div></div>' +
+    '<div class="ph-acts"><button class="btn bp" onclick="addBoardCard()">+ Add Card</button><button class="btn bc" onclick="addBoardColumn()">+ Column</button></div></div>' +
+    '<div class="board-strip">' +
+    boardData.columns.map(function(col){
+      return '<div class="board-col" id="bcol-'+col.id+'" data-col="'+col.id+'" style="min-width:240px;max-width:240px;flex-shrink:0">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.55rem">' +
+        '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;text-transform:uppercase;color:'+col.color+';font-weight:700">'+col.title+
+        ' <span style="background:'+col.color+'22;color:'+col.color+';border-radius:3px;padding:.05rem .35rem;font-size:.48rem">'+col.cards.length+'</span></div>' +
+        '<button onclick="addCardToCol(\''+col.id+'\')" style="background:none;border:none;color:var(--wg);cursor:pointer;font-size:1.1rem;line-height:1;padding:0 .2rem">+</button>' +
+        '</div>' +
+        '<div class="board-cards" id="bcards-'+col.id+'" style="display:flex;flex-direction:column;gap:.45rem;min-height:60px">' +
+        col.cards.map(function(card){return renderBoardCard(card,col.id);}).join('') +
+        '</div>' +
+        '</div>';
+    }).join('') +
+    '</div>'
+  );
+}
+
+// (from original app.js)
+function bSocial(){
+  var defaults={
+    strategy:{ig:'',yt:'',substack:'',tiktok:''},
+    pillars:['Clean Energy & Policy','Fashion Accountability','Personal Story','Behind the Scenes','Library of Morenita'],
+    cadence:{ig:'3x per week',yt:'1x per week',substack:'1x per week',tiktok:'Paused — relaunching for competition'},
+    metrics:{ig_followers:'1.4K',ig_goal:'100K',yt_followers:'0',yt_goal:'5K',substack_subs:'0',substack_goal:'1K'},
+    calendar:[],
+    videos:[
+      {id:1,title:'Why I Entered a Pageant',platform:'YouTube',status:'planned',notes:'Walk and talk, ocean background. No script, just talking points. Film this week.'},
+      {id:2,title:'SB 707 Explained',platform:'YouTube',status:'planned',notes:'Desk setup. Policy explainer. Text overlays for the numbers.'},
+      {id:3,title:'What Keel Labs Is Doing With Algae',platform:'YouTube',status:'planned',notes:'Nature location. Engineer meets innovator energy.'},
+      {id:4,title:'The Supply Chain of What You Are Wearing',platform:'YouTube',status:'planned',notes:'B-roll heavy. Investigative tone.'},
+      {id:5,title:'Cello, Engineering, and Why I Need Both',platform:'YouTube',status:'planned',notes:'Film at home. Cello in frame. Most personal video.'},
+      {id:6,title:'San Diego as a Clean Fashion Capital',platform:'YouTube',status:'planned',notes:'Film around SD. City + ocean + tech. Local pride.'},
+    ]
+  };
+  var saved=lsGet('chq-social',null)||{};
+  var sd={
+    strategy:Object.assign({},defaults.strategy,saved.strategy||{}),
+    pillars:Array.isArray(saved.pillars)&&saved.pillars.length?saved.pillars:defaults.pillars.slice(),
+    cadence:Object.assign({},defaults.cadence,saved.cadence||{}),
+    metrics:Object.assign({},defaults.metrics,saved.metrics||{}),
+    calendar:Array.isArray(saved.calendar)?saved.calendar:defaults.calendar.slice(),
+    videos:Array.isArray(saved.videos)&&saved.videos.length?saved.videos:defaults.videos.slice()
+  };
+  var socialStrategy=sd.strategy&&typeof sd.strategy==='object'?sd.strategy:defaults.strategy;
+  var socialPillars=Array.isArray(sd.pillars)?sd.pillars:defaults.pillars.slice();
+  var socialCadence=sd.cadence&&typeof sd.cadence==='object'?sd.cadence:defaults.cadence;
+  var socialMetrics=sd.metrics&&typeof sd.metrics==='object'?sd.metrics:defaults.metrics;
+  var socialVideos=Array.isArray(sd.videos)?sd.videos:defaults.videos.slice();
+  lsWriteLocal('chq-social',{
+    strategy:socialStrategy,
+    pillars:socialPillars,
+    cadence:socialCadence,
+    metrics:socialMetrics,
+    calendar:Array.isArray(sd.calendar)?sd.calendar:[],
+    videos:socialVideos
+  });
+
+  var statColors={ig:'var(--lv2)',yt:'var(--bl2)',substack:'var(--ch2)',tiktok:'var(--sg2)'};
+  var platforms=['ig','yt','substack'];
+  var platformLabels={ig:'Instagram',yt:'YouTube',substack:'Substack'};
+
+  inject(
+    '<div class="ph"><div><div class="ph-tag">Platform</div><div class="ph-title"><em>Social Media</em></div></div>' +
+    '<div class="ph-acts"><button class="btn bc" onclick="saveSocial()">Save</button></div></div>' +
+    '<div class="pb">' +
+
+    // METRICS
+    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">Growth Tracker</div>' +
+    '<div class="g4" style="margin-bottom:1.25rem">' +
+    '<div class="stat st-lv"><div class="sn" id="sm-ig-f">'+socialMetrics.ig_followers+'</div><div class="sl">Instagram</div><div class="prog"><div class="pf" style="background:var(--lv2);width:'+Math.min(100,Math.round((parseFloat(socialMetrics.ig_followers)||0)/(parseFloat(socialMetrics.ig_goal)||100)*100))+'%"></div></div><div class="pl">Goal: '+socialMetrics.ig_goal+'</div></div>' +
+    '<div class="stat st-bl"><div class="sn" id="sm-yt-f">'+socialMetrics.yt_followers+'</div><div class="sl">YouTube</div><div class="prog"><div class="pf" style="background:var(--bl2);width:'+Math.min(100,Math.round((parseFloat(socialMetrics.yt_followers)||0)/(parseFloat(socialMetrics.yt_goal)||5000)*100))+'%"></div></div><div class="pl">Goal: '+socialMetrics.yt_goal+'</div></div>' +
+    '<div class="stat st-ch"><div class="sn" id="sm-sub-f">'+socialMetrics.substack_subs+'</div><div class="sl">Substack</div><div class="prog"><div class="pf pf-c" style="width:'+Math.min(100,Math.round((parseFloat(socialMetrics.substack_subs)||0)/(parseFloat(socialMetrics.substack_goal)||1000)*100))+'%"></div></div><div class="pl">Goal: '+socialMetrics.substack_goal+'</div></div>' +
+    '<div class="stat st-tz"><div class="sn">'+((parseFloat(socialMetrics.ig_followers)||0)+(parseFloat(socialMetrics.yt_followers)||0)+'').replace(/\B(?=(\d{3})+(?!\d))/g,',')+'</div><div class="sl">Total Reach</div></div>' +
+    '</div>' +
+
+    // UPDATE METRICS
+    '<div class="card" style="margin-bottom:1.25rem">' +
+    '<div class="cl">Update Numbers</div>' +
+    '<div class="g4">' +
+    ['ig_followers','yt_followers','substack_subs'].map(function(k){
+      var labels={ig_followers:'IG Followers',yt_followers:'YT Subscribers',substack_subs:'Substack Subs'};
+      return '<div class="fg" style="margin-bottom:0"><label>'+labels[k]+'</label><input class="fi" id="sm-inp-'+k+'" value="'+socialMetrics[k]+'" style="font-size:.8rem" oninput="updateSocialMetric(\''+k+'\',this.value)"></div>';
+    }).join('') +
+    '</div></div>' +
+
+    // CONTENT PILLARS
+    '<div class="g2" style="margin-bottom:1.25rem">' +
+    '<div class="card">' +
+    '<div class="cl">Content Pillars</div>' +
+    socialPillars.map(function(p,i){
+      return '<div style="display:flex;align-items:center;gap:.5rem;padding:.3rem 0;border-bottom:1px solid var(--ch4)">' +
+        '<div style="width:6px;height:6px;border-radius:50%;background:var(--tz3);flex-shrink:0"></div>' +
+        '<span style="font-size:.8rem;color:var(--ink);flex:1">'+p+'</span>' +
+        '</div>';
+    }).join('') +
+    '</div>' +
+
+    '<div class="card">' +
+    '<div class="cl">Posting Cadence</div>' +
+    Object.keys(socialCadence).map(function(k){
+      var labels={ig:'Instagram',yt:'YouTube',substack:'Substack',tiktok:'TikTok'};
+      return '<div style="display:flex;align-items:center;gap:.5rem;padding:.35rem 0;border-bottom:1px solid var(--ch4)">' +
+        '<div style="font-family:var(--fm);font-size:.5rem;letter-spacing:1px;color:var(--wg);min-width:70px">'+labels[k]+'</div>' +
+        '<input style="border:none;outline:none;font-size:.78rem;color:var(--st);background:transparent;flex:1" value="'+socialCadence[k]+'" onblur="updateSocialCadence(\''+k+'\',this.value)">' +
+        '</div>';
+    }).join('') +
+    '</div>' +
+    '</div>' +
+
+    // PLATFORM STRATEGY
+    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">Platform Strategy</div>' +
+    '<div style="display:flex;flex-direction:column;gap:.65rem;margin-bottom:1.25rem">' +
+    platforms.map(function(k){
+      var tips={ig:'Visual platform. Aesthetic consistency. Reels get reach. Carousels get saves. Stories get intimacy. Link in bio drives everything else.',yt:'Long-form essay videos. 8-15 minutes. SEO matters here — title and description. Each video is a Library of Morenita article brought to life.',substack:'Your most loyal audience. Write like you talk. One exclusive paragraph per post that is not in the app or on IG. Build the list before you need it.'};
+      return '<div class="card" style="border-left:3px solid '+statColors[k]+';padding:.85rem">' +
+        '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:2px;color:'+statColors[k]+';text-transform:uppercase;margin-bottom:.4rem">'+platformLabels[k]+'</div>' +
+        '<div style="font-family:var(--fm);font-size:.55rem;color:var(--wg);margin-bottom:.45rem;line-height:1.6">'+tips[k]+'</div>' +
+        '<textarea class="social-strategy" data-key="'+k+'" placeholder="Your specific strategy notes for '+platformLabels[k]+'..." style="width:100%;min-height:65px;border:1.5px dashed var(--du);border-radius:3px;padding:.5rem .65rem;font-family:var(--fb);font-size:.75rem;color:var(--st);line-height:1.7;resize:vertical;outline:none;background:var(--ch5)">'+( socialStrategy[k]||'')+'</textarea>' +
+        '</div>';
+    }).join('') +
+    '</div>' +
+
+    // VIDEO PRODUCTION PIPELINE
+    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">YouTube Video Pipeline</div>' +
+    '<div style="display:flex;flex-direction:column;gap:.45rem;margin-bottom:1.25rem" id="video-pipeline">' +
+    socialVideos.map(function(v,i){
+      var sc={planned:'var(--du)',filming:'var(--ch2)',editing:'var(--lv2)',published:'var(--sg2)'};
+      return '<div class="card" style="padding:.75rem;border-left:3px solid '+(sc[v.status]||'var(--du)')+'">' +
+        '<div style="display:flex;align-items:center;gap:.65rem;flex-wrap:wrap">' +
+        '<div style="font-family:var(--fm);font-size:.5rem;color:var(--wg);min-width:18px">'+(i+1)+'</div>' +
+        '<div style="flex:1;font-size:.82rem;font-weight:600;color:var(--ink)">'+v.title+'</div>' +
+        '<select onchange="updateVideoStatus('+v.id+',this.value)" style="font-family:var(--fm);font-size:.55rem;border:1px solid var(--du);border-radius:3px;padding:.2rem .45rem;background:var(--wh);color:'+(sc[v.status]||'var(--du)')+';outline:none">' +
+        ['planned','filming','editing','published'].map(function(s){return '<option value="'+s+'" '+(v.status===s?'selected':'')+'>'+s.charAt(0).toUpperCase()+s.slice(1)+'</option>';}).join('') +
+        '</select>' +
+        '</div>' +
+        '<div style="font-size:.72rem;color:var(--wg);margin-top:.25rem;padding-left:1.35rem">'+v.notes+'</div>' +
+        '</div>';
+    }).join('') +
+    '</div>' +
+
+    // CROSS-POST SYSTEM
+    '<div class="card" style="margin-bottom:1.25rem;border-top:3px solid var(--tz3)">' +
+    '<div class="cl">Cross-Post System</div>' +
+    '<div style="display:grid;grid-template-columns:1fr auto auto auto auto;gap:.5rem;align-items:center;font-family:var(--fm);font-size:.5rem;color:var(--wg);text-transform:uppercase;padding:.35rem 0;border-bottom:2px solid var(--ch4);margin-bottom:.35rem">' +
+    '<div>Content</div><div>Library</div><div>Substack</div><div>YouTube</div><div>IG Reel</div>' +
+    '</div>' +
+    [
+      {title:'Why I Entered a Pageant',lib:true,sub:true,yt:true,ig:true},
+      {title:'SB 707 Explained',lib:true,sub:true,yt:true,ig:true},
+      {title:'Keel Labs & Algae',lib:true,sub:true,yt:true,ig:false},
+      {title:'Supply Chain Story',lib:true,sub:true,yt:true,ig:true},
+      {title:'Cello & Engineering',lib:true,sub:true,yt:true,ig:true},
+      {title:'SD Clean Fashion Capital',lib:true,sub:true,yt:true,ig:false},
+    ].map(function(r){
+      return '<div style="display:grid;grid-template-columns:1fr auto auto auto auto;gap:.5rem;align-items:center;padding:.3rem 0;border-bottom:1px solid var(--ch4)">' +
+        '<div style="font-size:.75rem;color:var(--st)">'+r.title+'</div>' +
+        '<div style="text-align:center">'+(r.lib?'✓':'—')+'</div>' +
+        '<div style="text-align:center">'+(r.sub?'✓':'—')+'</div>' +
+        '<div style="text-align:center">'+(r.yt?'✓':'—')+'</div>' +
+        '<div style="text-align:center">'+(r.ig?'✓':'—')+'</div>' +
+        '</div>';
+    }).join('') +
+    '</div>' +
+
+    // FILMING TIPS
+    '<div class="card" style="margin-bottom:1.5rem;background:var(--tz);border-radius:3px">' +
+    '<div style="font-family:var(--fm);font-size:.5rem;letter-spacing:3px;color:rgba(240,216,152,.3);text-transform:uppercase;margin-bottom:.65rem">iPhone Filming Setup</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.85rem">' +
+    [
+      {label:'Settings',text:'4K 24fps. Lock exposure before recording. ProRes if your phone supports it.'},
+      {label:'Audio',text:'Bluetooth mic always on. Test before every shoot. Audio makes or breaks it.'},
+      {label:'Locations',text:'Ocean for materials/sustainability. Desk for policy. Walking for personal essays.'},
+      {label:'Aesthetic',text:'Natural light only. Golden hour or overcast. Tanzanite + champagne wardrobe tones.'},
+    ].map(function(t){
+      return '<div><div style="font-family:var(--fm);font-size:.48rem;letter-spacing:2px;color:rgba(240,216,152,.4);text-transform:uppercase;margin-bottom:.2rem">'+t.label+'</div>' +
+        '<div style="font-size:.75rem;color:rgba(216,212,236,.7);line-height:1.6">'+t.text+'</div></div>';
+    }).join('') +
+    '</div></div>' +
+
+    // BRAND ASSETS
+    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">Brand Assets</div>' +
+    '<div class="g2" style="margin-bottom:1.5rem">' +
+    Object.entries(DA).map(function(entry){
+      var k=entry[0],a=entry[1];
+      return '<div class="card" style="padding:.85rem">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem">' +
+        '<div style="font-family:var(--fm);font-size:.5rem;letter-spacing:2px;color:var(--wg);text-transform:uppercase">'+a.title+'</div>' +
+        '<button class="btn bg" style="font-size:.52rem;padding:.18rem .5rem" onclick="copyAsset(\'sba-'+k+'\',this)">Copy</button>' +
+        '</div>' +
+        '<textarea class="ba-ta" id="sba-'+k+'" oninput="S.brand[\''+k+'\']=this.value" style="min-height:55px;font-size:.75rem">'+(S.brand[k]||a.text)+'</textarea>' +
+        '</div>';
+    }).join('') +
+    '<div class="card" style="padding:.85rem;grid-column:1/-1">' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem">' +
+    '<div style="font-family:var(--fm);font-size:.5rem;letter-spacing:2px;color:var(--wg);text-transform:uppercase">Voice Principles</div>' +
+    '<button class="btn bg" style="font-size:.52rem;padding:.18rem .5rem" onclick="copyAsset(\'sba-voice\',this)">Copy</button>' +
+    '</div>' +
+    '<textarea class="ba-ta" id="sba-voice" oninput="S.brand[\'voice\']=this.value" style="min-height:45px;font-size:.75rem">'+(S.brand.voice||'Name the number. Name the bill. State, do not apologize. Curious, never preachy. Not for a crown, but for a microphone.')+'</textarea>' +
+    '</div>' +
+    '</div>' +
+
+    '</div>' // close pb
+  );
+
+  // Wire up strategy textareas
+  document.querySelectorAll('.social-strategy').forEach(function(el){
+    el.addEventListener('blur',function(){
+      var sd2=lsGet('chq-social',{strategy:{}});
+      if(!sd2.strategy)sd2.strategy={};
+      sd2.strategy[el.dataset.key]=el.value;
+      lsSave('chq-social',sd2);
+    });
+  });
+}
+
+// (from original app.js)
+function bInbox(){
+  var inbox=lsGet('chq-inbox',[]);
+  var tagColors={link:'var(--tz3)',idea:'var(--ch2)',sponsor:'var(--sg2)',urgent:'var(--bl2)',fyi:'var(--wg)'};
+
+  inject(
+    '<div class="ph"><div><div class="ph-tag">Amelia & Laneea</div><div class="ph-title"><em>Shared Inbox</em></div></div>' +
+    '<div class="ph-acts">' +
+    '<button class="btn bp" onclick="toggleQC()">+ Drop Something</button>' +
+    '</div></div>' +
+    '<div class="pb">' +
+
+    // COMPOSE
+    '<div class="card" style="margin-bottom:.85rem">' +
+    '<div style="display:flex;gap:.5rem;align-items:flex-start">' +
+    '<div class="tb-av" style="background:var(--ch);color:var(--ink);flex-shrink:0;margin-top:.15rem">'+( S.role==='amelia'?'AA':'LL')+'</div>' +
+    '<div style="flex:1">' +
+    '<textarea id="inbox-compose" placeholder="Drop a link, idea, update, or question for the team..." style="width:100%;min-height:70px;border:1.5px solid var(--du);border-radius:3px;padding:.55rem .75rem;font-family:var(--fb);font-size:.82rem;color:var(--ink);line-height:1.7;resize:none;outline:none;background:var(--ch6)"></textarea>' +
+    '<div style="display:flex;gap:.35rem;margin-top:.35rem;flex-wrap:wrap">' +
+    ['link','idea','sponsor','urgent','fyi'].map(function(t){
+      return '<button class="inbox-tag-btn" data-tag="'+t+'" onclick="toggleInboxTag(this)" style="font-family:var(--fm);font-size:.48rem;letter-spacing:1px;padding:.15rem .5rem;border-radius:3px;border:1px solid var(--du);background:transparent;color:var(--wg);cursor:pointer;text-transform:uppercase">'+t+'</button>';
+    }).join('') +
+    '<button onclick="sendInbox()" style="margin-left:auto;background:var(--tz);color:var(--ch);border:none;border-radius:3px;padding:.3rem .9rem;font-family:var(--fb);font-size:.67rem;font-weight:600;cursor:pointer">Send</button>' +
+    '</div>' +
+    '</div>' +
+    '</div>' +
+    '</div>' +
+
+    // FEED
+    '<div style="display:flex;flex-direction:column;gap:.5rem" id="inbox-feed">' +
+    (inbox.length?
+    inbox.slice().reverse().map(function(m){
+      var isMe=m.from===S.role;
+      var isUnread=!m.readBy||m.readBy.indexOf(S.role)<0;
+      return '<div id="inm-'+m.id+'" style="background:var(--wh);border-radius:3px;padding:.85rem 1rem;border-left:3px solid '+(isMe?'var(--tz3)':'var(--ch3)')+';box-shadow:0 1px 6px rgba(46,37,96,.06);'+(isUnread?'border-right:3px solid var(--tz4)':'') +'">' +
+        '<div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem">' +
+        '<div class="tb-av" style="background:'+(isMe?'var(--ch)':'var(--lv)')+';color:var(--ink);width:20px;height:20px;font-size:.48rem">'+(m.from==='amelia'?'AA':'LL')+'</div>' +
+        '<div style="font-size:.75rem;font-weight:600;color:var(--ink)">'+(m.from==='amelia'?'Amelia':'Laneea')+'</div>' +
+        (m.tag?'<span style="font-family:var(--fm);font-size:.44rem;letter-spacing:1px;text-transform:uppercase;color:'+(tagColors[m.tag]||'var(--wg)')+';background:'+(tagColors[m.tag]||'var(--wg)')+'22;padding:.1rem .35rem;border-radius:3px">'+m.tag+'</span>':'') +
+        '<div style="margin-left:auto;font-family:var(--fm);font-size:.5rem;color:var(--wg)">'+m.date+' '+m.time+'</div>' +
+        '</div>' +
+        '<div style="font-size:.82rem;color:var(--st);line-height:1.65;word-break:break-word">'+linkify(m.text)+'</div>' +
+        (!isMe?'<button onclick="markInboxRead('+m.id+')" style="margin-top:.4rem;background:none;border:none;font-family:var(--fm);font-size:.48rem;color:var(--wg);cursor:pointer;letter-spacing:1px;text-transform:uppercase">Mark read</button>':'') +
+        '</div>';
+    }).join(''):
+    '<div style="text-align:center;padding:3rem;font-family:var(--fd);font-style:italic;color:var(--wg)">The inbox is empty — drop something in to get started</div>'
+    ) +
+    '</div>' +
+    '</div>'
+  );
+
+  // Mark all as read on open
+  var inbox2=lsGet('chq-inbox',[]);
+  inbox2.forEach(function(m){
+    if(!m.readBy)m.readBy=[];
+    if(m.readBy.indexOf(S.role)<0)m.readBy.push(S.role);
+  });
+  lsSave('chq-inbox',inbox2);
+}
+
+// (from original app.js)
+function bDeliverables(){inject('<div class="ph"><div><div class="ph-tag">Sponsor</div><div class="ph-title">Your <em>Deliverables</em></div></div></div><div class="pb">'+buildDelivCards()+'</div>');}
+
+// (from original app.js)
+function bCompProgress(){
+  inject('<div class="ph"><div><div class="ph-tag">Sponsor View</div><div class="ph-title">Competition <em>Progress</em></div></div></div><div class="pb"><div class="card">' +
+    [{label:'Entry Secured',done:true,note:'Miss Temecula USA 2026'},{label:'Coach Engaged',done:true,note:'Weekly sessions'},{label:'Wardrobe In Progress',done:false,note:'With Laneea'},{label:'YouTube Channel Launch',done:false,note:'Starting from 0'},{label:'Competition Week',done:false,note:'July 10-12 · Grand Hyatt Indian Wells'}].map(function(p){
+      return '<div class="tl"><div class="tl-d" style="background:'+(p.done?'var(--sg2)':'var(--du)')+'"></div><div class="tl-t"><strong>'+p.label+'</strong>'+p.note+'</div></div>';
+    }).join('') +
+    '</div></div>');
+}
+
+// (from original app.js)
+function bAdvocacy(){
+  var advDefaults={
+    energy:{stance:'SB 100 is law. Net-zero is the target. My platform is the bridge between legislation and lived reality — specifically in the textile supply chains that still run on fossil fuels.',stats:['65% of clothing is polyester — derived from crude oil','SB 100 mandates 100% clean energy by 2045','Textile mills rank among the most energy-intensive manufacturers','Green-collar jobs are the economic argument for transition'],notes:'',progress:'Developing',img:''},
+    fashion:{stance:'Every garment has a carbon cost. I advocate for the policy that makes brands pay it — not the planet. SB 707 is the mechanism. EPR is the framework.',stats:['Fashion = 10% of global carbon emissions','SB 707 shifts textile waste costs from taxpayers to brands','85% of textiles end up in landfills','Polyester takes 200+ years to decompose'],notes:'',progress:'Refined',img:''},
+    justice:{stance:'The communities closest to textile mills and fast fashion warehouses bear the greatest environmental burden. Clean fashion is not just a climate argument — it is a justice argument.',stats:['Low-income communities are 3x more likely to live near polluting facilities','California SB 535 directs cap-and-trade revenue to disadvantaged communities','Fast fashion workers earn an average $3/day globally','CA leads with the strongest environmental justice framework in the US'],notes:'',progress:'Drafting',img:''},
+    solarpunk:{stance:'Solarpunk is not a utopia. It is a building permit. Library of Morenita is solarpunk infrastructure — a digital archive designed not to burn.',stats:['Most creative work disappears within a generation','The Library of Alexandria held 400,000+ scrolls — and burned','Circular economy design could eliminate 45% of global emissions','Beauty and sustainability are not opposing forces'],notes:'',progress:'Concept',img:''},
+  };
+  var advSaved=lsGet('chq-adv',{});
+  var adv={};
+  ['energy','fashion','justice','solarpunk'].forEach(function(k){
+    adv[k]=Object.assign({},advDefaults[k],advSaved[k]||{});
+    if(!Array.isArray(adv[k].stats)) adv[k].stats=advDefaults[k].stats;
+  });
+  var sections=[
+    {key:'energy',icon:'⚡',title:'Clean Energy & EV',subtitle:'SB 100 · Net-Zero · Textile Mills',accent:'var(--ch3)',accentRaw:'#C8A84C',accentBg:'var(--ch4)'},
+    {key:'fashion',icon:'🌿',title:'Fashion Accountability',subtitle:'SB 707 · EPR · Fashion Miles',accent:'var(--sg2)',accentRaw:'#5A8A52',accentBg:'rgba(90,138,82,.08)'},
+    {key:'justice',icon:'🌍',title:'Environmental Justice',subtitle:'Frontline Communities · Equity · Policy',accent:'var(--lv2)',accentRaw:'#9880C8',accentBg:'rgba(152,128,200,.08)'},
+    {key:'solarpunk',icon:'✦',title:'Solarpunk & Sustainable Tech',subtitle:'Library of Morenita · Circular Design',accent:'var(--tz3)',accentRaw:'#6B5FBA',accentBg:'var(--tz5)'},
+  ];
+  var stages=['Concept','Drafting','Developing','Refined','Ready'];
+  var html='<div class="ph"><div><div class="ph-tag">Platform</div><div class="ph-title"><em>Advocacy</em></div></div>'+
+    '<div class="ph-acts"><span style="font-family:var(--fm);font-size:.55rem;color:var(--wg);font-style:italic">ameliaarabe.com/advocacy — coming soon</span></div></div>'+
+    '<div class="pb">';
+  sections.forEach(function(sec){
+    var d=adv[sec.key];
+    var hasImg=d.img&&d.img.length>0;
+    html+=
+      '<div class="adv-section" data-key="'+sec.key+'" style="margin-bottom:2rem;border-radius:3px;overflow:hidden;box-shadow:0 2px 16px rgba(46,37,96,.08);border:1px solid rgba(221,208,184,.25)">'+
+      '<div style="position:relative;height:200px;background:linear-gradient(135deg,var(--tz) 0%,var(--tz2) 60%,'+sec.accentRaw+'44 100%);overflow:hidden">'+
+      (hasImg?'<img src="'+d.img+'" style="width:100%;height:100%;object-fit:cover;opacity:.85">':
+        '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:.5rem">'+
+        '<div style="font-size:2.5rem;opacity:.25">'+sec.icon+'</div>'+
+        '<div style="font-family:var(--fm);font-size:.48rem;letter-spacing:4px;color:rgba(240,216,152,.3);text-transform:uppercase">Add a photo for this section</div>'+
+        '</div>')+
+      '<div style="position:absolute;inset:0;background:linear-gradient(transparent 30%,rgba(20,16,40,.75))"></div>'+
+      '<div style="position:absolute;bottom:0;left:0;right:0;padding:1.25rem 1.75rem">'+
+      '<div style="font-family:var(--fm);font-size:.44rem;letter-spacing:4px;color:rgba(240,216,152,.45);text-transform:uppercase;margin-bottom:.3rem">'+sec.subtitle+'</div>'+
+      '<div style="font-family:var(--fd);font-size:clamp(1.4rem,3vw,2rem);font-style:italic;color:var(--ch);line-height:1.1;font-weight:300">'+sec.title+'</div>'+
+      '</div>'+
+      '<label class="adv-img-btn" data-key="'+sec.key+'" style="position:absolute;top:.65rem;right:.65rem;background:rgba(20,16,40,.55);border:1px solid rgba(240,216,152,.2);border-radius:3px;padding:.22rem .6rem;font-family:var(--fm);font-size:.44rem;color:rgba(240,216,152,.65);cursor:pointer;letter-spacing:1px;text-transform:uppercase">'+
+      (hasImg?'Change':'+ Photo')+
+      '<input type="file" accept="image/*" style="display:none" class="adv-img-input" data-key="'+sec.key+'"></label>'+
+      (hasImg?'<button class="adv-img-clear" data-key="'+sec.key+'" style="position:absolute;top:.65rem;left:.65rem;background:rgba(20,16,40,.55);border:1px solid rgba(240,216,152,.2);border-radius:3px;padding:.22rem .6rem;font-family:var(--fm);font-size:.44rem;color:rgba(240,216,152,.65);cursor:pointer;letter-spacing:1px;text-transform:uppercase">Remove</button>':'')+
+      '</div>'+
+      '<div style="background:var(--ch6);padding:.55rem 1.5rem;display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;border-bottom:1px solid rgba(221,208,184,.2)">'+
+      '<span style="font-family:var(--fm);font-size:.44rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-right:.25rem;flex-shrink:0">Stage</span>'+
+      stages.map(function(s){
+        var active=d.progress===s;
+        return '<button class="adv-stage-btn" data-key="'+sec.key+'" data-stage="'+s+'" data-accent="'+sec.accentRaw+'" style="font-family:var(--fm);font-size:.44rem;letter-spacing:1px;padding:.2rem .6rem;border-radius:3px;border:1px solid '+(active?sec.accentRaw:'var(--du)')+';background:'+(active?sec.accentRaw:'transparent')+';color:'+(active?'white':'var(--wg)')+';cursor:pointer;transition:all .15s;text-transform:uppercase">'+s+'</button>';
+      }).join('')+
+      '</div>'+
+      '<div style="padding:1.35rem 1.75rem;background:var(--wh)">'+
+      '<div style="display:grid;grid-template-columns:1.15fr 1fr;gap:1.5rem;margin-bottom:1.25rem">'+
+      '<div>'+
+      '<div style="font-family:var(--fm);font-size:.44rem;letter-spacing:3px;color:'+sec.accent+';text-transform:uppercase;margin-bottom:.5rem">Public Stance</div>'+
+      '<div class="adv-stance" data-key="'+sec.key+'" contenteditable="true" style="font-family:var(--fd);font-size:.98rem;font-style:italic;color:var(--ink);line-height:1.75;outline:none;border-left:2px solid '+sec.accent+';padding:.85rem 1rem;background:'+sec.accentBg+';border-radius:0 3px 3px 0;min-height:90px">'+d.stance+'</div>'+
+      '</div>'+
+      '<div>'+
+      '<div style="font-family:var(--fm);font-size:.44rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.5rem">Key Facts</div>'+
+      '<div class="adv-stats-grid" data-key="'+sec.key+'">'+
+      d.stats.map(function(stat,si){
+        return '<div class="adv-stat-item" data-key="'+sec.key+'" data-idx="'+si+'" contenteditable="true" style="font-family:var(--fb);font-size:.72rem;color:var(--ink);line-height:1.5;padding:.5rem .7rem;margin-bottom:.35rem;background:var(--ch5);border-radius:3px;border-left:2px solid '+sec.accent+';outline:none">'+stat+'</div>';
+      }).join('')+
+      '<button class="adv-add-stat" data-key="'+sec.key+'" data-accent="'+sec.accentRaw+'" style="font-family:var(--fm);font-size:.44rem;letter-spacing:2px;color:var(--wg);background:transparent;border:1px dashed var(--du);border-radius:3px;padding:.25rem .7rem;cursor:pointer;width:100%;text-transform:uppercase;margin-top:.15rem">+ Add Fact</button>'+
+      '</div>'+
+      '</div>'+
+      '</div>'+
+      '<div style="font-family:var(--fm);font-size:.44rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.35rem">Working Notes <span style="opacity:.4;text-transform:none;letter-spacing:0;font-size:.6rem;font-family:var(--fb)">— private</span></div>'+
+      '<textarea class="adv-notes" data-key="'+sec.key+'" placeholder="Research, quotes, talking points in progress..." style="width:100%;border:1.5px dashed var(--du);border-radius:3px;padding:.7rem;font-family:var(--fb);font-size:.75rem;color:var(--st);line-height:1.7;resize:vertical;outline:none;background:#FEFCF9;min-height:70px">'+d.notes+'</textarea>'+
+      '</div></div>';
+  });
+  html+='</div>';
+  inject(html);
+  document.querySelectorAll('.adv-img-input').forEach(function(inp){
+    inp.addEventListener('change',function(){
+      var key=inp.dataset.key;
+      var file=inp.files[0];if(!file)return;
+      var r=new FileReader();
+      r.onload=function(ev){saveAdv(key,'img',ev.target.result);bAdvocacy();};
+      r.readAsDataURL(file);
+    });
+  });
+  document.querySelectorAll('.adv-img-clear').forEach(function(btn){
+    btn.addEventListener('click',function(){saveAdv(btn.dataset.key,'img','');bAdvocacy();});
+  });
+  document.querySelectorAll('.adv-stage-btn').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var key=btn.dataset.key,stage=btn.dataset.stage,acc=btn.dataset.accent;
+      saveAdv(key,'progress',stage);
+      document.querySelectorAll('.adv-stage-btn[data-key="'+key+'"]').forEach(function(b){
+        var active=b.dataset.stage===stage;
+        b.style.background=active?acc:'transparent';
+        b.style.borderColor=active?acc:'var(--du)';
+        b.style.color=active?'white':'var(--wg)';
+      });
+    });
+  });
+  document.querySelectorAll('.adv-stance').forEach(function(el){
+    el.addEventListener('blur',function(){saveAdv(el.dataset.key,'stance',el.textContent.trim());});
+  });
+  document.querySelectorAll('.adv-stat-item').forEach(function(el){
+    el.addEventListener('blur',function(){
+      var key=el.dataset.key;
+      var stats=Array.from(document.querySelectorAll('.adv-stat-item[data-key="'+key+'"]')).map(function(i){return i.textContent.trim();});
+      saveAdv(key,'stats',stats);
+    });
+  });
+  document.querySelectorAll('.adv-add-stat').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var key=btn.dataset.key,acc=btn.dataset.accent;
+      var div=document.createElement('div');
+      div.className='adv-stat-item';div.dataset.key=key;div.contentEditable='true';
+      div.style.cssText='font-family:var(--fb);font-size:.72rem;color:var(--ink);line-height:1.5;padding:.5rem .7rem;margin-bottom:.35rem;background:var(--ch5);border-radius:3px;border-left:2px solid '+acc+';outline:none';
+      div.textContent='New fact...';
+      btn.parentElement.insertBefore(div,btn);div.focus();
+      div.addEventListener('blur',function(){
+        var stats=Array.from(document.querySelectorAll('.adv-stat-item[data-key="'+key+'"]')).map(function(i){return i.textContent.trim();});
+        saveAdv(key,'stats',stats);
+      });
+    });
+  });
+  document.querySelectorAll('.adv-notes').forEach(function(el){
+    el.addEventListener('blur',function(){saveAdv(el.dataset.key,'notes',el.value);});
+  });
+}
+
+// (from original app.js)
+function quickSend(){
+  var inp=g('quick-msg');if(!inp||!inp.value.trim())return;
+  var from=S.portalProfile?getPortalWorkspaceKey():S.role;
+  var to=S.portalProfile?'amelia':'team';
+  var m={id:Date.now(),from:from,to:to,text:inp.value.trim(),time:new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})};
+  S.messages.push(m);lsSave('chq-ms',S.messages);inp.value='';bMessages();
+}
+
+// (from original app.js)
+function sendMsg(){
+  var body=g('msg-body').value.trim();if(!body)return;
+  var m={id:Date.now(),from:S.role,to:g('msg-to').value,text:body,time:new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})};
+  S.messages.push(m);lsSave('chq-ms',S.messages);closeM('m-msg');g('msg-body').value='';bMessages();
+}
+
+// (from original app.js)
+function handleUpload(e){
+  var isPortal=!!S.portalProfile;
+  Array.from(e.target.files).forEach(function(file){
+    var r=new FileReader();
+    r.onload=function(ev){
+      FILE_STORE.push({id:Date.now()+Math.floor(Math.random()*1000000),name:file.name,size:file.size,type:file.type,data:ev.target.result,folder:isPortal?getPortalWorkspaceLabel():(window._fileFolder&&window._fileFolder!=='All'?window._fileFolder:'Personal')});
+      renderFileList();
+      sbSaveFiles();
+    };
+    r.readAsDataURL(file);
+  });
+}
+
+// (from original app.js)
+function renderFileList(){
+  var c=g('uploaded-files');if(!c)return;
+  var isPortal=!!S.portalProfile;
+  var folder=isPortal?getPortalWorkspaceLabel():(window._fileFolder||'All');
+  var filtered=folder==='All'?FILE_STORE:FILE_STORE.filter(function(f){return (f.folder||'Personal')===folder;});
+  if(!filtered.length){c.innerHTML='<div style="text-align:center;padding:2rem;font-family:var(--fd);font-style:italic;color:var(--wg)">No files in '+folder+' yet</div>';return;}
+  c.innerHTML=filtered.map(function(f,i){var realIdx=FILE_STORE.indexOf(f);
+    var ext=f.name.split('.').pop().toLowerCase();
+    var ico=(['jpg','jpeg','png','gif','webp'].includes(ext)?'🖼':ext==='pdf'?'📄':(['mp3','wav','ogg','m4a'].includes(ext))?'🎵':(['mp4','mov','webm'].includes(ext))?'🎬':'📎');
+    return '<div class="f-item" onclick="openFile('+realIdx+')" style="cursor:pointer">'+
+      '<div class="f-ico">'+ico+'</div>'+
+      '<div style="flex:1"><div class="f-nm">'+f.name+'</div><div class="f-mt">'+( f.size/1024).toFixed(1)+' KB · click to view</div></div>'+
+      '<div class="f-acts"><button class="btn bg" style="font-size:.58rem" onclick="event.stopPropagation();openFile('+realIdx+')">View</button>'+
+      '<button class="btn bg" style="font-size:.58rem" onclick="event.stopPropagation();downloadFile('+realIdx+')">↓</button>'+
+      '<button class="btn bg" style="font-size:.58rem;color:var(--bl2)" onclick="event.stopPropagation();removeFile('+realIdx+')">×</button></div></div>';
+  }).join('');
+}
+
+// (from original app.js)
+function buildDelivCards(){
+  return [{title:'Instagram Feature Post',due:'Apr 15',status:'pending'},{title:'YouTube Short (Launch)',due:'Apr 1',status:'overdue'},{title:'Logo on Advocacy One-Pager',due:'Mar 31',status:'done'},{title:'Named in Press Materials',due:'Ongoing',status:'done'}].map(function(d){
+    return '<div class="dv-card '+d.status+'"><div class="dv-ti">'+d.title+'</div><div class="dv-du">Due: '+d.due+'</div>' +
+      '<span class="dv-st ds-'+(d.status==='pending'?'p':d.status==='done'?'d':'o')+'">'+(d.status==='done'?'Complete':d.status==='overdue'?'Overdue':'Pending')+'</span></div>';
+  }).join('');
+}
+
+// (from original app.js)
+function getSpTabContent(spTab, raised){
+  if(spTab==='accounts') return renderPortalAccounts();
+  if(spTab==='pitch') return renderSpPitchDecks();
+  if(spTab==='emails') return renderSpEmails();
+  if(spTab==='objections') return renderSpObjections();
+  var html = '';
+  html += '<div class="g4" style="margin-bottom:.85rem">';
+  html += '<div class="stat st-tz"><div class="sn">'+S.sponsors.length+'</div><div class="sl">Total</div></div>';
+  html += '<div class="stat st-ch"><div class="sn">'+S.sponsors.filter(function(s){return s.status==='meeting';}).length+'</div><div class="sl">Meeting Set</div></div>';
+  html += '<div class="stat st-sg"><div class="sn">'+S.sponsors.filter(function(s){return s.status==='closed';}).length+'</div><div class="sl">Closed</div></div>';
+  html += '<div class="stat st-bl"><div class="sn">$'+raised.toLocaleString()+'</div><div class="sl">Raised</div></div>';
+  html += '</div>';
+  html += '<div style="display:flex;gap:.3rem;margin-bottom:.85rem;flex-wrap:wrap">';
+  ['all','new','contacted','meeting','closed','declined'].forEach(function(f){
+    var label = f==='all'?'All':f.charAt(0).toUpperCase()+f.slice(1);
+    var cls = f===spFilter?'btn bp':'btn bg';
+    html += '<button class="'+cls+'" data-f="'+f+'" onclick="spFilter=this.getAttribute(String.fromCharCode(100,97,116,97,45,102));bSponsors()">'+label+'</button>';
+  });
+  html += '</div>';
+  html += '<div class="card" style="padding:0;overflow:hidden">';
+  html += renderSponsorsTable();
+  html += '</div>';
+  return html;
+}
+
+
+
+
+// bLookbook
+function bLookbook(){
+  var published=getPublishedPosts().slice(0,4);
+  var links=getLookbookLinks();
+  var meta=getLookbookMeta();
+  var heroSrc=getPortfolioHeroSrc();
+  inject(
+    '<div class="ph"><div><div class="ph-tag">Public · Portfolio</div><div class="ph-title"><em>Editorial Portfolio</em></div></div>' +
+    '<div class="ph-acts">' +
+    '<button class="btn bg" onclick="previewLookbook()">Preview Public Page</button>' +
+    '<button class="btn bg" onclick="openPublicPortfolioRoute()">Open Public Route</button>' +
+    '<label class="btn bp" style="cursor:pointer">+ Upload Look<input type="file" accept="image/*" multiple style="display:none" onchange="addLookbookImg(event)"></label>' +
+    '</div></div>' +
+    '<div class="pb">' +
+    '<div class="portfolio-hero-card" style="margin-bottom:1.1rem">' +
+    '<div class="portfolio-hero-copy">' +
+    '<div class="lib-front-kicker">Editorial Portfolio</div>' +
+    '<div class="lib-front-title">A more professional portfolio built around image, writing, and platform.</div>' +
+    '<div class="portfolio-hero-subtitle">'+meta.subtitle+'</div>' +
+    '<div class="lib-front-sub">This is the only forward-facing portfolio page now. It carries the visual story, your core bio, social links, and selected published essays in one cohesive presentation.</div>' +
+    '<div class="portfolio-link-row">' +
+    '<button class="pc-link" onclick="window.open(\''+links.ig+'\',\'_blank\')">Instagram</button>' +
+    '<button class="pc-link" onclick="window.open(\''+links.yt+'\',\'_blank\')">YouTube</button>' +
+    '<button class="pc-link" onclick="window.open(\''+links.gh+'\',\'_blank\')">GitHub</button>' +
+    '<button class="pc-link" onclick="window.open(\''+links.tech+'\',\'_blank\')">Technical Portfolio</button>' +
+    '</div></div>' +
+    '<div class="portfolio-hero-image">'+(heroSrc?'<img src="'+heroSrc+'" alt="Portfolio hero">':'')+'</div>' +
+    '</div>' +
+
+    // CURATED LOOKS
+    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">Curated Looks — Upload Your Photos</div>' +
+    '<div class="mb-grid" id="lb-grid" style="margin-bottom:1.5rem">' +
+    getLookbookImgs().map(function(m,i){
+      return '<div class="mb-item" style="aspect-ratio:2/3">' +
+        '<img src="'+m.src+'" alt="'+m.caption+'">' +
+        '<div class="mb-lbl">'+m.caption+'</div>' +
+        '<button class="mb-rm" onclick="removeLookbookImg('+i+')">×</button>' +
+        '</div>';
+    }).join('') +
+    '<label class="mb-item mb-add" style="aspect-ratio:2/3">' +
+    '<input type="file" accept="image/*" multiple style="display:none" onchange="addLookbookImg(event)">' +
+    '<div style="font-size:1.3rem;color:var(--wg)">+</div>' +
+    '<span style="font-family:var(--fm);font-size:.52rem;color:var(--wg);letter-spacing:1px;text-transform:uppercase">Add Photo</span>' +
+    '</label>' +
+    '</div>' +
+
+    // SOCIAL LINKS
+    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">Profile And Portfolio Links</div>' +
+    '<div class="g3" style="margin-bottom:1.5rem">' +
+    '<div class="card">' +
+    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:2px;color:var(--tz3);text-transform:uppercase;margin-bottom:.5rem">📸 Instagram</div>' +
+    '<input class="fi" id="lb-ig" value="'+links.ig+'" placeholder="https://instagram.com/ameliavarabe">' +
+    '<div style="font-family:var(--fm);font-size:.5rem;color:var(--wg);margin-top:.35rem">Sponsors will see a direct link to your profile</div>' +
+    '</div>' +
+    '<div class="card">' +
+    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:2px;color:var(--bl2);text-transform:uppercase;margin-bottom:.5rem">▶️ YouTube</div>' +
+    '<input class="fi" id="lb-yt" value="'+links.yt+'" placeholder="https://youtube.com/@ameliavarabe">' +
+    '<div style="font-family:var(--fm);font-size:.5rem;color:var(--wg);margin-top:.35rem">Sponsors will see a direct link to your channel</div>' +
+    '</div>' +
+    '<div class="card">' +
+    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:2px;color:var(--sg2);text-transform:uppercase;margin-bottom:.5rem">⌘ GitHub</div>' +
+    '<input class="fi" id="lb-gh" value="'+links.gh+'" placeholder="https://github.com/ameliavarabe">' +
+    '<div style="font-family:var(--fm);font-size:.5rem;color:var(--wg);margin-top:.35rem">For the engineering side of the portfolio</div>' +
+    '</div>' +
+    '<div class="card">' +
+    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:2px;color:var(--ch3);text-transform:uppercase;margin-bottom:.5rem">⌁ Technical Portfolio</div>' +
+    '<input class="fi" id="lb-tech" value="'+links.tech+'" placeholder="https://yourdomain.com">' +
+    '<div style="font-family:var(--fm);font-size:.5rem;color:var(--wg);margin-top:.35rem">Primary link for your official engineering portfolio site</div>' +
+    '</div>' +
+    '</div>' +
+
+    // PORTFOLIO SUBTITLE
+    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">Portfolio Subtitle</div>' +
+    '<div class="card" style="margin-bottom:1.5rem">' +
+    '<input class="fi" id="lb-subtitle" value="'+meta.subtitle.replace(/"/g,'&quot;')+'" placeholder="Student Engineer · Net-Zero Hardware · Cellist · Policy Advocate">' +
+    '<div style="font-family:var(--fm);font-size:.5rem;color:var(--wg);margin-top:.35rem">Short professional line under your name in the portfolio hero</div>' +
+    '</div>' +
+
+    // BIO FOR SPONSORS
+    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">Sponsor-Facing Bio</div>' +
+    '<div class="card" style="margin-bottom:1.5rem">' +
+    '<textarea id="lb-bio" style="width:100%;min-height:90px;border:none;outline:none;font-family:var(--fd);font-size:.95rem;font-style:italic;color:var(--ink);line-height:1.8;resize:vertical;background:transparent" placeholder="What sponsors read when they open the lookbook...">'+(lsGet('chq-lb-bio','')||'Amelia Arabe is a Filipina-American student engineer, cellist, and Miss Temecula USA 2026 candidate based in San Diego. Her platform is clean energy and textile accountability policy. She competes not for a crown — but for a microphone.')+'</textarea>' +
+    '</div>' +
+    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">Published Essays In Portfolio</div>' +
+    '<div class="lib-grid" style="margin-bottom:1.5rem">' +
+    published.map(function(p){
+      var cat=libCats[p.cat]||{lbl:p.tag,bg:'var(--tz5)'};
+      return '<div class="lib-card" '+(S.role==='amelia'?'onclick="editPost('+p.id+')"':'')+'>' +
+        '<div class="lib-cover" style="background:'+cat.bg+'">' +
+        (p.cover?'<img src="'+p.cover+'">':'') +
+        '<div class="lib-overlay"></div>' +
+        '<div class="lib-cover-text"><div class="lib-cat">'+p.tag+'</div><div class="lib-title-sm">'+p.title+'</div></div>' +
+        '</div>' +
+        '<div class="lib-meta"><span class="lib-date">'+fdate(p.date)+'</span><span class="lib-status ls-p">Essay</span></div>' +
+        '</div>';
+    }).join('') +
+    '</div>' +
+    '<button class="btn bp" onclick="saveLookbookData()">Save Portfolio</button>' +
+    '</div>'
+  );
+}
+
+
+
+// ═══ MISSING HELPERS FROM ORIGINAL ════════════════════════
+// FILE_STORE
+var FILE_STORE=[];
+
+// isPublicPortfolioRoute
+function isPublicPortfolioRoute(){
+  try{
+    var qp=new URLSearchParams(window.location.search||'');
+    var view=(qp.get('view')||'').toLowerCase();
+    var hash=(window.location.hash||'').replace(/^#/,'').toLowerCase();
+    return view==='portfolio'||hash==='portfolio';
+  }catch(e){
+    return false;
+  }
+}
+
+// renderPublicPortfolioRoute
+function renderPublicPortfolioRoute(){
+  var login=g('login');
+  var app=g('app');
+  if(login)login.style.display='none';
+  if(app)app.style.display='none';
+  seed();
+  loadFromSupabase().then(function(){
+    document.open();
+    document.write(buildPublicPortfolioHTML());
+    document.close();
+  });
+}
+
+// getMorningGreeting
+function getMorningGreeting(){
+  var h=new Date().getHours();
+  var days=Math.ceil((new Date('2026-07-10')-new Date())/(1000*60*60*24));
+  if(h<12) return 'Good morning, Amelia. '+days+' days to crown.';
+  if(h<17) return 'Good afternoon, Amelia. '+days+' days to crown.';
+  return 'Good evening, Amelia. '+days+' days to crown.';
+}
+
+// linkify
+function linkify(text){
+  return text.replace(/(https?:\/\/[^\s]+)/g,'<a href="$1" target="_blank" style="color:var(--tz3);text-decoration:underline">$1</a>');
+}
+
+// _quotes
+var _quotes=[
+  {text:'Out beyond ideas of wrongdoing and rightdoing, there is a field. I will meet you there.',author:'Rumi'},
+  {text:'You are not a drop in the ocean. You are the entire ocean in a drop.',author:'Rumi'},
+  {text:'The wound is the place where the light enters you.',author:'Rumi'},
+  {text:'I am deliberate and afraid of nothing.',author:'Audre Lorde'},
+  {text:'When I dare to be powerful, to use my strength in the service of my vision, then it becomes less and less important whether I am afraid.',author:'Audre Lorde'},
+  {text:'You are enough. You have always been enough.',author:'Unknown'},
+  {text:'She remembered who she was and the game changed.',author:'Lalah Delia'},
+  {text:'The most courageous act is still to think for yourself. Aloud.',author:'Coco Chanel'},
+  {text:'I am not afraid of storms, for I am learning how to sail my ship.',author:'Louisa May Alcott'},
+  {text:'You carry so much love in your heart. Give some to yourself.',author:'Unknown'},
+];
+
+function getBriefAlerts(){
+  var alerts=[];
+  var today=new Date().toISOString().split('T')[0];
+  // Today's calendar events
+  var todayEvs=(S.calEvents||[]).filter(function(e){return e.date===today;});
+  if(todayEvs.length) alerts.push('<span style="font-family:var(--fm);font-size:.48rem;letter-spacing:1.5px;text-transform:uppercase;padding:.2rem .65rem;border-radius:20px;background:rgba(201,168,76,.15);color:rgba(201,168,76,.85);border:0.5px solid rgba(201,168,76,.3)">'+todayEvs.length+' event'+(todayEvs.length>1?'s':'')+' today</span>');
+  // Sponsors in meeting
+  var meetings=(S.sponsors||[]).filter(function(s){return s.status==='meeting';});
+  if(meetings.length) alerts.push('<span style="font-family:var(--fm);font-size:.48rem;letter-spacing:1.5px;text-transform:uppercase;padding:.2rem .65rem;border-radius:20px;background:rgba(90,138,82,.12);color:var(--sg2);border:0.5px solid rgba(90,138,82,.25)">'+meetings.length+' meeting'+(meetings.length>1?'s':'')+' set</span>');
+  // Undone todos
+  var myTodos=(S.todos&&S.todos.amelia)||[];
+  var undone=myTodos.filter(function(t){return !t.done;});
+  if(undone.length) alerts.push('<span style="font-family:var(--fm);font-size:.48rem;letter-spacing:1.5px;text-transform:uppercase;padding:.2rem .65rem;border-radius:20px;background:rgba(152,128,200,.1);color:var(--lv2);border:0.5px solid rgba(152,128,200,.2)">'+undone.length+' open task'+(undone.length>1?'s':'')+'</span>');
+  return alerts.join('');
+}
+
+// ═══ PREVIOUSLY MISSING FUNCTIONS ══════════════════════════════
+
+function toggleSearch(){
+  var el=g('search-overlay');
+  if(!el)return;
+  var visible=el.style.display!=='none';
+  el.style.display=visible?'none':'block';
+  if(!visible){var inp=g('search-input');if(inp){inp.value='';inp.focus();}g('search-results').innerHTML='';}
+}
+
+function runSearch(val){
+  var out=g('search-results');if(!out)return;
+  val=(val||'').toLowerCase().trim();
+  if(!val){out.innerHTML='';return;}
+  var results=[];
+  (S.sponsors||[]).forEach(function(s){if((s.name||'').toLowerCase().indexOf(val)>=0||(s.industry||'').toLowerCase().indexOf(val)>=0)results.push({label:s.name,sub:s.industry||s.status,action:"showPanel('sponsors')"});});
+  (S.posts||[]).forEach(function(p){if((p.title||'').toLowerCase().indexOf(val)>=0||(p.body||'').toLowerCase().indexOf(val)>=0)results.push({label:p.title,sub:'Essay · '+(p.status||'draft'),action:"showPanel('library')"});});
+  (S.calEvents||[]).forEach(function(e){if((e.title||'').toLowerCase().indexOf(val)>=0)results.push({label:e.title,sub:'Event · '+e.date,action:"showPanel('calendar')"});});
+  if(!results.length){out.innerHTML='<div style="color:rgba(216,212,236,.45);font-family:var(--fb);font-size:.8rem;padding:.5rem">No results for "'+val+'"</div>';return;}
+  out.innerHTML=results.slice(0,12).map(function(r){
+    return '<div onclick="toggleSearch();'+r.action+'" style="background:rgba(255,255,255,.07);border-radius:3px;padding:.6rem .85rem;cursor:pointer;border:1px solid rgba(216,212,236,.1)">' +
+      '<div style="font-family:var(--fb);font-size:.82rem;color:var(--ch)">'+r.label+'</div>' +
+      '<div style="font-family:var(--fm);font-size:.55rem;color:rgba(216,212,236,.45);margin-top:.15rem">'+r.sub+'</div></div>';
+  }).join('');
+}
+
+function toggleQC(){
+  var el=g('qc-overlay');if(!el)return;
+  var visible=el.style.display!=='none';
+  el.style.display=visible?'none':'block';
+  if(!visible){var t=g('qc-text');if(t){t.value='';t.focus();}}
+}
+
+function submitQC(){
+  var text=(g('qc-text').value||'').trim();
+  if(!text)return;
+  var dest=g('qc-dest').value||'inbox';
+  if(dest==='inbox'){
+    var inbox=lsGet('chq-inbox',[]);
+    inbox.push({id:Date.now(),from:S.role,text:text,date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}),time:new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}),tag:null,readBy:[S.role]});
+    lsSave('chq-inbox',inbox);
+  } else if(dest==='todo'){
+    if(!S.todos[S.role])S.todos[S.role]=[];
+    S.todos[S.role].push({id:Date.now(),text:text,done:false});
+    lsSave('chq-td',S.todos);
+  } else {
+    var board=lsGet('chq-board',{});
+    var col=dest.replace('board-','');
+    if(!board[col])board[col]=[];
+    board[col].push({id:Date.now(),text:text});
+    lsSave('chq-board',board);
+  }
+  showToast('Captured!');
+  toggleQC();
+}
+
+function addWorkout(){
+  var day=g('wk-day').value;
+  var focus=(g('wk-focus').value||'').trim();
+  if(!focus)return;
+  var rawEx=(g('wk-exercises').value||'').trim();
+  var exercises=rawEx?rawEx.split('\n').map(function(line){
+    var parts=line.split('·');
+    return {name:(parts[0]||'').trim(),sets:(parts[1]||'').trim()};
+  }).filter(function(e){return e.name;}):[];
+  var notes=(g('wk-notes').value||'').trim();
+  S.workouts.push({id:Date.now(),day:day,focus:focus,exercises:exercises,notes:notes});
+  lsSave('chq-wk',S.workouts);
+  closeM('m-workout');
+  ['wk-focus','wk-exercises','wk-notes'].forEach(function(id){var el=g(id);if(el)el.value='';});
+  bBody();
+}
+
+function deleteCalEvent(){
+  if(!S._editingEvId)return;
+  S.calEvents=S.calEvents.filter(function(e){return e.id!==S._editingEvId;});
+  S._editingEvId=null;
+  lsSave('chq-ce',S.calEvents);
+  var sb=document.querySelector('#m-ev .btn.bp');if(sb)sb.textContent='Save';
+  closeM('m-ev');
+  bCalendar();
+}
+
+function saveLookbookData(){
+  var bio=(g('lb-bio').value||'').trim();
+  lsSave('chq-lb-bio',bio);
+  showToast('Portfolio saved');
+}
+
+function toggleInboxTag(el){
+  var active=el.classList.contains('active');
+  document.querySelectorAll('.inbox-tag-btn').forEach(function(b){b.classList.remove('active');b.style.background='transparent';b.style.color='var(--wg)';b.style.borderColor='var(--du)';});
+  if(!active){el.classList.add('active');el.style.background='var(--tz5)';el.style.color='var(--tz3)';el.style.borderColor='var(--tz3)';}
+}
+
+function sendInbox(){
+  var text=(g('inbox-compose').value||'').trim();
+  if(!text)return;
+  var activeTag=document.querySelector('.inbox-tag-btn.active');
+  var tag=activeTag?activeTag.dataset.tag:null;
+  var inbox=lsGet('chq-inbox',[]);
+  inbox.push({id:Date.now(),from:S.role,text:text,date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}),time:new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}),tag:tag,readBy:[S.role]});
+  lsSave('chq-inbox',inbox);
+  g('inbox-compose').value='';
+  document.querySelectorAll('.inbox-tag-btn').forEach(function(b){b.classList.remove('active');b.style.background='transparent';b.style.color='var(--wg)';b.style.borderColor='var(--du)';});
+  bInbox();
+}
 
