@@ -2811,8 +2811,7 @@ function renderFitnessTab(fd){
     html += '<div><div style="font-family:var(--fm);font-size:.44rem;letter-spacing:2px;color:'+(dayDone?'rgba(255,255,255,.55)':'var(--muted)')+';text-transform:uppercase">'+s.day+(isToday?' · TODAY':'')+'</div>';
     html += '<div style="font-family:var(--fd);font-size:.98rem;font-style:italic;color:'+(dayDone?'white':'var(--ink)')+'">'+s.focus+'</div></div></div>';
     html += '<div style="font-family:var(--fm);font-size:.46rem;color:'+(dayDone?'rgba(255,255,255,.45)':'var(--muted)')+'">'+doneCount+'/'+s.exercises.length+'</div></div>';
-    var dayOpen = (isToday||dayDone||_openFitDays[s.key]);
-    html += '<div id="fit-day-'+s.key+'" style="'+(dayOpen?'':'display:none')+'">';
+    html += '<div id="fit-day-'+s.key+'">';
     s.exercises.forEach(function(e,ei){
       var exDone=exChecks[ei];
       html += '<div onclick="saveFitnessEx(\''+s.key+'\','+ei+')" style="display:flex;gap:.6rem;padding:.42rem 1rem;border-bottom:0.5px solid var(--iv3);align-items:center;cursor:pointer;background:'+(exDone?'var(--sgp)':'transparent')+'">';
