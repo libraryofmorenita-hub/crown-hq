@@ -5143,20 +5143,25 @@ function bCampaignEditor(){
     pillar2Title:'Community Infrastructure',pillar2Text:'Where energy alone isn\'t the answer, we engineer the solution that is. Clean water systems, connectivity infrastructure, sustainable housing materials \u2014 the platform adapts to what the community actually needs, built with their voices at the table.',
     pillar3Title:'Fashion Sustainability Policy',pillar3Text:'Fashion is the second most polluting industry on earth. It doesn\'t have to be. I\'m pushing for transparency legislation, recycled textile requirements, and supply chain accountability \u2014 from runway to regulation.'
   };
-  var IS='border:0.5px solid var(--iv3);border-radius:3px;padding:.32rem .55rem;font-family:var(--fb);font-size:.75rem;color:var(--ink);background:var(--wh);outline:none;width:100%;box-sizing:border-box';
+  var em=S.emActive;
+  var IS_on ='border:0.5px solid var(--iv3);border-radius:3px;padding:.32rem .55rem;font-family:var(--fb);font-size:.75rem;color:var(--ink);background:var(--wh);outline:none;width:100%;box-sizing:border-box';
+  var IS_off='border:0.5px solid var(--iv3);border-radius:3px;padding:.32rem .55rem;font-family:var(--fb);font-size:.75rem;color:var(--muted);background:var(--iv2);outline:none;width:100%;box-sizing:border-box;cursor:default';
+  var IS=em?IS_on:IS_off;
+  var dis=em?'':' disabled';
   var LS='font-family:var(--fm);font-size:.48rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted)';
   var SH='font-size:.58rem;font-family:var(--fm);letter-spacing:2px;text-transform:uppercase;color:var(--si);padding-bottom:.4rem;margin-bottom:.75rem;border-bottom:0.5px solid var(--iv3)';
   function ci(lbl,key){
     return '<div style="display:flex;flex-direction:column;gap:.18rem"><label style="'+LS+'">'+lbl+'</label>'+
-      '<input value="'+escHtml(t[key]||D[key]||'')+'" style="'+IS+'" oninput="saveCampaignText(\''+key+'\',this.value)"></div>';
+      '<input data-ctkey="'+key+'" value="'+escHtml(t[key]||D[key]||'')+'" style="'+IS+'"'+dis+'></div>';
   }
   function cta(lbl,key,h){
     return '<div style="display:flex;flex-direction:column;gap:.18rem"><label style="'+LS+'">'+lbl+'</label>'+
-      '<textarea style="'+IS+';min-height:'+(h||60)+'px;resize:vertical" oninput="saveCampaignText(\''+key+'\',this.value)">'+escHtml(t[key]||D[key]||'')+'</textarea></div>';
+      '<textarea data-ctkey="'+key+'" style="'+IS+';min-height:'+(h||60)+'px;resize:'+(em?'vertical':'none')+'"'+dis+'>'+escHtml(t[key]||D[key]||'')+'</textarea></div>';
   }
   var textHtml=
     '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:.65rem">Site Text Content</div>'+
-    '<div class="card" style="margin-bottom:1.5rem;display:flex;flex-direction:column;gap:1.35rem">'+
+    '<div class="card" id="camp-text-section" style="margin-bottom:1.5rem;display:flex;flex-direction:column;gap:1.35rem">'+
+      (!em ? '<div style="font-size:.72rem;color:var(--muted);font-style:italic;text-align:center;padding:.35rem 0">Enable Edit Mode to edit site text</div>' : '')+
       '<div>'+
         '<div style="'+SH+'">Hero</div>'+
         '<div style="display:flex;flex-direction:column;gap:.55rem">'+
@@ -5166,7 +5171,7 @@ function bCampaignEditor(){
           cta('Bio paragraph','heroBio',72)+
           '<div><label style="display:block;'+LS+';margin-bottom:.3rem">Tags</label>'+
           '<div style="display:flex;flex-direction:column;gap:.28rem">'+
-          ['heroTag0','heroTag1','heroTag2','heroTag3','heroTag4'].map(function(k){return '<input value="'+escHtml(t[k]||D[k]||'')+'" style="'+IS+'" oninput="saveCampaignText(\''+k+'\',this.value)">';}).join('')+
+          ['heroTag0','heroTag1','heroTag2','heroTag3','heroTag4'].map(function(k){return '<input data-ctkey="'+k+'" value="'+escHtml(t[k]||D[k]||'')+'" style="'+IS+'"'+dis+'>';}).join('')+
           '</div></div>'+
         '</div>'+
       '</div>'+
@@ -5177,7 +5182,7 @@ function bCampaignEditor(){
           cta('Bio paragraph 2','aboutText2',68)+
           '<div><label style="display:block;'+LS+';margin-bottom:.3rem">Credentials</label>'+
           '<div style="display:flex;flex-direction:column;gap:.28rem">'+
-          ['cred0','cred1','cred2','cred3','cred4'].map(function(k){return '<input value="'+escHtml(t[k]||D[k]||'')+'" style="'+IS+'" oninput="saveCampaignText(\''+k+'\',this.value)">';}).join('')+
+          ['cred0','cred1','cred2','cred3','cred4'].map(function(k){return '<input data-ctkey="'+k+'" value="'+escHtml(t[k]||D[k]||'')+'" style="'+IS+'"'+dis+'>';}).join('')+
           '</div></div>'+
         '</div>'+
       '</div>'+
@@ -5189,12 +5194,13 @@ function bCampaignEditor(){
           [[1,'pillar1Title','pillar1Text'],[2,'pillar2Title','pillar2Text'],[3,'pillar3Title','pillar3Text']].map(function(p){
             return '<div style="background:var(--iv2);border-radius:3px;padding:.75rem;display:flex;flex-direction:column;gap:.4rem">'+
               '<div style="font-family:var(--fm);font-size:.46rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)">Pillar '+p[0]+'</div>'+
-              '<input value="'+escHtml(t[p[1]]||D[p[1]]||'')+'" style="'+IS+';font-weight:500" oninput="saveCampaignText(\''+p[1]+'\',this.value)">'+
-              '<textarea style="'+IS+';min-height:58px;resize:vertical" oninput="saveCampaignText(\''+p[2]+'\',this.value)">'+escHtml(t[p[2]]||D[p[2]]||'')+'</textarea>'+
+              '<input data-ctkey="'+p[1]+'" value="'+escHtml(t[p[1]]||D[p[1]]||'')+'" style="'+IS+';font-weight:500"'+dis+'>'+
+              '<textarea data-ctkey="'+p[2]+'" style="'+IS+';min-height:58px;resize:'+(em?'vertical':'none')+'"'+dis+'>'+escHtml(t[p[2]]||D[p[2]]||'')+'</textarea>'+
             '</div>';
           }).join('')+
         '</div>'+
       '</div>'+
+      (em ? '<button onclick="saveCampaignTextAll()" class="btn bp" style="width:100%;padding:.65rem;margin-top:.25rem">Save Text to Site &rarr;</button>' : '')+
     '</div>';
 
   inject(
@@ -5339,6 +5345,17 @@ function saveCampaignText(key,val){
   var t=lsGet('chq-pub-text',{});
   t[key]=val;
   lsSave('chq-pub-text',t);
+}
+
+function saveCampaignTextAll(){
+  var section=document.getElementById('camp-text-section');
+  if(!section)return;
+  var t=lsGet('chq-pub-text',{});
+  section.querySelectorAll('[data-ctkey]').forEach(function(el){
+    t[el.getAttribute('data-ctkey')]=el.value;
+  });
+  lsSave('chq-pub-text',t);
+  showToast('Site text saved \u2713');
 }
 
 function quickPublishPost(){
