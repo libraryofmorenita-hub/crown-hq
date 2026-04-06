@@ -2266,7 +2266,7 @@ function bLibraryEditor(){
   var cats=Object.keys(libCats);
   inject(
     '<div class="ph"><div><div class="ph-tag">Internal</div><div class="ph-title">Library <em>Editor</em></div></div>' +
-    '<div class="ph-acts"><button class="btn bg" onclick="showPanel(\'library\')">View Public Library</button><button class="btn bp" onclick="newPost()">+ New Article</button></div></div>' +
+    '<div class="ph-acts"><button class="btn bp" onclick="newPost()">+ New Article</button></div></div>' +
     '<div class="pb">' +
     '<div style="display:flex;gap:.3rem;margin-bottom:.85rem;flex-wrap:wrap">' +
     '<button class="cal-tab '+(libCatFilter==='all'?'on':'')+'" onclick="libCatFilter=\'all\';bLibraryEditor()">All</button>' +
@@ -5127,6 +5127,75 @@ function bCampaignEditor(){
   var heroSrc=localStorage.getItem('chq-pub-hero')||'';
   var posts=lsGet('chq-po',[]);
   var published=posts.filter(function(p){return p.status==='published';}).sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
+  var t=lsGet('chq-pub-text',{});
+  var D={
+    heroEyebrow:'Miss Temecula Valley USA 2026 \u00b7 Competing for Miss California USA',
+    heroName:'Amelia Arabe',
+    heroTitle:'Engineer \u00b7 Artist \u00b7 Cellist \u00b7 Builder',
+    heroBio:'I believe the crown is a tool \u2014 a platform to do real work in the world. I\'m running to bring solar energy and green infrastructure to communities that have been left behind, to engineer solutions that actually serve people, and to push fashion sustainability from runway aspiration to federal policy.',
+    heroTag0:'Green Energy Access',heroTag1:'Community Infrastructure',heroTag2:'Fashion Sustainability Policy',heroTag3:'Riverside, CA',heroTag4:'Software Engineer',
+    aboutText1:'I grew up believing that the pursuit of knowledge and the pursuit of happiness are the same pursuit. I\'m a senior software engineer, co-founder, oil painter, and cellist \u2014 and I move through the world convinced that human creations are most beautiful when the process behind them cultivates healthy human connections.',
+    aboutText2:'I build systems that breathe. At Ballmecca and across the teams I\'ve led, I\'ve learned that the best infrastructure \u2014 technical or human \u2014 is the kind that holds space for people to fully show up. That\'s the leadership I bring to this campaign.',
+    cred0:'Senior Software Engineer & Co-founder, Ballmecca',cred1:'Computer Engineering, Loyola University Maryland',cred2:'Co-President, Society of Women Engineers',cred3:'Cellist \u00b7 Oil painter \u00b7 Riverside, California',cred4:'Building tools for a greener, more human-centered world',
+    platformIntro:'The crown is a microphone. I intend to use it to amplify the communities who have been engineered out of prosperity \u2014 and to build real solutions alongside them.',
+    pqText:'I am not running to be beautiful on a stage. I am running to build something that lasts after the crown comes off.',
+    pillar1Title:'Green Energy Access',pillar1Text:'Solar panels, microgrids, and renewable infrastructure built in and for underserved communities. Not charity \u2014 engineering. Real partnerships with municipalities, nonprofits, and clean energy companies to bring power to the people who need it most.',
+    pillar2Title:'Community Infrastructure',pillar2Text:'Where energy alone isn\'t the answer, we engineer the solution that is. Clean water systems, connectivity infrastructure, sustainable housing materials \u2014 the platform adapts to what the community actually needs, built with their voices at the table.',
+    pillar3Title:'Fashion Sustainability Policy',pillar3Text:'Fashion is the second most polluting industry on earth. It doesn\'t have to be. I\'m pushing for transparency legislation, recycled textile requirements, and supply chain accountability \u2014 from runway to regulation.'
+  };
+  var IS='border:0.5px solid var(--iv3);border-radius:3px;padding:.32rem .55rem;font-family:var(--fb);font-size:.75rem;color:var(--ink);background:var(--wh);outline:none;width:100%;box-sizing:border-box';
+  var LS='font-family:var(--fm);font-size:.48rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted)';
+  var SH='font-size:.58rem;font-family:var(--fm);letter-spacing:2px;text-transform:uppercase;color:var(--si);padding-bottom:.4rem;margin-bottom:.75rem;border-bottom:0.5px solid var(--iv3)';
+  function ci(lbl,key){
+    return '<div style="display:flex;flex-direction:column;gap:.18rem"><label style="'+LS+'">'+lbl+'</label>'+
+      '<input value="'+escHtml(t[key]||D[key]||'')+'" style="'+IS+'" oninput="saveCampaignText(\''+key+'\',this.value)"></div>';
+  }
+  function cta(lbl,key,h){
+    return '<div style="display:flex;flex-direction:column;gap:.18rem"><label style="'+LS+'">'+lbl+'</label>'+
+      '<textarea style="'+IS+';min-height:'+(h||60)+'px;resize:vertical" oninput="saveCampaignText(\''+key+'\',this.value)">'+escHtml(t[key]||D[key]||'')+'</textarea></div>';
+  }
+  var textHtml=
+    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:.65rem">Site Text Content</div>'+
+    '<div class="card" style="margin-bottom:1.5rem;display:flex;flex-direction:column;gap:1.35rem">'+
+      '<div>'+
+        '<div style="'+SH+'">Hero</div>'+
+        '<div style="display:flex;flex-direction:column;gap:.55rem">'+
+          ci('Eyebrow','heroEyebrow')+
+          ci('Name (H1)','heroName')+
+          ci('Title line','heroTitle')+
+          cta('Bio paragraph','heroBio',72)+
+          '<div><label style="display:block;'+LS+';margin-bottom:.3rem">Tags</label>'+
+          '<div style="display:flex;flex-direction:column;gap:.28rem">'+
+          ['heroTag0','heroTag1','heroTag2','heroTag3','heroTag4'].map(function(k){return '<input value="'+escHtml(t[k]||D[k]||'')+'" style="'+IS+'" oninput="saveCampaignText(\''+k+'\',this.value)">';}).join('')+
+          '</div></div>'+
+        '</div>'+
+      '</div>'+
+      '<div>'+
+        '<div style="'+SH+'">About</div>'+
+        '<div style="display:flex;flex-direction:column;gap:.55rem">'+
+          cta('Bio paragraph 1','aboutText1',68)+
+          cta('Bio paragraph 2','aboutText2',68)+
+          '<div><label style="display:block;'+LS+';margin-bottom:.3rem">Credentials</label>'+
+          '<div style="display:flex;flex-direction:column;gap:.28rem">'+
+          ['cred0','cred1','cred2','cred3','cred4'].map(function(k){return '<input value="'+escHtml(t[k]||D[k]||'')+'" style="'+IS+'" oninput="saveCampaignText(\''+k+'\',this.value)">';}).join('')+
+          '</div></div>'+
+        '</div>'+
+      '</div>'+
+      '<div>'+
+        '<div style="'+SH+'">Platform</div>'+
+        '<div style="display:flex;flex-direction:column;gap:.55rem">'+
+          cta('Intro paragraph','platformIntro',58)+
+          cta('Pull quote','pqText',52)+
+          [[1,'pillar1Title','pillar1Text'],[2,'pillar2Title','pillar2Text'],[3,'pillar3Title','pillar3Text']].map(function(p){
+            return '<div style="background:var(--iv2);border-radius:3px;padding:.75rem;display:flex;flex-direction:column;gap:.4rem">'+
+              '<div style="font-family:var(--fm);font-size:.46rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)">Pillar '+p[0]+'</div>'+
+              '<input value="'+escHtml(t[p[1]]||D[p[1]]||'')+'" style="'+IS+';font-weight:500" oninput="saveCampaignText(\''+p[1]+'\',this.value)">'+
+              '<textarea style="'+IS+';min-height:58px;resize:vertical" oninput="saveCampaignText(\''+p[2]+'\',this.value)">'+escHtml(t[p[2]]||D[p[2]]||'')+'</textarea>'+
+            '</div>';
+          }).join('')+
+        '</div>'+
+      '</div>'+
+    '</div>';
 
   inject(
     '<div class="ph"><div><div class="ph-tag">Amelia</div><div class="ph-title">Campaign <em>Site Editor</em></div></div>' +
@@ -5150,6 +5219,9 @@ function bCampaignEditor(){
         '</div>' +
       '</div>' +
     '</div>' +
+
+    // ── SITE TEXT ────────────────────────────────────────
+    textHtml +
 
     // ── GALLERY ─────────────────────────────────────────
     '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:.65rem">Photo Gallery</div>' +
@@ -5202,7 +5274,7 @@ function bCampaignEditor(){
         return '<div style="display:flex;align-items:center;justify-content:space-between;padding:.65rem .85rem;background:var(--wh);border-radius:3px;border:0.5px solid var(--iv3)">' +
           '<div>' +
             '<div style="font-size:.8rem;font-weight:500;color:var(--ink)">'+escHtml(p.title)+'</div>' +
-            '<div style="font-family:var(--fm);font-size:.5rem;color:var(--muted);margin-top:.1rem;letter-spacing:1px;text-transform:uppercase">'+(p.tag||p.cat||'Essay')+' · '+fdate(p.date)+'</div>' +
+            '<div style="font-family:var(--fm);font-size:.5rem;color:var(--muted);margin-top:.1rem;letter-spacing:1px;text-transform:uppercase">'+(p.tag||p.cat||'Essay')+' \u00b7 '+fdate(p.date)+'</div>' +
           '</div>' +
           '<button onclick="unpublishPost('+p.id+')" style="background:transparent;border:0.5px solid var(--iv4);border-radius:3px;padding:.22rem .6rem;font-family:var(--fm);font-size:.48rem;color:var(--muted);cursor:pointer;text-transform:uppercase;letter-spacing:1px">Unpublish</button>' +
         '</div>';
@@ -5261,6 +5333,12 @@ function updateGalleryCaption(idx,val){
   var gallery=lsGet('chq-pub-gallery',[]);
   if(gallery[idx])gallery[idx].caption=val;
   lsSave('chq-pub-gallery',gallery);
+}
+
+function saveCampaignText(key,val){
+  var t=lsGet('chq-pub-text',{});
+  t[key]=val;
+  lsSave('chq-pub-text',t);
 }
 
 function quickPublishPost(){

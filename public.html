@@ -1061,6 +1061,40 @@ document.addEventListener('keydown', function(e) {
 
 renderGallery();
 
+// ── LIVE SITE TEXT FROM DASHBOARD ───────────────────
+(function(){
+  try {
+    var raw = localStorage.getItem('chq-pub-text');
+    if(!raw) return;
+    var t = JSON.parse(raw);
+    if(!t||typeof t!=='object') return;
+    function setText(sel,val){ var el=document.querySelector(sel); if(el&&val) el.textContent=val; }
+    if(t.heroEyebrow) setText('.hero-eyebrow',t.heroEyebrow);
+    if(t.heroName) setText('.hero-name',t.heroName);
+    if(t.heroTitle) setText('.hero-title',t.heroTitle);
+    if(t.heroBio) setText('.hero-bio',t.heroBio);
+    var tags=document.querySelectorAll('.hero-tags .htag');
+    ['heroTag0','heroTag1','heroTag2','heroTag3','heroTag4'].forEach(function(k,i){ if(t[k]&&tags[i]) tags[i].textContent=t[k]; });
+    var aboutPs=document.querySelectorAll('.about-text');
+    if(t.aboutText1&&aboutPs[0]) aboutPs[0].textContent=t.aboutText1;
+    if(t.aboutText2&&aboutPs[1]) aboutPs[1].textContent=t.aboutText2;
+    var creds=document.querySelectorAll('.cred');
+    ['cred0','cred1','cred2','cred3','cred4'].forEach(function(k,i){
+      if(t[k]&&creds[i]){ var dot=creds[i].querySelector('.cred-dot'); creds[i].textContent=t[k]; if(dot) creds[i].insertBefore(dot,creds[i].firstChild); }
+    });
+    if(t.platformIntro) setText('.platform-intro',t.platformIntro);
+    if(t.pqText) setText('.pq-text',t.pqText);
+    var pTitles=document.querySelectorAll('.pillar-title');
+    var pTexts=document.querySelectorAll('.pillar-text');
+    if(t.pillar1Title&&pTitles[0]) pTitles[0].textContent=t.pillar1Title;
+    if(t.pillar1Text&&pTexts[0]) pTexts[0].textContent=t.pillar1Text;
+    if(t.pillar2Title&&pTitles[1]) pTitles[1].textContent=t.pillar2Title;
+    if(t.pillar2Text&&pTexts[1]) pTexts[1].textContent=t.pillar2Text;
+    if(t.pillar3Title&&pTitles[2]) pTitles[2].textContent=t.pillar3Title;
+    if(t.pillar3Text&&pTexts[2]) pTexts[2].textContent=t.pillar3Text;
+  } catch(e){}
+})();
+
 // ── LIVE TEAM DATA FROM DASHBOARD ─────────────────
 // Reads from localStorage written by app.js when team members
 // save their profiles. Works because both pages share the same origin.
