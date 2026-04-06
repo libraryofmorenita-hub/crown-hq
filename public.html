@@ -1037,6 +1037,28 @@ document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') closeLightbox();
 });
 
+// ── LIVE HERO IMAGE ─────────────────────────────────
+(function(){
+  try {
+    var heroSrc = localStorage.getItem('chq-pub-hero');
+    if(heroSrc){
+      var el = document.querySelector('.hero-img');
+      if(el) el.style.background = 'url(\''+heroSrc+'\') center 20%/cover no-repeat';
+    }
+  } catch(e){}
+})();
+
+// ── LIVE GALLERY FROM DASHBOARD ─────────────────────
+(function(){
+  try {
+    var raw = localStorage.getItem('chq-pub-gallery');
+    if(!raw) return;
+    var live = JSON.parse(raw);
+    if(!Array.isArray(live)||!live.length) return;
+    GALLERY_PHOTOS = live;
+  } catch(e){}
+})();
+
 renderGallery();
 
 // ── LIVE TEAM DATA FROM DASHBOARD ─────────────────

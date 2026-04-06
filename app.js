@@ -899,6 +899,7 @@ var ROLES={
       {ico:'🏠',lbl:'Dashboard',id:'dashboard'},
       {ico:'👤',lbl:'My Profile',id:'profile'},
       {ico:'👥',lbl:'Team Admin',id:'team-admin'},
+      {ico:'🌐',lbl:'Campaign Site',id:'campaign-site'},
       {ico:'✍️',lbl:'Library Editor',id:'library-editor'},
       {ico:'💰',lbl:'Sponsors',id:'sponsors',badge:true},
       {ico:'📅',lbl:'Calendar',id:'calendar'},
@@ -1088,6 +1089,7 @@ function showPanel(id,navEl){
     'comp-progress':    function(){ bCompProgress(); },
     'advocacy':         function(){ bAdvocacy(); },
     'lookbook':         function(){ bLookbook(); },
+    'campaign-site':    function(){ bCampaignEditor(); },
   }[id];
   if(panelFn) panelFn();
   else bPlaceholder(id);
@@ -2630,33 +2632,92 @@ function bLooks(){
     '<div class="ph-acts"><button class="btn bp" onclick="addLook()">+ Add Look</button></div></div>' +
     '<div class="pb"><div class="g2">' +
     S.looks.map(function(l){
+      var links=Array.isArray(l.links)?l.links:[];
       return '<div class="look-card">' +
+        // Image
         '<div class="look-img">' +
-        (l.img?'<img src="'+l.img+'" alt="'+l.title+'">' :
-        '<div class="look-add-img"><label style="cursor:pointer;text-align:center;display:flex;flex-direction:column;align-items:center;gap:.3rem;color:var(--wg)">' +
-        '<input type="file" accept="image/*" style="display:none" onchange="setLookImg('+l.id+',event)">' +
-        '<div style="font-size:1.4rem">📷</div>' +
-        '<div style="font-family:var(--fm);font-size:.55rem;letter-spacing:1px;text-transform:uppercase">Add image</div>' +
-        '</label></div>') +
+        (l.img
+          ? '<img src="'+l.img+'" alt="'+escHtml(l.title)+'" onclick="openLookImg(\''+l.id+'\')">' +
+            '<label class="look-img-upload-btn" style="display:none;position:absolute;bottom:.5rem;right:.5rem;cursor:pointer;background:rgba(28,23,20,.65);border:0.5px solid rgba(255,255,255,.2);border-radius:3px;padding:.25rem .55rem;font-family:var(--fm);font-size:.48rem;letter-spacing:1px;color:rgba(255,255,255,.75);text-transform:uppercase;align-items:center;gap:.3rem">' +
+              'Change<input type="file" accept="image/*" style="display:none" onchange="setLookImg('+l.id+',event)">' +
+            '</label>'
+          : '<div class="look-add-img"><label style="cursor:pointer;text-align:center;display:flex;flex-direction:column;align-items:center;gap:.35rem;color:var(--muted)">' +
+            '<input type="file" accept="image/*" style="display:none" onchange="setLookImg('+l.id+',event)">' +
+            '<div style="font-size:2rem;opacity:.4">📷</div>' +
+            '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:1.5px;text-transform:uppercase">Add Photo</div>' +
+            '</label></div>') +
         '</div>' +
+        // Body
         '<div class="look-body">' +
-        '<div class="look-ev" data-e="look:'+l.id+':event">'+l.event+'</div>' +
-        '<div class="look-title" data-e="look:'+l.id+':title">'+l.title+'</div>' +
-        '<div class="look-desc" data-e="look:'+l.id+':desc">'+l.desc+'</div>' +
-        '<button onclick="if(confirm(\'Remove this look?\'))removeLook('+l.id+')" style="margin-top:.65rem;background:transparent;border:0.5px solid var(--iv4);border-radius:3px;padding:.22rem .6rem;font-family:var(--fm);font-size:.48rem;letter-spacing:1px;color:var(--muted);cursor:pointer;text-transform:uppercase">Remove</button>' +
+        '<div class="look-ev" data-e="look:'+l.id+':event">'+escHtml(l.event)+'</div>' +
+        '<div class="look-title" data-e="look:'+l.id+':title">'+escHtml(l.title)+'</div>' +
+        '<div class="look-notes" data-e="look:'+l.id+':notes" data-placeholder="Notes, details, inspiration...">'+escHtml(l.notes||'')+'</div>' +
+        // Links
+        '<div class="look-links">' +
+        links.map(function(lk,li){
+          return '<a href="'+escHtml(lk.url)+'" target="_blank" class="look-link-chip">'+escHtml(lk.title)+
+            '<button class="look-link-rm" onclick="event.preventDefault();removeLookLink('+l.id+','+li+')">×</button></a>';
+        }).join('') +
+        '</div>' +
+        // Add link form (visible in edit mode via CSS)
+        '<div class="look-add-link">' +
+        '<div style="font-family:var(--fm);font-size:.48rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:.1rem">Add Link</div>' +
+        '<input id="ll-title-'+l.id+'" class="fi" placeholder="Link title (e.g. Shop ECONYL)" style="font-size:.72rem;padding:.3rem .55rem">' +
+        '<input id="ll-url-'+l.id+'" class="fi" placeholder="https://..." style="font-size:.72rem;padding:.3rem .55rem">' +
+        '<button onclick="addLookLink('+l.id+')" class="btn bp" style="font-size:.52rem;padding:.25rem .7rem;align-self:flex-start">Add</button>' +
+        '</div>' +
+        // Remove button (edit mode)
+        '<button onclick="if(confirm(\'Remove this look?\'))removeLook('+l.id+')" style="margin-top:auto;padding-top:.75rem;background:transparent;border:none;font-family:var(--fm);font-size:.48rem;letter-spacing:1px;color:var(--faint);cursor:pointer;text-align:left;text-transform:uppercase;display:none" class="look-rm-btn">Remove look</button>' +
         '</div></div>';
     }).join('') +
     '</div></div>'
   );
 }
+
 function setLookImg(id,e){
   var file=e.target.files[0];if(!file)return;
   var r=new FileReader();
   r.onload=function(ev){var l=S.looks.find(function(x){return x.id===id;});if(l){l.img=ev.target.result;lsSave('chq-lk',S.looks);bLooks();}};
   r.readAsDataURL(file);
 }
-function addLook(){S.looks.push({id:Date.now(),event:'New Event',round:'Competition',title:'New Look',desc:'Describe this look...',img:''});lsSave('chq-lk',S.looks);bLooks();}
+
+function openLookImg(id){
+  var l=S.looks.find(function(x){return String(x.id)===String(id);});
+  if(!l||!l.img)return;
+  var ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;background:rgba(28,23,20,.92);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:zoom-out';
+  ov.onclick=function(){ov.remove();};
+  var img=document.createElement('img');
+  img.src=l.img;img.style.cssText='max-width:92vw;max-height:92vh;object-fit:contain;border-radius:4px';
+  ov.appendChild(img);document.body.appendChild(ov);
+}
+
+function addLook(){
+  S.looks.push({id:Date.now(),event:'New Event',round:'Competition',title:'New Look',notes:'',links:[],img:''});
+  lsSave('chq-lk',S.looks);bLooks();
+}
+
 function removeLook(id){S.looks=S.looks.filter(function(x){return x.id!==id;});lsSave('chq-lk',S.looks);bLooks();}
+
+function addLookLink(id){
+  var titleEl=g('ll-title-'+id), urlEl=g('ll-url-'+id);
+  if(!titleEl||!urlEl)return;
+  var title=titleEl.value.trim(), url=urlEl.value.trim();
+  if(!title||!url)return;
+  if(!/^https?:\/\//.test(url))url='https://'+url;
+  var l=S.looks.find(function(x){return x.id===id;});
+  if(!l)return;
+  if(!Array.isArray(l.links))l.links=[];
+  l.links.push({title:title,url:url});
+  lsSave('chq-lk',S.looks);bLooks();
+}
+
+function removeLookLink(id,idx){
+  var l=S.looks.find(function(x){return x.id===id;});
+  if(!l||!Array.isArray(l.links))return;
+  l.links.splice(idx,1);
+  lsSave('chq-lk',S.looks);bLooks();
+}
 
 
 // ═══ BODY & MIND — unified Fitness / Peace / Diet ═══════════════
@@ -5058,6 +5119,173 @@ var _quotes=[
   {text:'I am not afraid of storms, for I am learning how to sail my ship.',author:'Louisa May Alcott'},
   {text:'You carry so much love in your heart. Give some to yourself.',author:'Unknown'},
 ];
+
+// ═══ CAMPAIGN SITE EDITOR ═══════════════════════════════════════
+
+function bCampaignEditor(){
+  var gallery=lsGet('chq-pub-gallery',[]);
+  var heroSrc=localStorage.getItem('chq-pub-hero')||'';
+  var posts=lsGet('chq-po',[]);
+  var published=posts.filter(function(p){return p.status==='published';}).sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
+
+  inject(
+    '<div class="ph"><div><div class="ph-tag">Amelia</div><div class="ph-title">Campaign <em>Site Editor</em></div></div>' +
+    '<div class="ph-acts"><a href="public.html" target="_blank" class="btn bg" style="text-decoration:none">View Site ↗</a></div></div>' +
+    '<div class="pb">' +
+
+    // ── HERO IMAGE ──────────────────────────────────────
+    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:.65rem">Hero Image</div>' +
+    '<div class="card" style="margin-bottom:1.5rem">' +
+      '<div style="display:flex;align-items:flex-start;gap:1.25rem">' +
+        '<div style="width:120px;height:80px;border-radius:4px;overflow:hidden;flex-shrink:0;background:var(--iv3);border:0.5px solid var(--iv4)">' +
+          (heroSrc ? '<img src="'+heroSrc+'" style="width:100%;height:100%;object-fit:cover">' : '<div style="width:100%;height:100%;background:url(assets/portfolio-hero.jpeg) center/cover"></div>') +
+        '</div>' +
+        '<div style="flex:1">' +
+          '<div style="font-size:.78rem;color:var(--ink);font-weight:500;margin-bottom:.3rem">Full-page hero background</div>' +
+          '<div style="font-size:.72rem;color:var(--muted);line-height:1.6;margin-bottom:.75rem">Appears on the public site hero section. Best as a portrait photo, at least 1200px wide.</div>' +
+          '<label style="display:inline-flex;align-items:center;gap:.4rem;cursor:pointer;background:var(--iv2);border:0.5px solid var(--iv3);border-radius:3px;padding:.35rem .75rem;font-family:var(--fm);font-size:.55rem;letter-spacing:1px;color:var(--muted);text-transform:uppercase">' +
+            'Upload New Image<input type="file" accept="image/*" style="display:none" onchange="uploadCampaignHero(event)">' +
+          '</label>' +
+          (heroSrc ? '<button onclick="clearCampaignHero()" style="margin-left:.5rem;background:transparent;border:0.5px solid var(--iv4);border-radius:3px;padding:.35rem .65rem;font-family:var(--fm);font-size:.5rem;color:var(--muted);cursor:pointer;letter-spacing:1px;text-transform:uppercase">Reset to default</button>' : '') +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+
+    // ── GALLERY ─────────────────────────────────────────
+    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:.65rem">Photo Gallery</div>' +
+    '<div class="card" style="margin-bottom:1.5rem">' +
+      '<div style="font-size:.72rem;color:var(--muted);margin-bottom:1rem;line-height:1.6">These appear in the Journey section of the public site. First photo is featured large.</div>' +
+      (gallery.length ?
+        '<div style="display:flex;flex-direction:column;gap:.5rem;margin-bottom:1rem" id="gallery-list">' +
+        gallery.map(function(p,i){
+          return '<div style="display:flex;align-items:center;gap:.75rem;padding:.6rem .75rem;background:var(--iv2);border-radius:3px;border:0.5px solid var(--iv3)">' +
+            '<div style="width:52px;height:36px;border-radius:2px;overflow:hidden;flex-shrink:0;background:var(--iv3)">' +
+              '<img src="'+p.src+'" style="width:100%;height:100%;object-fit:cover">' +
+            '</div>' +
+            '<input value="'+escHtml(p.caption||'')+'" placeholder="Caption..." ' +
+              'style="flex:1;border:0.5px solid var(--iv3);border-radius:3px;padding:.3rem .55rem;font-family:var(--fb);font-size:.75rem;color:var(--ink);background:var(--wh);outline:none" ' +
+              'onchange="updateGalleryCaption('+i+',this.value)">' +
+            '<button onclick="removeGalleryPhoto('+i+')" style="background:transparent;border:0.5px solid var(--iv4);border-radius:3px;padding:.25rem .55rem;font-family:var(--fm);font-size:.5rem;color:var(--muted);cursor:pointer;text-transform:uppercase;letter-spacing:1px;flex-shrink:0">Remove</button>' +
+          '</div>';
+        }).join('') +
+        '</div>'
+      : '<div style="font-size:.75rem;color:var(--faint);font-style:italic;margin-bottom:1rem">No photos added yet.</div>') +
+      '<label style="display:inline-flex;align-items:center;gap:.4rem;cursor:pointer;background:var(--sip);border:0.5px solid var(--sil);border-radius:3px;padding:.4rem .85rem;font-family:var(--fm);font-size:.55rem;letter-spacing:1px;color:var(--si);text-transform:uppercase">' +
+        '+ Add Photo<input type="file" accept="image/*" multiple style="display:none" onchange="addGalleryPhotos(event)">' +
+      '</label>' +
+    '</div>' +
+
+    // ── QUICK POST ───────────────────────────────────────
+    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:.65rem">Post an Update</div>' +
+    '<div class="card" style="margin-bottom:1.5rem">' +
+      '<div style="font-size:.72rem;color:var(--muted);margin-bottom:.85rem;line-height:1.6">Published posts appear in the Writing &amp; Essays section of the public site.</div>' +
+      '<div style="margin-bottom:.65rem">' +
+        '<input id="qp-title" class="fi" placeholder="Post title..." style="width:100%;margin-bottom:.5rem">' +
+        '<select id="qp-cat" class="fs" style="width:100%;margin-bottom:.5rem">' +
+          '<option value="energy">Clean Energy</option>' +
+          '<option value="fashion">Fashion Accountability</option>' +
+          '<option value="wellness">Beauty & Wellness</option>' +
+          '<option value="fitness">Fitness & Movement</option>' +
+          '<option value="morenita">Library of Morenita</option>' +
+          '<option value="solarpunk">Solarpunk</option>' +
+        '</select>' +
+        '<textarea id="qp-body" class="ft" placeholder="Write your post..." style="width:100%;min-height:120px;resize:vertical"></textarea>' +
+      '</div>' +
+      '<button onclick="quickPublishPost()" class="btn bp" style="width:100%;padding:.65rem">Publish to Site &rarr;</button>' +
+    '</div>' +
+
+    // ── PUBLISHED POSTS ──────────────────────────────────
+    (published.length ?
+      '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:.65rem">Live on Site ('+published.length+')</div>' +
+      '<div style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:1.5rem">' +
+      published.map(function(p){
+        return '<div style="display:flex;align-items:center;justify-content:space-between;padding:.65rem .85rem;background:var(--wh);border-radius:3px;border:0.5px solid var(--iv3)">' +
+          '<div>' +
+            '<div style="font-size:.8rem;font-weight:500;color:var(--ink)">'+escHtml(p.title)+'</div>' +
+            '<div style="font-family:var(--fm);font-size:.5rem;color:var(--muted);margin-top:.1rem;letter-spacing:1px;text-transform:uppercase">'+(p.tag||p.cat||'Essay')+' · '+fdate(p.date)+'</div>' +
+          '</div>' +
+          '<button onclick="unpublishPost('+p.id+')" style="background:transparent;border:0.5px solid var(--iv4);border-radius:3px;padding:.22rem .6rem;font-family:var(--fm);font-size:.48rem;color:var(--muted);cursor:pointer;text-transform:uppercase;letter-spacing:1px">Unpublish</button>' +
+        '</div>';
+      }).join('') +
+      '</div>'
+    : '') +
+
+    '</div>'
+  );
+}
+
+function uploadCampaignHero(e){
+  var file=e.target.files&&e.target.files[0];
+  if(!file)return;
+  if(file.size>5*1024*1024){showToast('Image must be under 5MB');return;}
+  var r=new FileReader();
+  r.onload=function(ev){
+    localStorage.setItem('chq-pub-hero',ev.target.result);
+    showToast('Hero image updated \u2713');
+    bCampaignEditor();
+  };
+  r.readAsDataURL(file);
+}
+
+function clearCampaignHero(){
+  localStorage.removeItem('chq-pub-hero');
+  showToast('Reset to default');
+  bCampaignEditor();
+}
+
+function addGalleryPhotos(e){
+  var files=Array.from(e.target.files||[]);
+  if(!files.length)return;
+  var gallery=lsGet('chq-pub-gallery',[]);
+  var loaded=0;
+  files.forEach(function(file){
+    if(file.size>5*1024*1024){showToast('Skipped file over 5MB');loaded++;if(loaded===files.length)bCampaignEditor();return;}
+    var r=new FileReader();
+    r.onload=function(ev){
+      gallery.push({src:ev.target.result,caption:''});
+      loaded++;
+      if(loaded===files.length){lsSave('chq-pub-gallery',gallery);showToast('Photo'+(files.length>1?'s':'')+' added \u2713');bCampaignEditor();}
+    };
+    r.readAsDataURL(file);
+  });
+}
+
+function removeGalleryPhoto(idx){
+  var gallery=lsGet('chq-pub-gallery',[]);
+  gallery.splice(idx,1);
+  lsSave('chq-pub-gallery',gallery);
+  bCampaignEditor();
+}
+
+function updateGalleryCaption(idx,val){
+  var gallery=lsGet('chq-pub-gallery',[]);
+  if(gallery[idx])gallery[idx].caption=val;
+  lsSave('chq-pub-gallery',gallery);
+}
+
+function quickPublishPost(){
+  var title=(g('qp-title').value||'').trim();
+  var body=(g('qp-body').value||'').trim();
+  var cat=g('qp-cat').value||'energy';
+  if(!title||!body){showToast('Title and body required');return;}
+  var catLabels={energy:'Clean Energy',fashion:'Fashion Accountability',wellness:'Beauty & Wellness',fitness:'Fitness & Movement',morenita:'Library of Morenita',solarpunk:'Solarpunk'};
+  var posts=lsGet('chq-po',[]);
+  posts.push({id:Date.now(),title:title,body:body,cat:cat,tag:catLabels[cat]||cat,status:'published',date:new Date().toISOString().split('T')[0]});
+  lsSave('chq-po',posts);
+  S.posts=posts;
+  showToast('Published \u2713');
+  bCampaignEditor();
+}
+
+function unpublishPost(id){
+  var posts=lsGet('chq-po',[]);
+  var p=posts.find(function(x){return x.id===id;});
+  if(p)p.status='draft';
+  lsSave('chq-po',posts);
+  S.posts=posts;
+  showToast('Moved to drafts');
+  bCampaignEditor();
+}
 
 function getBriefAlerts(){
   var alerts=[];
