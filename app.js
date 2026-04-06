@@ -5295,12 +5295,27 @@ function bCampaignEditor(){
 function uploadCampaignHero(e){
   var file=e.target.files&&e.target.files[0];
   if(!file)return;
-  if(file.size>5*1024*1024){showToast('Image must be under 5MB');return;}
+  if(file.size>20*1024*1024){showToast('Image must be under 20MB');return;}
   var r=new FileReader();
   r.onload=function(ev){
-    localStorage.setItem('chq-pub-hero',ev.target.result);
-    showToast('Hero image updated \u2713');
-    bCampaignEditor();
+    var img=new Image();
+    img.onload=function(){
+      var MAX=1400;
+      var w=img.width,h=img.height;
+      if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}
+      var canvas=document.createElement('canvas');
+      canvas.width=w;canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      var dataUrl=canvas.toDataURL('image/jpeg',0.82);
+      try{
+        localStorage.setItem('chq-pub-hero',dataUrl);
+        showToast('Hero image updated \u2713');
+        bCampaignEditor();
+      }catch(ex){
+        showToast('Image too large to store \u2014 try a smaller file');
+      }
+    };
+    img.src=ev.target.result;
   };
   r.readAsDataURL(file);
 }
