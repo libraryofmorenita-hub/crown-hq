@@ -5307,12 +5307,31 @@ function uploadCampaignHero(e){
       canvas.width=w;canvas.height=h;
       canvas.getContext('2d').drawImage(img,0,0,w,h);
       var dataUrl=canvas.toDataURL('image/jpeg',0.82);
-      try{
-        localStorage.setItem('chq-pub-hero',dataUrl);
-        showToast('Hero image updated \u2713');
-        bCampaignEditor();
-      }catch(ex){
-        showToast('Image too large to store \u2014 try a smaller file');
+      function storeHero(posX,posY){
+        try{
+          localStorage.setItem('chq-pub-hero',dataUrl);
+          localStorage.setItem('chq-pub-hero-pos',posX+'% '+posY+'%');
+          showToast('Hero image updated \u2713');
+          bCampaignEditor();
+        }catch(ex){
+          showToast('Image too large to store \u2014 try a smaller file');
+        }
+      }
+      if('FaceDetector' in window){
+        var fd=new FaceDetector({fastMode:true});
+        fd.detect(canvas).then(function(faces){
+          if(faces.length){
+            var f=faces[0].boundingBox;
+            // anchor to top of face so it stays visible when image is cropped tall
+            var cx=Math.round((f.x+f.width/2)/w*100);
+            var cy=Math.round((f.y+f.height*0.1)/h*100);
+            storeHero(cx,Math.max(5,Math.min(cy,60)));
+          } else {
+            storeHero(50,18);
+          }
+        }).catch(function(){storeHero(50,18);});
+      } else {
+        storeHero(50,18);
       }
     };
     img.src=ev.target.result;
@@ -5322,6 +5341,7 @@ function uploadCampaignHero(e){
 
 function clearCampaignHero(){
   localStorage.removeItem('chq-pub-hero');
+  localStorage.removeItem('chq-pub-hero-pos');
   showToast('Reset to default');
   bCampaignEditor();
 }

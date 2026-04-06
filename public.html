@@ -1042,8 +1042,9 @@ document.addEventListener('keydown', function(e) {
   try {
     var heroSrc = localStorage.getItem('chq-pub-hero');
     if(heroSrc){
+      var pos = localStorage.getItem('chq-pub-hero-pos') || '50% 18%';
       var el = document.querySelector('.hero-img');
-      if(el) el.style.background = 'url(\''+heroSrc+'\') center 20%/cover no-repeat';
+      if(el) el.style.background = 'url(\''+heroSrc+'\') '+pos+'/cover no-repeat';
     }
   } catch(e){}
 })();
