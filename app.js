@@ -5211,18 +5211,18 @@ function bCampaignEditor(){
     // ── HERO IMAGE ──────────────────────────────────────
     '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:.65rem">Hero Image</div>' +
     '<div class="card" style="margin-bottom:1.5rem">' +
-      '<div style="display:flex;align-items:flex-start;gap:1.25rem">' +
-        '<div style="width:120px;height:80px;border-radius:4px;overflow:hidden;flex-shrink:0;background:var(--iv3);border:0.5px solid var(--iv4)">' +
-          (heroSrc ? '<img src="'+heroSrc+'" style="width:100%;height:100%;object-fit:cover">' : '<div style="width:100%;height:100%;background:url(assets/portfolio-hero.jpeg) center/cover"></div>') +
-        '</div>' +
-        '<div style="flex:1">' +
-          '<div style="font-size:.78rem;color:var(--ink);font-weight:500;margin-bottom:.3rem">Full-page hero background</div>' +
-          '<div style="font-size:.72rem;color:var(--muted);line-height:1.6;margin-bottom:.75rem">Appears on the public site hero section. Best as a portrait photo, at least 1200px wide.</div>' +
-          '<label style="display:inline-flex;align-items:center;gap:.4rem;cursor:pointer;background:var(--iv2);border:0.5px solid var(--iv3);border-radius:3px;padding:.35rem .75rem;font-family:var(--fm);font-size:.55rem;letter-spacing:1px;color:var(--muted);text-transform:uppercase">' +
-            'Upload New Image<input type="file" accept="image/*" style="display:none" onchange="uploadCampaignHero(event)">' +
-          '</label>' +
-          (heroSrc ? '<button onclick="clearCampaignHero()" style="margin-left:.5rem;background:transparent;border:0.5px solid var(--iv4);border-radius:3px;padding:.35rem .65rem;font-family:var(--fm);font-size:.5rem;color:var(--muted);cursor:pointer;letter-spacing:1px;text-transform:uppercase">Reset to default</button>' : '') +
-        '</div>' +
+      (heroSrc ?
+        // preview with crop handle
+        '<div style="position:relative;width:100%;height:160px;border-radius:4px;overflow:hidden;background:var(--iv3);margin-bottom:.85rem;cursor:ns-resize" id="hero-crop-wrap" title="Drag up/down to adjust crop">' +
+          '<div id="hero-crop-preview" style="width:100%;height:100%;background:url(\''+heroSrc+'\') 50% '+(localStorage.getItem('chq-pub-hero-pos')||'50% 18%').split(' ')[1]+'/cover no-repeat"></div>' +
+          '<div style="position:absolute;bottom:.45rem;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.55);color:#fff;font-family:var(--fm);font-size:.46rem;letter-spacing:1px;text-transform:uppercase;padding:.2rem .55rem;border-radius:2px;pointer-events:none">Drag to reposition</div>' +
+        '</div>'
+      : '<div style="width:100%;height:80px;border-radius:4px;background:url(assets/portfolio-hero.jpeg) center/cover;margin-bottom:.85rem;opacity:.4"></div>') +
+      '<div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">' +
+        '<label style="display:inline-flex;align-items:center;gap:.4rem;cursor:pointer;background:var(--iv2);border:0.5px solid var(--iv3);border-radius:3px;padding:.35rem .75rem;font-family:var(--fm);font-size:.55rem;letter-spacing:1px;color:var(--muted);text-transform:uppercase">' +
+          'Upload New Image<input type="file" accept="image/*" style="display:none" onchange="uploadCampaignHero(event)">' +
+        '</label>' +
+        (heroSrc ? '<button onclick="clearCampaignHero()" style="background:transparent;border:0.5px solid var(--iv4);border-radius:3px;padding:.35rem .65rem;font-family:var(--fm);font-size:.5rem;color:var(--muted);cursor:pointer;letter-spacing:1px;text-transform:uppercase">Reset to default</button>' : '') +
       '</div>' +
     '</div>' +
 
@@ -5290,6 +5290,48 @@ function bCampaignEditor(){
 
     '</div>'
   );
+  // init crop drag after DOM is ready
+  requestAnimationFrame(function(){ initHeroCrop(); });
+}
+
+function initHeroCrop(){
+  var wrap=document.getElementById('hero-crop-wrap');
+  var preview=document.getElementById('hero-crop-preview');
+  if(!wrap||!preview)return;
+  var posStr=localStorage.getItem('chq-pub-hero-pos')||'50% 18%';
+  var parts=posStr.split(' ');
+  var curY=parseInt(parts[1])||18;
+  var dragging=false,startY=0,startVal=0;
+  function applyY(y){
+    curY=Math.max(0,Math.min(100,y));
+    preview.style.backgroundPosition='50% '+curY+'%';
+  }
+  wrap.addEventListener('mousedown',function(e){dragging=true;startY=e.clientY;startVal=curY;e.preventDefault();});
+  document.addEventListener('mousemove',function(e){
+    if(!dragging)return;
+    var delta=e.clientY-startY;
+    // moving mouse down → show more bottom of image → increase Y
+    applyY(startVal+Math.round(delta/wrap.offsetHeight*100));
+  });
+  document.addEventListener('mouseup',function(){
+    if(!dragging)return;
+    dragging=false;
+    localStorage.setItem('chq-pub-hero-pos','50% '+curY+'%');
+    showToast('Crop position saved \u2713');
+  });
+  // touch support
+  wrap.addEventListener('touchstart',function(e){dragging=true;startY=e.touches[0].clientY;startVal=curY;},{passive:true});
+  wrap.addEventListener('touchmove',function(e){
+    if(!dragging)return;
+    var delta=e.touches[0].clientY-startY;
+    applyY(startVal+Math.round(delta/wrap.offsetHeight*100));
+  },{passive:true});
+  wrap.addEventListener('touchend',function(){
+    if(!dragging)return;
+    dragging=false;
+    localStorage.setItem('chq-pub-hero-pos','50% '+curY+'%');
+    showToast('Crop position saved \u2713');
+  });
 }
 
 function uploadCampaignHero(e){
