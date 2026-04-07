@@ -5212,10 +5212,10 @@ function bCampaignEditor(){
     '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:.65rem">Hero Image</div>' +
     '<div class="card" style="margin-bottom:1.5rem">' +
       (heroSrc ?
-        // preview with crop handle
-        '<div style="position:relative;width:100%;height:160px;border-radius:4px;overflow:hidden;background:var(--iv3);margin-bottom:.85rem;cursor:ns-resize" id="hero-crop-wrap" title="Drag up/down to adjust crop">' +
+        // full-viewport-height preview matching the live site hero
+        '<div style="position:relative;width:100%;height:100vh;border-radius:4px;overflow:hidden;background:var(--iv3);margin-bottom:.85rem;cursor:ns-resize;touch-action:none" id="hero-crop-wrap" title="Drag up/down to adjust crop">' +
           '<div id="hero-crop-preview" style="width:100%;height:100%;background:url(\''+heroSrc+'\') 50% '+(localStorage.getItem('chq-pub-hero-pos')||'50% 18%').split(' ')[1]+'/cover no-repeat"></div>' +
-          '<div style="position:absolute;bottom:.45rem;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.55);color:#fff;font-family:var(--fm);font-size:.46rem;letter-spacing:1px;text-transform:uppercase;padding:.2rem .55rem;border-radius:2px;pointer-events:none">Drag to reposition</div>' +
+          '<div style="position:absolute;bottom:1.25rem;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.6);color:#fff;font-family:var(--fm);font-size:.5rem;letter-spacing:1.5px;text-transform:uppercase;padding:.3rem .8rem;border-radius:2px;pointer-events:none;white-space:nowrap">Drag to reposition crop</div>' +
         '</div>'
       : '<div style="width:100%;height:80px;border-radius:4px;background:url(assets/portfolio-hero.jpeg) center/cover;margin-bottom:.85rem;opacity:.4"></div>') +
       '<div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">' +
