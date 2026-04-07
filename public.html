@@ -85,10 +85,10 @@ body{font-family:var(--fb);background:var(--ivory);color:var(--ink);font-size:13
   );
 }
 .hero-content{
-  position:relative;z-index:1;
-  padding:0 2.5rem 5rem;
-  max-width:1100px;margin:0 auto;width:100%;
-  display:grid;grid-template-columns:1fr auto;gap:3rem;align-items:flex-end;
+  position:absolute;z-index:1;
+  top:0;left:0;
+  padding:7rem 2.5rem 0;
+  max-width:580px;
 }
 .hero-eyebrow{
   font-size:10px;letter-spacing:.28em;text-transform:uppercase;
@@ -144,6 +144,8 @@ body{font-family:var(--fb);background:var(--ivory);color:var(--ink);font-size:13
 
 /* Countdown card */
 .cd-card{
+  position:absolute;z-index:1;
+  bottom:2.5rem;right:2.5rem;
   background:rgba(250,247,242,.06);backdrop-filter:blur(12px);
   border:0.5px solid rgba(255,255,255,.12);border-radius:14px;
   padding:1.6rem;min-width:260px;
@@ -397,7 +399,7 @@ body{font-family:var(--fb);background:var(--ivory);color:var(--ink);font-size:13
 
 /* ── RESPONSIVE ── */
 @media(max-width:960px){
-  .hero-content{grid-template-columns:1fr;}
+  .hero-content{max-width:100%;padding:6rem 1.5rem 0;}
   .cd-card{display:none;}
   .hero-name{font-size:52px;}
   .about-grid{grid-template-columns:1fr;}
@@ -451,48 +453,46 @@ body{font-family:var(--fb);background:var(--ivory);color:var(--ink);font-size:13
 <section class="hero">
   <div class="hero-img"></div>
   <div class="hero-overlay"></div>
-  <div style="position:absolute;bottom:1rem;right:1.5rem;z-index:2;font-size:10px;color:rgba(250,247,242,.3);letter-spacing:.06em">Miss Philippines USA Top Model &middot; Bontika Swim Ambassador</div>
+  <!-- Text — top left -->
   <div class="hero-content">
-    <div>
-      <div class="hero-eyebrow">Miss Temecula Valley USA 2026 &middot; Competing for Miss California USA</div>
-      <h1 class="hero-name">Amelia <em>Arabe</em></h1>
-      <p class="hero-title">Engineer &middot; Artist &middot; Cellist &middot; Builder</p>
-      <p class="hero-bio">
-        I believe the crown is a <strong>tool</strong> &mdash; a platform to do real work in the world.
-        I&rsquo;m running to bring solar energy and green infrastructure to communities that have been left behind,
-        to engineer solutions that actually serve people, and to push fashion sustainability from runway aspiration to federal policy.
-      </p>
-      <div class="hero-tags">
-        <span class="htag gold">Green Energy Access</span>
-        <span class="htag sage">Community Infrastructure</span>
-        <span class="htag si">Fashion Sustainability Policy</span>
-        <span class="htag">Riverside, CA</span>
-        <span class="htag">Software Engineer</span>
-      </div>
-      <div class="hero-actions">
-        <a href="#join" class="btn btn-dark">Join the team &rarr;</a>
-        <a href="#platform" class="btn btn-outline-light">See the platform</a>
-        <a href="#sponsor" class="btn btn-gold">Become a sponsor</a>
-      </div>
+    <div class="hero-eyebrow">Miss Temecula Valley USA 2026 &middot; Competing for Miss California USA</div>
+    <h1 class="hero-name">Amelia <em>Arabe</em></h1>
+    <p class="hero-title">Engineer &middot; Artist &middot; Cellist &middot; Builder</p>
+    <p class="hero-bio">
+      I believe the crown is a <strong>tool</strong> &mdash; a platform to do real work in the world.
+      I&rsquo;m running to bring solar energy and green infrastructure to communities that have been left behind,
+      to engineer solutions that actually serve people, and to push fashion sustainability from runway aspiration to federal policy.
+    </p>
+    <div class="hero-tags">
+      <span class="htag gold">Green Energy Access</span>
+      <span class="htag sage">Community Infrastructure</span>
+      <span class="htag si">Fashion Sustainability Policy</span>
+      <span class="htag">Riverside, CA</span>
+      <span class="htag">Software Engineer</span>
     </div>
-    <!-- Countdown -->
-    <div class="cd-card">
-      <div class="cd-label">Competition Day</div>
-      <div class="cd-event">Miss California USA &middot; July 10, 2026</div>
-      <div class="cd-nums">
-        <div class="cd-unit"><span class="cd-n" id="cd-d">--</span><span class="cd-u">Days</span></div>
-        <div class="cd-unit"><span class="cd-n" id="cd-h">--</span><span class="cd-u">Hours</span></div>
-        <div class="cd-unit"><span class="cd-n" id="cd-m">--</span><span class="cd-u">Min</span></div>
-        <div class="cd-unit"><span class="cd-n" id="cd-s">--</span><span class="cd-u">Sec</span></div>
-      </div>
-      <div class="cd-prog-wrap">
-        <div class="cd-prog-lbl"><span class="cd-prog-title">Training</span><span class="cd-prog-pct">40%</span></div>
-        <div class="cd-bar"><div class="cd-fill cf-sage" style="width:40%"></div></div>
-        <div class="cd-prog-lbl"><span class="cd-prog-title">Sponsorships</span><span class="cd-prog-pct">15%</span></div>
-        <div class="cd-bar"><div class="cd-fill cf-gold" style="width:15%"></div></div>
-        <div class="cd-prog-lbl"><span class="cd-prog-title">Team Assembly</span><span class="cd-prog-pct">60%</span></div>
-        <div class="cd-bar" style="margin-bottom:0"><div class="cd-fill cf-si" style="width:60%"></div></div>
-      </div>
+    <div class="hero-actions">
+      <a href="#join" class="btn btn-dark">Join the team &rarr;</a>
+      <a href="#platform" class="btn btn-outline-light">See the platform</a>
+      <a href="#sponsor" class="btn btn-gold">Become a sponsor</a>
+    </div>
+  </div>
+  <!-- Countdown — bottom right -->
+  <div class="cd-card">
+    <div class="cd-label">Competition Day</div>
+    <div class="cd-event">Miss California USA &middot; July 10, 2026</div>
+    <div class="cd-nums">
+      <div class="cd-unit"><span class="cd-n" id="cd-d">--</span><span class="cd-u">Days</span></div>
+      <div class="cd-unit"><span class="cd-n" id="cd-h">--</span><span class="cd-u">Hours</span></div>
+      <div class="cd-unit"><span class="cd-n" id="cd-m">--</span><span class="cd-u">Min</span></div>
+      <div class="cd-unit"><span class="cd-n" id="cd-s">--</span><span class="cd-u">Sec</span></div>
+    </div>
+    <div class="cd-prog-wrap">
+      <div class="cd-prog-lbl"><span class="cd-prog-title">Training</span><span class="cd-prog-pct">40%</span></div>
+      <div class="cd-bar"><div class="cd-fill cf-sage" style="width:40%"></div></div>
+      <div class="cd-prog-lbl"><span class="cd-prog-title">Sponsorships</span><span class="cd-prog-pct">15%</span></div>
+      <div class="cd-bar"><div class="cd-fill cf-gold" style="width:15%"></div></div>
+      <div class="cd-prog-lbl"><span class="cd-prog-title">Team Assembly</span><span class="cd-prog-pct">60%</span></div>
+      <div class="cd-bar" style="margin-bottom:0"><div class="cd-fill cf-si" style="width:60%"></div></div>
     </div>
   </div>
 </section>
