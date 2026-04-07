@@ -191,11 +191,7 @@ body{font-family:var(--fb);background:var(--ivory);color:var(--ink);font-size:13
 
 /* ── PLATFORM ── */
 .platform-section{background:var(--ink);}
-.platform-bg{
-  position:absolute;inset:0;pointer-events:none;
-  background:radial-gradient(ellipse at 50% 0%,rgba(201,168,76,.04) 0%,transparent 60%);
-}
-.platform-wrap{position:relative;}
+.platform-bg{display:none;}
 .platform-intro{font-size:15px;font-weight:300;line-height:1.85;color:rgba(250,247,242,.6);max-width:580px;margin:.8rem 0 3rem;}
 .pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;margin-bottom:3rem;}
 .pillar{
@@ -497,8 +493,7 @@ body{font-family:var(--fb);background:var(--ivory);color:var(--ink);font-size:13
 
 <!-- ══ PLATFORM ══ -->
 <section class="section platform-section" id="platform">
-  <div style="position:relative">
-    <div class="platform-bg"></div>
+  <div>
     <div class="section-inner platform-wrap">
       <div class="s-eyebrow ey-gold reveal">The Platform</div>
       <h2 class="s-title-light reveal">Building a <em>greener,</em><br>more equitable world</h2>
@@ -795,14 +790,7 @@ body{font-family:var(--fb);background:var(--ivory);color:var(--ink);font-size:13
         <div class="sp-why-title reveal">Who we&rsquo;re looking for</div>
         <p class="sp-why-text reveal">Clean energy companies. Sustainable fashion brands. Tech companies with a social mission. Local San Diego and Riverside businesses. Anyone who wants their name on the right side of a story that&rsquo;s about to be told on a statewide stage.</p>
 
-        <div class="sp-stats reveal">
-          <div class="stat"><div class="stat-n">Miss CA</div><div class="stat-l">Platform &middot; Statewide reach</div></div>
-          <div class="stat"><div class="stat-n">July 10</div><div class="stat-l">Competition day &middot; 2026</div></div>
-          <div class="stat"><div class="stat-n">3</div><div class="stat-l">Platform pillars</div></div>
-          <div class="stat"><div class="stat-n">Real</div><div class="stat-l">Engineering work, not just talk</div></div>
-        </div>
-
-        <div class="sp-tiers reveal">
+<div class="sp-tiers reveal">
           <div class="tier"><div class="tier-name">&#127775; Title Sponsor</div><div class="tier-amt">$5,000+</div><div class="tier-benefit">Primary brand placement, press mentions, social features</div></div>
           <div class="tier"><div class="tier-name">&#11088; Gold Sponsor</div><div class="tier-amt">$2,500</div><div class="tier-benefit">Logo on all materials, website feature, content collaboration</div></div>
           <div class="tier"><div class="tier-name">&#10024; Silver Sponsor</div><div class="tier-amt">$1,000</div><div class="tier-benefit">Website listing, social acknowledgment, campaign presence</div></div>
