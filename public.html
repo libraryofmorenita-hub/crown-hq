@@ -1021,14 +1021,32 @@ document.addEventListener('keydown', function(e) {
 
 // ── LIVE HERO IMAGE ─────────────────────────────────
 (function(){
-  try {
-    var heroSrc = localStorage.getItem('chq-pub-hero');
-    if(heroSrc){
-      var pos = localStorage.getItem('chq-pub-hero-pos') || '50% 18%';
-      var el = document.querySelector('.hero-img');
-      if(el) el.style.background = 'url(\''+heroSrc+'\') '+pos+'/cover no-repeat';
+  var SB_URL='https://haqfxrcsszjwiyrchqnm.supabase.co';
+  var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhcWZ4cmNzc3pqd2l5cmNocW5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMDY5NjIsImV4cCI6MjA4OTg4Mjk2Mn0.eioSLntQ0E1mIxUC_r4kmmVbzrIi-d69LLO4rnn0Nlg';
+  function applyHero(src,pos){
+    var el=document.querySelector('.hero-img');
+    if(el&&src)el.style.background='url(\''+src+'\') '+pos+'/cover no-repeat';
+  }
+  function sbGetKV(key){
+    return fetch(SB_URL+'/rest/v1/app_data?key=eq.'+encodeURIComponent(key),{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}})
+    .then(function(r){return r.json();}).then(function(rows){return rows&&rows.length?rows[0].value:null;}).catch(function(){return null;});
+  }
+  // Try localStorage first (instant), then fall back to Supabase
+  try{
+    var cached=localStorage.getItem('chq-pub-hero');
+    if(cached){
+      applyHero(cached,localStorage.getItem('chq-pub-hero-pos')||'50% 18%');
+      return;
     }
-  } catch(e){}
+  }catch(e){}
+  // No local cache — fetch from Supabase so any device sees the right image
+  Promise.all([sbGetKV('pub_hero'),sbGetKV('pub_hero_pos')]).then(function(res){
+    var src=res[0],pos=res[1]||'50% 18%';
+    if(src){
+      applyHero(src,pos);
+      try{localStorage.setItem('chq-pub-hero',src);localStorage.setItem('chq-pub-hero-pos',pos);}catch(e){}
+    }
+  });
 })();
 
 // ── LIVE GALLERY FROM DASHBOARD ─────────────────────
