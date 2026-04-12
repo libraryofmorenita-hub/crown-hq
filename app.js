@@ -97,7 +97,7 @@ function sbSetKV(key,value){
   .catch(function(){finishSupabaseSave(false);});
 }
 function loadFromSupabase(){
-  var kvKeys=['goals','todos','answers','brand','adv','gd','timeline','appts','mood','dashMood','quiz','pitch','board','lookbook_imgs','lookbook_links','lookbook_bio','lookbook_meta','social','inbox','fitness','peace','role_pages','contacts','portal_profiles'];
+  var kvKeys=['goals','todos','answers','brand','adv','gd','timeline','appts','mood','dashMood','quiz','pitch','board','lookbook_imgs','lookbook_links','lookbook_bio','lookbook_meta','social','inbox','fitness','peace','role_pages','contacts','portal_profiles','pub_hero','pub_hero_pos'];
   return Promise.all([sbGet('sponsors'),sbGet('calendar_events'),sbGet('posts'),sbGet('looks'),sbGet('workouts'),sbGet('messages'),sbGet('files'),sbGet('mood_board')].concat(kvKeys.map(sbGetKV)))
   .then(function(results){
     var sp=results[0],ev=results[1],po=results[2],lk=results[3],wk=results[4],ms=results[5],fi=results[6],mb=results[7];
@@ -146,6 +146,8 @@ function loadFromSupabase(){
     if(kv.role_pages)lsWriteLocal('chq-role-pages',kv.role_pages);
     if(kv.contacts)lsWriteLocal('chq-contacts',kv.contacts);
     if(kv.portal_profiles)lsWriteLocal('chq-portal-profiles',kv.portal_profiles);
+    if(kv.pub_hero){try{localStorage.setItem('chq-pub-hero',kv.pub_hero);}catch(ex){}}
+    if(kv.pub_hero_pos){try{localStorage.setItem('chq-pub-hero-pos',kv.pub_hero_pos);}catch(ex){}}
     SB_SYNC_SUSPENDED=false;
   }).catch(function(){SB_SYNC_SUSPENDED=false;});
 }
@@ -5316,7 +5318,9 @@ function initHeroCrop(){
   document.addEventListener('mouseup',function(){
     if(!dragging)return;
     dragging=false;
-    localStorage.setItem('chq-pub-hero-pos','50% '+curY+'%');
+    var pos='50% '+curY+'%';
+    localStorage.setItem('chq-pub-hero-pos',pos);
+    sbSetKV('pub_hero_pos',pos);
     showToast('Crop position saved \u2713');
   });
   // touch support
@@ -5329,7 +5333,9 @@ function initHeroCrop(){
   wrap.addEventListener('touchend',function(){
     if(!dragging)return;
     dragging=false;
-    localStorage.setItem('chq-pub-hero-pos','50% '+curY+'%');
+    var pos='50% '+curY+'%';
+    localStorage.setItem('chq-pub-hero-pos',pos);
+    sbSetKV('pub_hero_pos',pos);
     showToast('Crop position saved \u2713');
   });
 }
@@ -5357,6 +5363,8 @@ function uploadCampaignHero(e){
         showToast('Image too large to store \u2014 try a smaller file');
         return;
       }
+      sbSetKV('pub_hero',dataUrl);
+      sbSetKV('pub_hero_pos','50% 18%');
       showToast('Hero image updated \u2713');
       bCampaignEditor();
       // attempt face detection async to refine crop position
@@ -5370,7 +5378,9 @@ function uploadCampaignHero(e){
               var f=faces[0].boundingBox;
               var cx=Math.round((f.x+f.width/2)/w*100);
               var cy=Math.round((f.y+f.height*0.1)/h*100);
-              localStorage.setItem('chq-pub-hero-pos',cx+'% '+Math.max(5,Math.min(cy,60))+'%');
+              var facePos=cx+'% '+Math.max(5,Math.min(cy,60))+'%';
+              localStorage.setItem('chq-pub-hero-pos',facePos);
+              sbSetKV('pub_hero_pos',facePos);
             }
           }).catch(function(){});
           // safety timeout — if API hangs for 4s, leave default position
@@ -5386,6 +5396,8 @@ function uploadCampaignHero(e){
 function clearCampaignHero(){
   localStorage.removeItem('chq-pub-hero');
   localStorage.removeItem('chq-pub-hero-pos');
+  sbSetKV('pub_hero',null);
+  sbSetKV('pub_hero_pos',null);
   showToast('Reset to default');
   bCampaignEditor();
 }
