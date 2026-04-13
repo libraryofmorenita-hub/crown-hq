@@ -980,48 +980,38 @@ var obs=new IntersectionObserver(function(entries){
 },{threshold:0.12});
 document.querySelectorAll('.reveal').forEach(function(el){obs.observe(el);});
 
-// ── JOIN FORM ──────────────────────────────────────
-// Replace with your Formspree ID once set up
-var FORMSPREE = 'YOUR_FORMSPREE_ID';
+// ── SUPABASE (forms) ───────────────────────────────
+var PUB_SB_URL='https://haqfxrcsszjwiyrchqnm.supabase.co';
+var PUB_SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhcWZ4cmNzc3pqd2l5cmNocW5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMDY5NjIsImV4cCI6MjA4OTg4Mjk2Mn0.eioSLntQ0E1mIxUC_r4kmmVbzrIi-d69LLO4rnn0Nlg';
 
+// ── JOIN FORM ──────────────────────────────────────
 function submitJoin(){
   var fn=document.getElementById('jf-fn').value.trim();
+  var ln=document.getElementById('jf-ln').value.trim();
   var email=document.getElementById('jf-email').value.trim();
+  var phone=document.getElementById('jf-phone').value.trim();
   var role=document.getElementById('jf-role').value;
   var msg=document.getElementById('jf-msg').value.trim();
+  var link=document.getElementById('jf-link').value.trim();
   if(!fn||!email||!role||!msg){alert('Please fill in all required fields.');return;}
-
-  if(FORMSPREE==='YOUR_FORMSPREE_ID'){
-    // Fallback: open mailto
-    var body=encodeURIComponent(
-      'Name: '+fn+' '+document.getElementById('jf-ln').value+
-      '\nEmail: '+email+
-      '\nPhone: '+(document.getElementById('jf-phone').value||'—')+
-      '\nRole: '+role+
-      '\nLink: '+(document.getElementById('jf-link').value||'—')+
-      '\n\n'+msg
-    );
-    window.location='mailto:missameliava@gmail.com?subject=[Team Application] '+encodeURIComponent(role)+'&body='+body;
-    document.getElementById('join-form').style.display='none';
-    document.getElementById('join-success').style.display='block';
-    return;
-  }
-
-  fetch('https://formspree.io/f/'+FORMSPREE,{
+  var btn=document.querySelector('.f-submit');
+  if(btn){btn.disabled=true;btn.textContent='Sending\u2026';}
+  fetch(PUB_SB_URL+'/rest/v1/team_applications',{
     method:'POST',
-    headers:{'Content-Type':'application/json','Accept':'application/json'},
-    body:JSON.stringify({
-      name:fn+' '+document.getElementById('jf-ln').value,
-      email:email,phone:document.getElementById('jf-phone').value,
-      role:role,message:msg,link:document.getElementById('jf-link').value,
-      _subject:'[Team Application] '+role
-    })
+    headers:{'apikey':PUB_SB_KEY,'Authorization':'Bearer '+PUB_SB_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+    body:JSON.stringify({first_name:fn,last_name:ln,email:email,phone:phone||null,role:role,message:msg,link:link||null})
   }).then(function(r){
     if(r.ok){
       document.getElementById('join-form').style.display='none';
       document.getElementById('join-success').style.display='block';
-    }else{alert('Something went wrong. Please email missameliava@gmail.com directly.');}
-  }).catch(function(){alert('Network error. Please email missameliava@gmail.com directly.');});
+    }else{
+      alert('Something went wrong. Please email missameliava@gmail.com directly.');
+      if(btn){btn.disabled=false;btn.textContent='Submit application \u2192';}
+    }
+  }).catch(function(){
+    alert('Network error. Please email missameliava@gmail.com directly.');
+    if(btn){btn.disabled=false;btn.textContent='Submit application \u2192';}
+  });
 }
 
 // ── SPONSOR FORM ──────────────────────────────────
@@ -1032,28 +1022,24 @@ function submitSponsor(){
   var tier=document.getElementById('sf-tier').value;
   var msg=document.getElementById('sf-msg').value.trim();
   if(!name||!email){alert('Please enter your name and email.');return;}
-
-  if(FORMSPREE==='YOUR_FORMSPREE_ID'){
-    var body=encodeURIComponent(
-      'Name: '+name+'\nCompany: '+company+'\nEmail: '+email+
-      '\nTier: '+tier+'\n\n'+msg
-    );
-    window.location='mailto:missameliava@gmail.com?subject=[Sponsor Inquiry] '+encodeURIComponent(company||name)+'&body='+body;
-    document.getElementById('sp-form-inner').style.display='none';
-    document.getElementById('sp-success').style.display='block';
-    return;
-  }
-
-  fetch('https://formspree.io/f/'+FORMSPREE,{
+  var btn=document.querySelector('.sf-submit');
+  if(btn){btn.disabled=true;btn.textContent='Sending\u2026';}
+  fetch(PUB_SB_URL+'/rest/v1/sponsor_inquiries',{
     method:'POST',
-    headers:{'Content-Type':'application/json','Accept':'application/json'},
-    body:JSON.stringify({name:name,company:company,email:email,tier:tier,message:msg,_subject:'[Sponsor Inquiry] '+(company||name)})
+    headers:{'apikey':PUB_SB_KEY,'Authorization':'Bearer '+PUB_SB_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+    body:JSON.stringify({name:name,company:company||null,email:email,tier:tier||null,message:msg||null})
   }).then(function(r){
     if(r.ok){
       document.getElementById('sp-form-inner').style.display='none';
       document.getElementById('sp-success').style.display='block';
-    }else{alert('Something went wrong. Please email missameliava@gmail.com directly.');}
-  }).catch(function(){alert('Network error. Please email missameliava@gmail.com directly.');});
+    }else{
+      alert('Something went wrong. Please email missameliava@gmail.com directly.');
+      if(btn){btn.disabled=false;btn.textContent='Send inquiry \u2192';}
+    }
+  }).catch(function(){
+    alert('Network error. Please email missameliava@gmail.com directly.');
+    if(btn){btn.disabled=false;btn.textContent='Send inquiry \u2192';}
+  });
 }
 
 // ── PHOTO GALLERY ─────────────────────────────────
