@@ -97,7 +97,7 @@ function sbSetKV(key,value){
   .catch(function(){finishSupabaseSave(false);});
 }
 function loadFromSupabase(){
-  var kvKeys=['goals','todos','answers','brand','adv','gd','timeline','appts','mood','dashMood','quiz','pitch','board','lookbook_imgs','lookbook_links','lookbook_bio','lookbook_meta','social','inbox','fitness','peace','role_pages','contacts','portal_profiles','pub_hero','pub_hero_pos'];
+  var kvKeys=['goals','todos','answers','brand','adv','gd','timeline','appts','mood','dashMood','quiz','pitch','board','lookbook_imgs','lookbook_links','lookbook_bio','lookbook_meta','social','inbox','fitness','peace','role_pages','contacts','portal_profiles','pub_hero','pub_hero_pos','pub_gallery','pub_journey','pub_progress'];
   return Promise.all([sbGet('sponsors'),sbGet('calendar_events'),sbGet('posts'),sbGet('looks'),sbGet('workouts'),sbGet('messages'),sbGet('files'),sbGet('mood_board')].concat(kvKeys.map(sbGetKV)))
   .then(function(results){
     var sp=results[0],ev=results[1],po=results[2],lk=results[3],wk=results[4],ms=results[5],fi=results[6],mb=results[7];
@@ -148,6 +148,9 @@ function loadFromSupabase(){
     if(kv.portal_profiles)lsWriteLocal('chq-portal-profiles',kv.portal_profiles);
     if(kv.pub_hero){try{localStorage.setItem('chq-pub-hero',kv.pub_hero);}catch(ex){}}
     if(kv.pub_hero_pos){try{localStorage.setItem('chq-pub-hero-pos',kv.pub_hero_pos);}catch(ex){}}
+    if(kv.pub_gallery){try{lsWriteLocal('chq-pub-gallery',kv.pub_gallery);}catch(ex){}}
+    if(kv.pub_journey){try{lsWriteLocal('chq-pub-journey',kv.pub_journey);}catch(ex){}}
+    if(kv.pub_progress){try{lsWriteLocal('chq-pub-progress',kv.pub_progress);}catch(ex){}}
     SB_SYNC_SUSPENDED=false;
   }).catch(function(){SB_SYNC_SUSPENDED=false;});
 }
@@ -902,7 +905,8 @@ var ROLES={
       {ico:'👤',lbl:'My Profile',id:'profile'},
       {ico:'👥',lbl:'Team Admin',id:'team-admin'},
       {ico:'🌐',lbl:'Campaign Site',id:'campaign-site'},
-      {ico:'✍️',lbl:'Library Editor',id:'library-editor'},
+      {ico:'✍️',lbl:'Observatory Editor',id:'library-editor'},
+      {ico:'📸',lbl:'Gallery & Journey',id:'gallery-editor'},
       {ico:'💰',lbl:'Sponsors',id:'sponsors',badge:true},
       {ico:'📅',lbl:'Calendar',id:'calendar'},
       {ico:'🎤',lbl:'Interview Prep',id:'quiz'},
@@ -1073,6 +1077,7 @@ function showPanel(id,navEl){
     'calendar':         function(){ bCalendar(); },
     'library':          function(){ bLibrary(); },
     'library-editor':   function(){ bLibraryEditor(); },
+    'gallery-editor':   function(){ bGalleryEditor(); },
     'quiz':             function(){ bQuiz(); },
     'brand':            function(){ bBrand(); },
     'moodboard':        function(){ bMoodboard(); },
@@ -2267,8 +2272,8 @@ function closeLibraryPost(){
 function bLibraryEditor(){
   var cats=Object.keys(libCats);
   inject(
-    '<div class="ph"><div><div class="ph-tag">Internal</div><div class="ph-title">Library <em>Editor</em></div></div>' +
-    '<div class="ph-acts"><button class="btn bp" onclick="newPost()">+ New Article</button></div></div>' +
+    '<div class="ph"><div><div class="ph-tag">Observatory</div><div class="ph-title">Article <em>Editor</em></div></div>' +
+    '<div class="ph-acts"><a href="library.html" target="_blank" class="btn bg" style="text-decoration:none">View Observatory ↗</a><button class="btn bp" onclick="newPost()" style="margin-left:.4rem">+ New Article</button></div></div>' +
     '<div class="pb">' +
     '<div style="display:flex;gap:.3rem;margin-bottom:.85rem;flex-wrap:wrap">' +
     '<button class="cal-tab '+(libCatFilter==='all'?'on':'')+'" onclick="libCatFilter=\'all\';bLibraryEditor()">All</button>' +
@@ -2315,8 +2320,9 @@ function editPost(id){
     cats.map(function(c){return '<option value="'+c+'" '+(p.cat===c?'selected':'')+'>'+libCats[c].lbl+'</option>';}).join('') +
     '</select>' +
     '<label class="btn bg" style="cursor:pointer;display:flex;align-items:center;gap:.25rem;font-size:.65rem">Cover<input type="file" accept="image/*" style="display:none" onchange="setCover(event)"></label>' +
-    '<button class="btn bg" onclick="togglePostStatus()" id="post-status-btn">'+(p.status==='published'?'Published':'Draft')+'</button>' +
+    '<button class="btn bg" onclick="togglePostStatus()" id="post-status-btn">'+(p.status==='published'?'⬤ Live':'○ Draft')+'</button>' +
     '<button class="btn bp" onclick="savePost()">Save</button>' +
+    '<button class="btn" style="background:transparent;border:0.5px solid var(--iv4);color:var(--muted);flex-shrink:0" onclick="deletePost('+p.id+')">Delete</button>' +
     '</div></div>' +
     '<div class="ed-bar">' +
     '<button class="t-btn" onclick="ins(\'hero\')">Headline</button>' +
@@ -2393,6 +2399,15 @@ function savePost(){
   var btn=document.querySelector('.ed-top .btn.bp');
   if(btn){btn.textContent='Saved!';setTimeout(function(){btn.textContent='Save';},1500);}
   showToast('Article saved');
+}
+
+function deletePost(id){
+  if(!confirm('Delete this article? This cannot be undone.')) return;
+  S.posts=S.posts.filter(function(x){return x.id!==id;});
+  lsSave('chq-po',S.posts);
+  sbSavePosts();
+  showToast('Article deleted');
+  showPanel('library-editor');
 }
 
 // ═══ QUIZ ════════════════════════════════════════════════════
@@ -3771,7 +3786,7 @@ body{font-family:'Figtree',sans-serif;color:#1C1714;background:white;padding:3re
 <div class="header">
   <div class="logo-area">
     <h1>Amelia Arabe</h1>
-    <p>Miss Temecula Valley USA 2026 · Competing for Miss California USA<br>missameliava@gmail.com · Riverside, CA</p>
+    <p>Miss Temecula Valley USA 2026 · Competing for Miss California USA<br>missameliava@gmail.com · Temecula, CA</p>
   </div>
   <div class="inv-meta">
     <div class="inv-num">${inv.number}</div>
@@ -3786,7 +3801,7 @@ body{font-family:'Figtree',sans-serif;color:#1C1714;background:white;padding:3re
   <div>
     <div class="bill-label">From</div>
     <div class="bill-name">Amelia Arabe</div>
-    <div class="bill-detail">Miss Temecula Valley USA 2026<br>Riverside, California<br>missameliava@gmail.com</div>
+    <div class="bill-detail">Miss Temecula Valley USA 2026<br>Temecula, California<br>missameliava@gmail.com</div>
   </div>
   <div>
     <div class="bill-label">Bill To</div>
@@ -4436,25 +4451,7 @@ function bFiles(){
 
 // (from original app.js)
 function bBoard(){
-  var fallbackBoard={
-    columns:[
-      {id:'sponsors',title:'Sponsor Outreach',color:'var(--ch2)',cards:[]},
-      {id:'competition',title:'Competition Prep',color:'var(--tz3)',cards:[]},
-      {id:'general',title:'General / Notes',color:'var(--bl2)',cards:[]},
-    ]
-  };
-  var rawBoard=lsGet('chq-board',fallbackBoard)||fallbackBoard;
-  var boardData={
-    columns:Array.isArray(rawBoard.columns)&&rawBoard.columns.length?rawBoard.columns.map(function(col,i){
-      var fb=fallbackBoard.columns[i]||{id:'col_'+i,title:'Column',color:'var(--tz4)',cards:[]};
-      return {
-        id:(col&&col.id)||fb.id,
-        title:(col&&col.title)||fb.title,
-        color:(col&&col.color)||fb.color,
-        cards:Array.isArray(col&&col.cards)?col.cards:[]
-      };
-    }):fallbackBoard.columns.slice()
-  };
+  var boardData=getBoardData();
   lsWriteLocal('chq-board',boardData);
 
   inject(
@@ -4475,6 +4472,83 @@ function bBoard(){
     }).join('') +
     '</div>'
   );
+}
+
+function renderBoardCard(card,colId){
+  var priColors={high:'var(--ch2)',normal:'var(--iv4)',low:'var(--tz4)'};
+  var pri=card.priority||'normal';
+  return '<div class="board-card" id="bcard-'+card.id+'">' +
+    '<div style="display:flex;align-items:flex-start;gap:.4rem">' +
+      '<div style="flex:1">' +
+        '<div class="board-card-title">'+escHtml(card.title||'Untitled')+'</div>' +
+        (card.body?'<div class="board-card-meta" style="margin-top:.2rem;line-height:1.45">'+escHtml(card.body)+'</div>':'') +
+      '</div>' +
+      '<button onclick="removeBoardCard(\''+colId+'\','+card.id+')" style="background:none;border:none;color:var(--faint);cursor:pointer;font-size:.9rem;line-height:1;padding:0;flex-shrink:0" title="Remove">×</button>' +
+    '</div>' +
+    '<div style="display:flex;align-items:center;gap:.35rem;margin-top:.55rem;flex-wrap:wrap">' +
+      (card.tag?'<span class="board-tag" style="background:var(--iv2);color:var(--muted)">'+escHtml(card.tag)+'</span>':'') +
+      '<span class="board-tag" style="background:'+priColors[pri]+'22;color:'+priColors[pri]+'">'+(pri==='high'?'↑ High':pri==='low'?'↓ Low':'Normal')+'</span>' +
+      (card.due?'<span class="board-card-meta">Due '+escHtml(card.due)+'</span>':'') +
+    '</div>' +
+  '</div>';
+}
+
+function getBoardData(){
+  var fallback={columns:[
+    {id:'sponsors',title:'Sponsor Outreach',color:'var(--ch2)',cards:[]},
+    {id:'competition',title:'Competition Prep',color:'var(--tz3)',cards:[]},
+    {id:'general',title:'General / Notes',color:'var(--bl2)',cards:[]}
+  ]};
+  var d=lsGet('chq-board',fallback)||fallback;
+  if(!Array.isArray(d.columns)||!d.columns.length) return fallback;
+  return d;
+}
+
+function saveBoardData(data){
+  lsSave('chq-board',data);
+}
+
+function addCardToCol(colId){
+  var title=prompt('Card title:');
+  if(!title||!title.trim()) return;
+  var data=getBoardData();
+  var col=data.columns.find(function(c){return c.id===colId;});
+  if(!col) return;
+  if(!Array.isArray(col.cards)) col.cards=[];
+  col.cards.push({id:Date.now(),title:title.trim(),body:'',tag:'',priority:'normal',due:'',done:false});
+  saveBoardData(data);
+  bBoard();
+}
+
+function addBoardCard(){
+  var data=getBoardData();
+  if(!data.columns.length) return;
+  var options=data.columns.map(function(c,i){return (i+1)+'. '+c.title;}).join('\n');
+  var ans=prompt('Add to which column?\n\n'+options+'\n\nEnter number:');
+  if(!ans) return;
+  var idx=parseInt(ans)-1;
+  if(isNaN(idx)||idx<0||idx>=data.columns.length) return;
+  addCardToCol(data.columns[idx].id);
+}
+
+function addBoardColumn(){
+  var name=prompt('Column name:');
+  if(!name||!name.trim()) return;
+  var data=getBoardData();
+  var colors=['var(--lv2)','var(--sg2)','var(--tz3)','var(--bl2)','var(--ch2)'];
+  var col={id:'col_'+Date.now(),title:name.trim(),color:colors[data.columns.length%colors.length],cards:[]};
+  data.columns.push(col);
+  saveBoardData(data);
+  bBoard();
+}
+
+function removeBoardCard(colId,cardId){
+  var data=getBoardData();
+  var col=data.columns.find(function(c){return c.id===colId;});
+  if(!col||!Array.isArray(col.cards)) return;
+  col.cards=col.cards.filter(function(c){return c.id!==cardId;});
+  saveBoardData(data);
+  bBoard();
 }
 
 // (from original app.js)
@@ -5135,10 +5209,10 @@ function bCampaignEditor(){
     heroName:'Amelia Arabe',
     heroTitle:'Engineer \u00b7 Artist \u00b7 Cellist \u00b7 Builder',
     heroBio:'I believe the crown is a tool \u2014 a platform to do real work in the world. I\'m running to bring solar energy and green infrastructure to communities that have been left behind, to engineer solutions that actually serve people, and to push fashion sustainability from runway aspiration to federal policy.',
-    heroTag0:'Green Energy Access',heroTag1:'Community Infrastructure',heroTag2:'Fashion Sustainability Policy',heroTag3:'Riverside, CA',heroTag4:'Software Engineer',
+    heroTag0:'Green Energy Access',heroTag1:'Community Infrastructure',heroTag2:'Fashion Sustainability Policy',heroTag3:'Temecula, CA',heroTag4:'Software Engineer',
     aboutText1:'I grew up believing that the pursuit of knowledge and the pursuit of happiness are the same pursuit. I\'m a senior software engineer, co-founder, oil painter, and cellist \u2014 and I move through the world convinced that human creations are most beautiful when the process behind them cultivates healthy human connections.',
     aboutText2:'I build systems that breathe. At Ballmecca and across the teams I\'ve led, I\'ve learned that the best infrastructure \u2014 technical or human \u2014 is the kind that holds space for people to fully show up. That\'s the leadership I bring to this campaign.',
-    cred0:'Senior Software Engineer & Co-founder, Ballmecca',cred1:'Computer Engineering, Loyola University Maryland',cred2:'Co-President, Society of Women Engineers',cred3:'Cellist \u00b7 Oil painter \u00b7 Riverside, California',cred4:'Building tools for a greener, more human-centered world',
+    cred0:'Senior Software Engineer & Co-founder, Ballmecca',cred1:'Computer Engineering, Loyola University Maryland',cred2:'Co-President, Society of Women Engineers',cred3:'Cellist \u00b7 Oil painter \u00b7 Temecula, California',cred4:'Building tools for a greener, more human-centered world',
     platformIntro:'The crown is a microphone. I intend to use it to amplify the communities who have been engineered out of prosperity \u2014 and to build real solutions alongside them.',
     pqText:'I am not running to be beautiful on a stage. I am running to build something that lasts after the crown comes off.',
     pillar1Title:'Green Energy Access',pillar1Text:'Solar panels, microgrids, and renewable infrastructure built in and for underserved communities. Not charity \u2014 engineering. Real partnerships with municipalities, nonprofits, and clean energy companies to bring power to the people who need it most.',
@@ -5227,6 +5301,27 @@ function bCampaignEditor(){
         (heroSrc ? '<button onclick="clearCampaignHero()" style="background:transparent;border:0.5px solid var(--iv4);border-radius:3px;padding:.35rem .65rem;font-family:var(--fm);font-size:.5rem;color:var(--muted);cursor:pointer;letter-spacing:1px;text-transform:uppercase">Reset to default</button>' : '') +
       '</div>' +
     '</div>' +
+
+    // ── CAMPAIGN PROGRESS ───────────────────────────────
+    (function(){
+      var prog=lsGet('chq-pub-progress',{training:40,sponsorships:15,team:60});
+      var LS2='font-family:var(--fm);font-size:.48rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted)';
+      function prow(label,key,color){
+        var val=prog[key]||0;
+        return '<div style="display:grid;grid-template-columns:1fr auto 56px;align-items:center;gap:.6rem;padding:.5rem 0;border-bottom:0.5px solid var(--iv3)">' +
+          '<span style="'+LS2+'">'+label+'</span>' +
+          '<input type="range" min="0" max="100" value="'+val+'" style="width:120px;accent-color:'+color+'" oninput="updateProgress(\''+key+'\',+this.value,\'prog-pct-'+key+'\')">' +
+          '<span id="prog-pct-'+key+'" style="font-family:var(--fm);font-size:.72rem;color:var(--ink);text-align:right">'+val+'%</span>' +
+        '</div>';
+      }
+      return '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:.65rem">Campaign Progress</div>' +
+        '<div class="card" style="margin-bottom:1.5rem">' +
+          '<div style="font-size:.72rem;color:var(--muted);margin-bottom:.85rem;line-height:1.6">Shown in the countdown card on the hero. Drag to update — saves instantly.</div>' +
+          prow('Training',        'training',    'var(--sal)') +
+          prow('Sponsorships',    'sponsorships', 'var(--gold)') +
+          prow('Team Assembly',   'team',         'var(--sil)') +
+        '</div>';
+    })() +
 
     // ── SITE TEXT ────────────────────────────────────────
     textHtml +
@@ -5407,13 +5502,14 @@ function addGalleryPhotos(e){
   if(!files.length)return;
   var gallery=lsGet('chq-pub-gallery',[]);
   var loaded=0;
+  var rerender=function(){document.getElementById('ge-panel')?bGalleryEditor():bCampaignEditor();};
   files.forEach(function(file){
-    if(file.size>5*1024*1024){showToast('Skipped file over 5MB');loaded++;if(loaded===files.length)bCampaignEditor();return;}
+    if(file.size>5*1024*1024){showToast('Skipped file over 5MB');loaded++;if(loaded===files.length)rerender();return;}
     var r=new FileReader();
     r.onload=function(ev){
       gallery.push({src:ev.target.result,caption:''});
       loaded++;
-      if(loaded===files.length){lsSave('chq-pub-gallery',gallery);showToast('Photo'+(files.length>1?'s':'')+' added \u2713');bCampaignEditor();}
+      if(loaded===files.length){lsSave('chq-pub-gallery',gallery);sbSetKV('pub_gallery',gallery);showToast('Photo'+(files.length>1?'s':'')+' added \u2713');rerender();}
     };
     r.readAsDataURL(file);
   });
@@ -5423,13 +5519,158 @@ function removeGalleryPhoto(idx){
   var gallery=lsGet('chq-pub-gallery',[]);
   gallery.splice(idx,1);
   lsSave('chq-pub-gallery',gallery);
-  bCampaignEditor();
+  sbSetKV('pub_gallery',gallery);
+  document.getElementById('ge-panel')?bGalleryEditor():bCampaignEditor();
 }
 
 function updateGalleryCaption(idx,val){
   var gallery=lsGet('chq-pub-gallery',[]);
   if(gallery[idx])gallery[idx].caption=val;
   lsSave('chq-pub-gallery',gallery);
+  sbSetKV('pub_gallery',gallery);
+}
+
+// ═══ GALLERY & JOURNEY EDITOR ════════════════════════════════
+
+function bGalleryEditor(){
+  var gallery=lsGet('chq-pub-gallery',[]);
+  var journey=lsGet('chq-pub-journey',[]);
+  var TYPE_LABELS={event:'Event',award:'Award / Win',press:'Press',milestone:'Milestone'};
+  var TYPE_COLORS={event:'var(--tz4)',award:'var(--si)',press:'var(--ch)',milestone:'var(--lv)'};
+  inject(
+    '<div id="ge-panel" style="display:flex;flex-direction:column;height:100%">' +
+    '<div class="ph"><div><div class="ph-tag">Campaign</div><div class="ph-title">Gallery & <em>Journey</em></div></div>' +
+    '<div class="ph-acts"><a href="public.html#press" target="_blank" class="btn bg" style="text-decoration:none">View on Site ↗</a></div></div>' +
+    '<div class="pb">' +
+
+    // ── PHOTO GALLERY ──────────────────────────────
+    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:.65rem">Photo Gallery</div>' +
+    '<div class="card" style="margin-bottom:1.75rem">' +
+      '<div style="font-size:.72rem;color:var(--muted);margin-bottom:1rem;line-height:1.6">Photos appear in The Journey section of the public site. First photo is featured large. Changes sync across devices instantly.</div>' +
+      (gallery.length ?
+        '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-bottom:1.1rem">' +
+        gallery.map(function(p,i){
+          return '<div style="display:flex;flex-direction:column;gap:0;border-radius:4px;overflow:hidden;border:0.5px solid var(--iv3);background:var(--wh)">' +
+            '<div style="position:relative">' +
+              '<div style="aspect-ratio:4/5;background:var(--iv3) url(\''+p.src+'\') center/cover no-repeat"></div>' +
+              (i===0?'<div style="position:absolute;top:.4rem;left:.4rem;font-family:var(--fm);font-size:.42rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--si);background:var(--sip);padding:.18rem .45rem;border-radius:2px">Featured</div>':'') +
+              '<button onclick="geRemovePhoto('+i+')" style="position:absolute;top:.35rem;right:.35rem;background:rgba(0,0,0,.55);border:none;border-radius:50%;width:20px;height:20px;color:#fff;cursor:pointer;font-size:.75rem;line-height:1;display:flex;align-items:center;justify-content:center">×</button>' +
+            '</div>' +
+            '<div style="padding:.4rem .5rem .5rem;display:flex;flex-direction:column;gap:.3rem">' +
+              '<input value="'+escHtml(p.caption||'')+'" placeholder="Add caption..." ' +
+                'style="border:0.5px solid var(--iv3);border-radius:3px;padding:.28rem .45rem;font-family:var(--fb);font-size:.72rem;color:var(--ink);background:var(--wh);outline:none;width:100%;box-sizing:border-box" ' +
+                'onchange="geUpdateCaption('+i+',this.value)">' +
+              '<div style="display:flex;gap:.3rem">' +
+                (i>0?'<button onclick="galleryMoveUp('+i+')" style="flex:1;background:var(--iv2);border:0.5px solid var(--iv3);border-radius:3px;padding:.2rem;cursor:pointer;font-size:.6rem;color:var(--muted)">▲</button>':'<div style="flex:1"></div>') +
+                (i<gallery.length-1?'<button onclick="galleryMoveDown('+i+')" style="flex:1;background:var(--iv2);border:0.5px solid var(--iv3);border-radius:3px;padding:.2rem;cursor:pointer;font-size:.6rem;color:var(--muted)">▼</button>':'<div style="flex:1"></div>') +
+              '</div>' +
+            '</div>' +
+          '</div>';
+        }).join('') +
+        '</div>'
+      : '<div style="font-size:.75rem;color:var(--faint);font-style:italic;margin-bottom:1rem">No photos yet — add your first campaign photo.</div>') +
+      '<label style="display:inline-flex;align-items:center;gap:.4rem;cursor:pointer;background:var(--sip);border:0.5px solid var(--sil);border-radius:3px;padding:.4rem .85rem;font-family:var(--fm);font-size:.55rem;letter-spacing:1px;color:var(--si);text-transform:uppercase">' +
+        '+ Add Photos<input type="file" accept="image/*" multiple style="display:none" onchange="addGalleryPhotos(event)">' +
+      '</label>' +
+    '</div>' +
+
+    // ── CAMPAIGN JOURNEY ──────────────────────────
+    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:.65rem">Campaign Journey Timeline</div>' +
+    '<div class="card" style="margin-bottom:1.75rem">' +
+      '<div style="font-size:.72rem;color:var(--muted);margin-bottom:1rem;line-height:1.6">Campaign milestones displayed as a timeline on the public site — competitions, events, wins, appearances.</div>' +
+      '<div style="display:flex;flex-direction:column;gap:.65rem;margin-bottom:1rem">' +
+      (journey.length ?
+        journey.map(function(m,i){
+          var col=TYPE_COLORS[m.type||'event']||'var(--tz4)';
+          return '<div style="background:var(--iv2);border-radius:4px;border:0.5px solid var(--iv3);padding:.7rem .8rem">' +
+            '<div style="display:flex;align-items:center;gap:.45rem;margin-bottom:.4rem;flex-wrap:wrap">' +
+              '<div style="width:6px;height:6px;border-radius:50%;background:'+col+';flex-shrink:0"></div>' +
+              '<input type="date" value="'+escHtml(m.date||'')+'" style="border:0.5px solid var(--iv3);border-radius:3px;padding:.25rem .4rem;font-family:var(--fb);font-size:.7rem;color:var(--ink);background:var(--wh);outline:none" onchange="geUpdateMilestone('+i+',\'date\',this.value)">' +
+              '<select style="border:0.5px solid var(--iv3);border-radius:3px;padding:.25rem .4rem;font-family:var(--fb);font-size:.7rem;color:var(--ink);background:var(--wh);outline:none" onchange="geUpdateMilestone('+i+',\'type\',this.value)">' +
+                Object.keys(TYPE_LABELS).map(function(k){return '<option value="'+k+'" '+(m.type===k?'selected':'')+'>'+TYPE_LABELS[k]+'</option>';}).join('') +
+              '</select>' +
+              '<button onclick="geRemoveMilestone('+i+')" style="margin-left:auto;background:transparent;border:0.5px solid var(--iv4);border-radius:3px;padding:.2rem .45rem;font-family:var(--fm);font-size:.48rem;color:var(--muted);cursor:pointer;text-transform:uppercase;letter-spacing:1px">Remove</button>' +
+            '</div>' +
+            '<input value="'+escHtml(m.title||'')+'" placeholder="Milestone title..." ' +
+              'style="width:100%;box-sizing:border-box;border:0.5px solid var(--iv3);border-radius:3px;padding:.3rem .55rem;font-family:var(--fb);font-size:.75rem;font-weight:500;color:var(--ink);background:var(--wh);outline:none;margin-bottom:.3rem" ' +
+              'onchange="geUpdateMilestone('+i+',\'title\',this.value)">' +
+            '<input value="'+escHtml(m.desc||'')+'" placeholder="Short description (optional)..." ' +
+              'style="width:100%;box-sizing:border-box;border:0.5px solid var(--iv3);border-radius:3px;padding:.3rem .55rem;font-family:var(--fb);font-size:.72rem;color:var(--ink);background:var(--wh);outline:none" ' +
+              'onchange="geUpdateMilestone('+i+',\'desc\',this.value)">' +
+          '</div>';
+        }).join('')
+      : '<div style="font-size:.75rem;color:var(--faint);font-style:italic">No milestones yet — document your campaign moments.</div>') +
+      '</div>' +
+      '<button class="btn bg" onclick="geAddMilestone()">+ Add Milestone</button>' +
+    '</div>' +
+
+    '</div></div>'
+  );
+}
+
+function geRemovePhoto(idx){
+  var gallery=lsGet('chq-pub-gallery',[]);
+  gallery.splice(idx,1);
+  lsSave('chq-pub-gallery',gallery);
+  sbSetKV('pub_gallery',gallery);
+  bGalleryEditor();
+}
+
+function geUpdateCaption(idx,val){
+  var gallery=lsGet('chq-pub-gallery',[]);
+  if(gallery[idx])gallery[idx].caption=val;
+  lsSave('chq-pub-gallery',gallery);
+  sbSetKV('pub_gallery',gallery);
+}
+
+function galleryMoveUp(idx){
+  var gallery=lsGet('chq-pub-gallery',[]);
+  if(idx===0)return;
+  var tmp=gallery[idx];gallery[idx]=gallery[idx-1];gallery[idx-1]=tmp;
+  lsSave('chq-pub-gallery',gallery);
+  sbSetKV('pub_gallery',gallery);
+  bGalleryEditor();
+}
+
+function galleryMoveDown(idx){
+  var gallery=lsGet('chq-pub-gallery',[]);
+  if(idx>=gallery.length-1)return;
+  var tmp=gallery[idx];gallery[idx]=gallery[idx+1];gallery[idx+1]=tmp;
+  lsSave('chq-pub-gallery',gallery);
+  sbSetKV('pub_gallery',gallery);
+  bGalleryEditor();
+}
+
+function geAddMilestone(){
+  var journey=lsGet('chq-pub-journey',[]);
+  journey.unshift({date:new Date().toISOString().split('T')[0],title:'',desc:'',type:'event'});
+  lsSave('chq-pub-journey',journey);
+  sbSetKV('pub_journey',journey);
+  bGalleryEditor();
+}
+
+function geRemoveMilestone(idx){
+  var journey=lsGet('chq-pub-journey',[]);
+  journey.splice(idx,1);
+  lsSave('chq-pub-journey',journey);
+  sbSetKV('pub_journey',journey);
+  bGalleryEditor();
+}
+
+function geUpdateMilestone(idx,field,val){
+  var journey=lsGet('chq-pub-journey',[]);
+  if(journey[idx])journey[idx][field]=val;
+  lsSave('chq-pub-journey',journey);
+  sbSetKV('pub_journey',journey);
+}
+
+function updateProgress(key,val,labelId){
+  var prog=lsGet('chq-pub-progress',{training:40,sponsorships:15,team:60});
+  prog[key]=val;
+  lsSave('chq-pub-progress',prog);
+  sbSetKV('pub_progress',prog);
+  var lbl=document.getElementById(labelId);
+  if(lbl) lbl.textContent=val+'%';
 }
 
 function saveCampaignText(key,val){

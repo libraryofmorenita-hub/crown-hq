@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Observatory &middot; Amelia Arabe</title>
+<meta name="description" content="Ideas, essays, and dispatches from the campaign — on technology, culture, sustainability, and what it means to build something that lasts.">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500;1,600&family=Figtree:wght@300;400;500;600&display=swap');
+
+:root{
+  --ink:#1C1714;--charcoal:#2E2520;--muted:#7A6F68;--faint:#B0A89F;
+  --ivory:#FAF7F2;--iv2:#F0EBE3;--iv3:#E5DDD2;
+  --si:#8B4A2F;--sil:#C47A5A;--sip:#F5EDE8;
+  --gold:#C9A84C;--gold-d:#8B6E1E;
+  --bd:rgba(28,23,20,0.10);
+  --fd:'Cormorant Garamond',Georgia,serif;
+  --fb:'Figtree',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:var(--fb);background:var(--ink);color:var(--ivory);font-size:13px;line-height:1.5;overflow-x:hidden;}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#3a2e28;border-radius:2px}
+
+/* ── NAV ── */
+.nav{
+  position:fixed;top:0;left:0;right:0;z-index:200;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 2rem;height:56px;
+  background:rgba(28,23,20,0.94);backdrop-filter:blur(16px);
+  border-bottom:0.5px solid rgba(250,247,242,0.07);
+}
+.nav-logo{font-family:var(--fd);font-size:15px;color:var(--ivory);text-decoration:none;opacity:.85;transition:opacity .15s;}
+.nav-logo:hover{opacity:1;}
+.nav-logo em{font-style:italic;color:var(--gold);}
+.nav-back{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:rgba(250,247,242,.4);text-decoration:none;transition:color .15s;}
+.nav-back:hover{color:var(--ivory);}
+
+/* ── CONSTELLATION HERO ── */
+.obs{
+  min-height:100vh;position:relative;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  overflow:hidden;
+  background:radial-gradient(ellipse at 50% 45%,#261b14 0%,#1C1714 65%);
+}
+.bg-stars{position:absolute;inset:0;pointer-events:none;}
+.bg-star{
+  position:absolute;border-radius:50%;background:white;
+  animation:twinkle var(--dur,3s) ease-in-out infinite var(--delay,0s);
+}
+@keyframes twinkle{0%,100%{opacity:var(--lo,.08)}50%{opacity:var(--hi,.65)}}
+
+/* Constellation SVG */
+#cmap{
+  position:absolute;inset:0;width:100%;height:100%;
+  pointer-events:none;overflow:visible;
+}
+#cmap .c-line{stroke:rgba(250,247,242,.08);stroke-width:.5;transition:stroke .3s,opacity .3s;}
+#cmap .c-line.active{stroke:rgba(250,247,242,.32);stroke-width:.8;}
+#cmap .c-orbit{stroke:rgba(250,247,242,.04);stroke-width:.5;stroke-dasharray:3 6;fill:none;}
+#cmap .planet-halo{opacity:.18;transition:opacity .3s,r .3s;}
+#cmap .planet-core{transition:r .25s,filter .25s;}
+#cmap .planet-label{
+  fill:rgba(250,247,242,.55);font-family:'Figtree',sans-serif;
+  font-size:9px;letter-spacing:.14em;text-transform:uppercase;
+  text-anchor:middle;pointer-events:none;transition:fill .25s;
+  text-shadow:none;
+}
+#cmap .art-halo{opacity:.25;transition:opacity .3s,r .3s;}
+#cmap .art-core{transition:r .25s;}
+#cmap .art-node{pointer-events:all;cursor:pointer;}
+#cmap .art-node:hover .art-halo{opacity:.55;r:10;}
+#cmap .art-node:hover .art-core{r:4;}
+#cmap .planet-group:hover .planet-halo{opacity:.35;}
+#cmap .planet-group:hover .planet-core{r:16;}
+#cmap .planet-group:hover .planet-label{fill:rgba(250,247,242,.9);}
+
+/* Tooltip */
+#ctip{
+  position:fixed;z-index:300;pointer-events:none;
+  background:rgba(28,23,20,.92);backdrop-filter:blur(16px);
+  border:0.5px solid rgba(250,247,242,.1);border-radius:4px;
+  padding:.55rem .85rem;max-width:220px;
+  opacity:0;transition:opacity .18s;transform:translateY(-4px);
+}
+#ctip.show{opacity:1;transform:translateY(0);}
+#ctip-tag{font-size:8px;letter-spacing:.16em;text-transform:uppercase;margin-bottom:.22rem;}
+#ctip-title{font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:300;color:var(--ivory);line-height:1.3;}
+#ctip-hint{font-size:9px;color:rgba(250,247,242,.35);margin-top:.3rem;}
+
+/* Hero title overlay */
+.obs-content{
+  position:relative;z-index:2;text-align:center;padding:0 2rem;
+  max-width:540px;pointer-events:none;
+}
+.obs-eyebrow{font-size:10px;letter-spacing:.32em;text-transform:uppercase;color:rgba(201,168,76,.55);margin-bottom:1.4rem;animation:fadeUp .7s ease both;}
+.obs-title{font-family:var(--fd);font-size:clamp(54px,9vw,98px);font-weight:300;line-height:.9;color:var(--ivory);margin-bottom:1.4rem;animation:fadeUp .7s .1s ease both;}
+.obs-title em{font-style:italic;color:var(--gold);}
+.obs-sub{font-size:13px;font-weight:300;line-height:1.75;color:rgba(250,247,242,.35);margin-bottom:3rem;animation:fadeUp .7s .2s ease both;}
+.obs-cta{
+  display:inline-flex;flex-direction:column;align-items:center;gap:10px;
+  font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:rgba(201,168,76,.5);
+  text-decoration:none;animation:fadeUp .7s .32s ease both;transition:color .2s;
+  pointer-events:all;cursor:pointer;
+}
+.obs-cta:hover{color:var(--gold);}
+.obs-cta-line{width:0.5px;height:44px;background:linear-gradient(to bottom,rgba(201,168,76,.45),transparent);animation:bobble 2.2s ease-in-out infinite;}
+@keyframes bobble{0%,100%{transform:translateY(0)}50%{transform:translateY(7px)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── ARTICLE GRID ── */
+.lib-section{background:var(--ivory);min-height:60vh;padding:5rem 2.5rem 6rem;}
+.lib-inner{max-width:1100px;margin:0 auto;}
+.lib-head{margin-bottom:3rem;display:flex;align-items:flex-end;justify-content:space-between;gap:1rem;flex-wrap:wrap;}
+.lib-eyebrow{font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--si);margin-bottom:.5rem;display:flex;align-items:center;gap:10px;}
+.lib-eyebrow::before{content:'';width:20px;height:0.5px;background:var(--sil);}
+.lib-title{font-family:var(--fd);font-size:42px;font-weight:300;color:var(--ink);line-height:1;}
+.lib-title em{font-style:italic;color:var(--si);}
+.lib-count{font-size:11px;color:var(--faint);}
+.lib-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;}
+.lib-card{background:white;border:0.5px solid var(--bd);border-radius:6px;overflow:hidden;cursor:pointer;transition:border-color .2s,transform .2s;display:flex;flex-direction:column;}
+.lib-card:hover{border-color:var(--sil);transform:translateY(-3px);}
+.lib-cover{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;}
+.lib-cover-empty{width:100%;aspect-ratio:16/9;background:linear-gradient(135deg,var(--iv2) 0%,var(--iv3) 100%);display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:28px;color:rgba(28,23,20,.12);font-style:italic;}
+.lib-card-body{padding:1.3rem;flex:1;display:flex;flex-direction:column;}
+.lib-card-tag{font-size:9px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:.45rem;}
+.lib-card-title{font-family:var(--fd);font-size:19px;color:var(--ink);line-height:1.3;margin-bottom:auto;padding-bottom:.7rem;}
+.lib-card-date{font-size:10px;color:var(--faint);margin-top:.5rem;}
+.lib-empty{grid-column:1/-1;text-align:center;padding:5rem 2rem;border:0.5px dashed var(--bd);border-radius:6px;}
+.lib-empty-title{font-family:var(--fd);font-size:28px;font-style:italic;color:var(--muted);margin-bottom:.4rem;}
+.lib-empty-sub{font-size:12px;color:var(--faint);}
+
+/* ── ARTICLE READER ── */
+.art-overlay{display:none;position:fixed;inset:0;z-index:500;background:rgba(28,23,20,.65);backdrop-filter:blur(8px);}
+.art-overlay.open{display:block;}
+.art-panel{position:absolute;top:0;right:0;bottom:0;width:min(700px,100%);overflow-y:auto;background:var(--ivory);animation:slideIn .28s cubic-bezier(.22,.68,0,1.2);}
+@keyframes slideIn{from{transform:translateX(100%);opacity:.5}to{transform:translateX(0);opacity:1}}
+.art-head{position:sticky;top:0;z-index:1;background:rgba(250,247,242,.96);backdrop-filter:blur(12px);border-bottom:0.5px solid var(--bd);padding:.9rem 1.5rem;display:flex;align-items:center;justify-content:space-between;}
+.art-head-label{font-family:var(--fd);font-size:13px;font-style:italic;color:var(--muted);}
+.art-close{background:none;border:0.5px solid var(--bd);border-radius:4px;padding:5px 12px;font-size:11px;color:var(--muted);cursor:pointer;font-family:var(--fb);letter-spacing:.04em;transition:all .15s;}
+.art-close:hover{border-color:var(--sil);color:var(--si);}
+.art-meta{padding:2.2rem 2rem 1.2rem;}
+.art-tag{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--si);margin-bottom:.5rem;}
+.art-title{font-family:var(--fd);font-size:38px;font-weight:300;color:var(--ink);line-height:1.05;margin-bottom:.5rem;}
+.art-date{font-size:10px;color:var(--faint);}
+.art-cover-wrap{padding:0 2rem;}
+.art-cover{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:4px;}
+.art-body{padding:1.8rem 2rem 4rem;font-size:14px;line-height:1.9;color:var(--charcoal);}
+.art-body h1,.art-body h2,.art-body h3{font-family:var(--fd);font-weight:400;color:var(--ink);margin:2rem 0 .6rem;line-height:1.1;}
+.art-body h1{font-size:32px;}.art-body h2{font-size:26px;}.art-body h3{font-size:20px;}
+.art-body p{margin-bottom:1.1rem;}
+.art-body em{font-style:italic;}.art-body strong{font-weight:500;color:var(--ink);}
+.art-body a{color:var(--si);text-decoration:underline;}
+.art-body blockquote{border-left:2px solid var(--sil);margin:1.5rem 0;padding:.6rem 1.2rem;font-style:italic;color:var(--muted);}
+
+/* ── FOOTER ── */
+.lib-footer{background:var(--ivory);border-top:0.5px solid var(--bd);padding:2rem 2.5rem;}
+.lib-footer-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;}
+.lib-footer-logo{font-family:var(--fd);font-size:14px;color:var(--ink);}
+.lib-footer-logo em{font-style:italic;color:var(--si);}
+.lib-footer-back{font-size:11px;color:var(--muted);text-decoration:none;transition:color .15s;}
+.lib-footer-back:hover{color:var(--ink);}
+.lib-footer-note{font-size:11px;color:var(--faint);}
+
+/* ── RESPONSIVE ── */
+@media(max-width:960px){
+  .lib-grid{grid-template-columns:repeat(2,1fr);}
+  .lib-section{padding:4rem 1.5rem 5rem;}
+}
+@media(max-width:480px){
+  .nav{padding:0 1rem;}
+  .obs-content{padding:0 1.2rem;}
+  .obs-title{font-size:52px;}
+  .lib-grid{grid-template-columns:1fr;}
+  .lib-section{padding:3.5rem 1.2rem 4rem;}
+  .lib-title{font-size:30px;}
+  .art-panel{width:100%;}
+  .art-meta{padding:1.5rem 1.2rem 1rem;}
+  .art-cover-wrap{padding:0 1.2rem;}
+  .art-body{padding:1.4rem 1.2rem 3rem;}
+  .art-title{font-size:28px;}
+  .art-head{padding:.8rem 1rem;}
+  .lib-footer{padding:1.8rem 1.2rem;}
+  .lib-footer-inner{flex-direction:column;align-items:flex-start;gap:.8rem;}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ NAV ══ -->
+<nav class="nav">
+  <a href="public.html" class="nav-logo">Amelia <em>Arabe</em></a>
+  <a href="public.html" class="nav-back">&#8592; Back to campaign</a>
+</nav>
+
+<!-- ══ CONSTELLATION HERO ══ -->
+<section class="obs" id="obs">
+  <div class="bg-stars" id="bg-stars"></div>
+
+  <!-- Live constellation map — built from published posts -->
+  <svg id="cmap" xmlns="http://www.w3.org/2000/svg">
+    <defs id="cmap-defs"></defs>
+    <g id="cmap-orbits"></g>
+    <g id="cmap-lines"></g>
+    <g id="cmap-planets"></g>
+    <g id="cmap-articles"></g>
+  </svg>
+
+  <div class="obs-content">
+    <div class="obs-eyebrow">Library of Amelia Arabe</div>
+    <h1 class="obs-title">The <em>Observatory</em></h1>
+    <p class="obs-sub">A living map of ideas — each star an essay, each planet a world of thought.</p>
+    <a class="obs-cta" onclick="document.getElementById('articles').scrollIntoView({behavior:'smooth'})">
+      <div class="obs-cta-line"></div>
+      <span>Browse all</span>
+    </a>
+  </div>
+
+</section>
+
+<!-- Tooltip -->
+<div id="ctip">
+  <div id="ctip-tag"></div>
+  <div id="ctip-title"></div>
+  <div id="ctip-hint">Click to read</div>
+</div>
+
+<!-- ══ ARTICLE GRID ══ -->
+<section class="lib-section" id="articles">
+  <div class="lib-inner">
+    <div class="lib-head">
+      <div>
+        <div class="lib-eyebrow">Essays &amp; Writing</div>
+        <h2 class="lib-title">All <em>published</em> work</h2>
+      </div>
+      <span class="lib-count" id="lib-count"></span>
+    </div>
+    <div class="lib-grid" id="lib-grid">
+      <div class="lib-empty">
+        <div class="lib-empty-title">Essays coming soon</div>
+        <div class="lib-empty-sub">Check back as the campaign builds.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ FOOTER ══ -->
+<footer class="lib-footer">
+  <div class="lib-footer-inner">
+    <div class="lib-footer-logo">Amelia <em>Arabe</em> &middot; The Observatory</div>
+    <a href="public.html" class="lib-footer-back">&#8592; Back to campaign</a>
+    <div class="lib-footer-note">
+      <a href="https://libraryofmorenita-hub.github.io/amelia-arabe/#services" target="_blank" style="color:inherit;text-decoration:none;">Website made by Morenita Design</a>
+    </div>
+  </div>
+</footer>
+
+<!-- ══ ARTICLE READER ══ -->
+<div class="art-overlay" id="art-overlay">
+  <div class="art-panel" id="art-panel">
+    <div class="art-head">
+      <span class="art-head-label">The Observatory</span>
+      <button class="art-close" onclick="closeArt()">Close &#10005;</button>
+    </div>
+    <div class="art-meta">
+      <div class="art-tag" id="art-tag"></div>
+      <h1 class="art-title" id="art-title"></h1>
+      <div class="art-date" id="art-date"></div>
+    </div>
+    <div class="art-cover-wrap" id="art-cover-wrap" style="display:none">
+      <img class="art-cover" id="art-cover" src="" alt="">
+    </div>
+    <div class="art-body" id="art-body"></div>
+  </div>
+</div>
+
+<script>
+// ══ TOPIC DEFINITIONS ══════════════════════════════════════════
+var TOPICS = {
+  energy:    {label:'Clean Energy',      color:'#C9A84C', r:18},
+  fashion:   {label:'Fashion Policy',    color:'#C47A5A', r:18},
+  wellness:  {label:'Beauty & Wellness', color:'#8BA07A', r:14},
+  fitness:   {label:'Fitness',           color:'#7A8BA0', r:14},
+  morenita:  {label:'Morenita',          color:'#B08EA0', r:20},
+  solarpunk: {label:'Solarpunk',         color:'#7AA08B', r:14},
+};
+var TOPIC_KEYS = Object.keys(TOPICS);
+
+// ══ BACKGROUND TWINKLE STARS ═══════════════════════════════════
+(function(){
+  var c = document.getElementById('bg-stars');
+  for(var i = 0; i < 140; i++){
+    var s = document.createElement('div');
+    s.className = 'bg-star';
+    var sz = Math.random() < .75 ? .5 + Math.random() * .5 : 1 + Math.random() * 1.8;
+    s.style.cssText = 'width:'+sz+'px;height:'+sz+'px;top:'+Math.random()*100+'%;left:'+Math.random()*100+'%;'+
+      '--lo:'+(0.04+Math.random()*.10)+';--hi:'+(0.3+Math.random()*.5)+';'+
+      '--dur:'+(2.5+Math.random()*5)+'s;--delay:'+(-Math.random()*6)+'s';
+    c.appendChild(s);
+  }
+})();
+
+// ══ SUPABASE ═══════════════════════════════════════════════════
+var SB_URL = 'https://haqfxrcsszjwiyrchqnm.supabase.co';
+var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhcWZ4cmNzc3pqd2l5cmNocW5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMDY5NjIsImV4cCI6MjA4OTg4Mjk2Mn0.eioSLntQ0E1mIxUC_r4kmmVbzrIi-d69LLO4rnn0Nlg';
+
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmtDate(d){
+  if(!d) return '';
+  try{ return new Date(d+'T12:00:00').toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}); }
+  catch(e){ return d; }
+}
+
+// ══ CONSTELLATION ENGINE ═══════════════════════════════════════
+var W, H, CX, CY;
+var allPosts = [];
+
+function getViewport(){
+  W = document.getElementById('obs').offsetWidth;
+  H = document.getElementById('obs').offsetHeight;
+  CX = W / 2;
+  CY = H / 2;
+}
+
+// Seeded pseudo-random for stable layouts between renders
+function seededRand(seed){
+  var x = Math.sin(seed + 1) * 10000;
+  return x - Math.floor(x);
+}
+
+function buildConstellation(posts){
+  getViewport();
+  allPosts = posts;
+
+  var svg = document.getElementById('cmap');
+  svg.setAttribute('viewBox','0 0 '+W+' '+H);
+
+  var defs   = document.getElementById('cmap-defs');
+  var orbits = document.getElementById('cmap-orbits');
+  var lines  = document.getElementById('cmap-lines');
+  var planets= document.getElementById('cmap-planets');
+  var arts   = document.getElementById('cmap-articles');
+
+  defs.innerHTML = '';
+  orbits.innerHTML = '';
+  lines.innerHTML = '';
+  planets.innerHTML = '';
+  arts.innerHTML = '';
+
+  // Group posts by topic
+  var byTopic = {};
+  TOPIC_KEYS.forEach(function(k){ byTopic[k] = []; });
+  posts.forEach(function(p){
+    var cat = (p.cat||'morenita').toLowerCase();
+    if(!byTopic[cat]) byTopic[cat] = [];
+    byTopic[cat].push(p);
+  });
+
+  // Always show all topics — dimmed when empty, bright when they have articles
+  var activeTopic = TOPIC_KEYS.slice();
+  var n = activeTopic.length;
+
+  // Planet orbital radius — responsive
+  var orbitR = Math.min(W, H) * (W < 600 ? 0.26 : 0.30);
+
+  // Place planets evenly on orbit, offset so no planet sits at top
+  var planetPos = {};
+  activeTopic.forEach(function(key, i){
+    var angle = (i / n) * Math.PI * 2 - Math.PI / 2 + (Math.PI / n);
+    planetPos[key] = {
+      x: CX + orbitR * Math.cos(angle),
+      y: CY + orbitR * Math.sin(angle),
+      angle: angle,
+      key: key
+    };
+  });
+
+  // Draw glow gradients in defs
+  activeTopic.forEach(function(key){
+    var col = TOPICS[key].color;
+    var hex = col.replace('#','');
+    var gr = document.createElementNS('http://www.w3.org/2000/svg','radialGradient');
+    gr.setAttribute('id','pg-'+key);
+    gr.setAttribute('cx','50%');gr.setAttribute('cy','50%');gr.setAttribute('r','50%');
+    var s1 = document.createElementNS('http://www.w3.org/2000/svg','stop');
+    s1.setAttribute('offset','0%');s1.setAttribute('stop-color',col);s1.setAttribute('stop-opacity','0.7');
+    var s2 = document.createElementNS('http://www.w3.org/2000/svg','stop');
+    s2.setAttribute('offset','100%');s2.setAttribute('stop-color',col);s2.setAttribute('stop-opacity','0');
+    gr.appendChild(s1);gr.appendChild(s2);
+    defs.appendChild(gr);
+  });
+
+  // Draw faint orbit ring
+  var orb = document.createElementNS('http://www.w3.org/2000/svg','circle');
+  orb.setAttribute('class','c-orbit');
+  orb.setAttribute('cx',CX);orb.setAttribute('cy',CY);orb.setAttribute('r',orbitR);
+  orbits.appendChild(orb);
+
+  // Draw faint inter-planet lines (the skeleton of the constellation)
+  for(var i = 0; i < activeTopic.length; i++){
+    var next = (i + 1) % activeTopic.length;
+    var pa = planetPos[activeTopic[i]];
+    var pb = planetPos[activeTopic[next]];
+    var il = document.createElementNS('http://www.w3.org/2000/svg','line');
+    il.setAttribute('class','c-line');
+    il.setAttribute('x1',pa.x);il.setAttribute('y1',pa.y);
+    il.setAttribute('x2',pb.x);il.setAttribute('y2',pb.y);
+    il.style.opacity = '.35';
+    lines.appendChild(il);
+  }
+
+  // Article star positions
+  var starPos = {};
+  var phi = 2.39996323; // golden angle
+
+  activeTopic.forEach(function(key){
+    var pp = planetPos[key];
+    var articles = byTopic[key];
+    starPos[key] = [];
+
+    articles.forEach(function(post, i){
+      var seed = post.id || i * 137;
+      var angle = i * phi + pp.angle;
+      // Vary the radius so stars don't stack
+      var baseR = 75 + (i % 4) * 18;
+      var jitter = (seededRand(seed) - 0.5) * 22;
+      var dist = baseR + jitter;
+      var ax = pp.x + dist * Math.cos(angle);
+      var ay = pp.y + dist * Math.sin(angle);
+
+      // Keep star inside canvas padding
+      var pad = 30;
+      ax = Math.max(pad, Math.min(W - pad, ax));
+      ay = Math.max(pad + 56, Math.min(H - pad, ay));
+
+      starPos[key].push({x:ax, y:ay, post:post});
+
+      // Line: planet → star
+      var sl = document.createElementNS('http://www.w3.org/2000/svg','line');
+      sl.setAttribute('class','c-line');
+      sl.setAttribute('id','sl-'+post.id);
+      sl.setAttribute('x1',pp.x);sl.setAttribute('y1',pp.y);
+      sl.setAttribute('x2',ax);sl.setAttribute('y2',ay);
+      sl.style.stroke = TOPICS[key].color;
+      sl.style.opacity = '.2';
+      lines.appendChild(sl);
+    });
+
+    // Cross-connect stars within a topic if more than 1
+    if(articles.length > 1){
+      for(var j = 0; j < starPos[key].length - 1; j++){
+        var sa = starPos[key][j];
+        var sb = starPos[key][j+1];
+        var cl = document.createElementNS('http://www.w3.org/2000/svg','line');
+        cl.setAttribute('class','c-line');
+        cl.setAttribute('x1',sa.x);cl.setAttribute('y1',sa.y);
+        cl.setAttribute('x2',sb.x);cl.setAttribute('y2',sb.y);
+        cl.style.stroke = TOPICS[key].color;
+        cl.style.opacity = '.12';
+        lines.appendChild(cl);
+      }
+    }
+  });
+
+  // Draw planets
+  activeTopic.forEach(function(key){
+    var pp = planetPos[key];
+    var topic = TOPICS[key];
+    var col = topic.color;
+    var r = topic.r;
+    var hasArts = byTopic[key].length > 0;
+
+    var g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.setAttribute('class','planet-group');
+    g.setAttribute('data-key',key);
+
+    // Glow halo
+    var halo = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    halo.setAttribute('class','planet-halo');
+    halo.setAttribute('cx',pp.x);halo.setAttribute('cy',pp.y);halo.setAttribute('r',r * 2.4);
+    halo.setAttribute('fill','url(#pg-'+key+')');
+    g.appendChild(halo);
+
+    // Core
+    var core = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    core.setAttribute('class','planet-core');
+    core.setAttribute('cx',pp.x);core.setAttribute('cy',pp.y);core.setAttribute('r',r);
+    core.setAttribute('fill',col);
+    core.setAttribute('opacity', hasArts ? '0.92' : '0.38');
+    g.appendChild(core);
+
+    // Ring (small accent)
+    var ring = document.createElementNS('http://www.w3.org/2000/svg','ellipse');
+    ring.setAttribute('cx',pp.x);ring.setAttribute('cy',pp.y);
+    ring.setAttribute('rx',r * 1.7);ring.setAttribute('ry',r * 0.4);
+    ring.setAttribute('fill','none');ring.setAttribute('stroke',col);
+    ring.setAttribute('stroke-width','0.8');ring.setAttribute('opacity','0.25');
+    ring.setAttribute('transform','rotate(-25 '+pp.x+' '+pp.y+')');
+    g.appendChild(ring);
+
+    // Label
+    var lbl = document.createElementNS('http://www.w3.org/2000/svg','text');
+    lbl.setAttribute('class','planet-label');
+    lbl.setAttribute('x',pp.x);
+    // Position label below planet, avoiding overlap
+    var ly = pp.y > CY ? pp.y + r + 16 : pp.y - r - 8;
+    lbl.setAttribute('y',ly);
+    lbl.textContent = topic.label;
+    if(!hasArts) lbl.setAttribute('opacity','0.35');
+    g.appendChild(lbl);
+
+    planets.appendChild(g);
+  });
+
+  // Draw article stars
+  activeTopic.forEach(function(key){
+    var col = TOPICS[key].color;
+    starPos[key].forEach(function(s){
+      var post = s.post;
+
+      var g = document.createElementNS('http://www.w3.org/2000/svg','g');
+      g.setAttribute('class','art-node');
+      g.setAttribute('data-id', post.id);
+
+      // Glow
+      var halo = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      halo.setAttribute('class','art-halo');
+      halo.setAttribute('cx',s.x);halo.setAttribute('cy',s.y);halo.setAttribute('r','7');
+      halo.setAttribute('fill',col);
+      g.appendChild(halo);
+
+      // Star core — use a 4-point star shape via polygon
+      var starPts = makeStar4(s.x, s.y, 2.5, 5.5);
+      var sp = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+      sp.setAttribute('class','art-core');
+      sp.setAttribute('points',starPts);
+      sp.setAttribute('fill',col);
+      sp.setAttribute('opacity','0.92');
+      g.appendChild(sp);
+
+      // Hover & click
+      g.addEventListener('mouseenter', function(e){ showTip(e, post, col); activateLines(post.id, key, col); });
+      g.addEventListener('mouseleave', function(){ hideTip(); deactivateLines(); });
+      g.addEventListener('click', function(e){ e.stopPropagation(); openArt(post); });
+
+      // Touch support
+      g.addEventListener('touchstart', function(e){ e.preventDefault(); showTip(e.touches[0], post, col); });
+      g.addEventListener('touchend', function(e){ e.preventDefault(); hideTip(); openArt(post); });
+
+      arts.appendChild(g);
+    });
+  });
+
+  // Enable SVG pointer events
+  svg.style.pointerEvents = 'all';
+  // Click on background: scroll to articles
+  svg.addEventListener('click', function(e){
+    if(e.target === svg || e.target.classList.contains('c-orbit') || e.target.classList.contains('c-line')){
+      document.getElementById('articles').scrollIntoView({behavior:'smooth'});
+    }
+  });
+}
+
+// 4-point star polygon points
+function makeStar4(cx, cy, inner, outer){
+  var pts = [];
+  for(var i = 0; i < 8; i++){
+    var angle = (i * Math.PI / 4) - Math.PI / 2;
+    var r = i % 2 === 0 ? outer : inner;
+    pts.push((cx + r * Math.cos(angle)).toFixed(2) + ',' + (cy + r * Math.sin(angle)).toFixed(2));
+  }
+  return pts.join(' ');
+}
+
+// ── TOOLTIP ─────────────────────────────────────────
+var tip = document.getElementById('ctip');
+function showTip(e, post, col){
+  document.getElementById('ctip-tag').textContent = post.tag || post.cat || 'Essay';
+  document.getElementById('ctip-tag').style.color = col;
+  document.getElementById('ctip-title').textContent = post.title || 'Untitled';
+  tip.classList.add('show');
+  moveTip(e);
+}
+function moveTip(e){
+  var x = (e.clientX || e.pageX) + 14;
+  var y = (e.clientY || e.pageY) - 10;
+  if(x + 230 > window.innerWidth) x = (e.clientX || e.pageX) - 230;
+  tip.style.left = x + 'px';
+  tip.style.top  = y + 'px';
+}
+function hideTip(){ tip.classList.remove('show'); }
+document.addEventListener('mousemove', function(e){
+  if(tip.classList.contains('show')) moveTip(e);
+});
+
+// ── LINE HIGHLIGHT ───────────────────────────────────
+function activateLines(postId, key, col){
+  var lineEl = document.getElementById('sl-'+postId);
+  if(lineEl){ lineEl.style.opacity = '0.7'; lineEl.style.strokeWidth = '1.2'; }
+}
+function deactivateLines(){
+  var allLines = document.querySelectorAll('.c-line');
+  allLines.forEach(function(l){
+    if(l.id && l.id.startsWith('sl-')){ l.style.opacity = '0.2'; l.style.strokeWidth = ''; }
+  });
+}
+
+// ── LOAD POSTS ──────────────────────────────────────
+function loadPosts(){
+  fetch(SB_URL+'/rest/v1/posts?status=eq.published&order=date.desc',{
+    headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(posts){
+    if(!Array.isArray(posts)) posts = [];
+    // Build constellation
+    buildConstellation(posts);
+    // Build article grid
+    buildGrid(posts);
+  })
+  .catch(function(){
+    buildConstellation([]);
+    buildGrid([]);
+  });
+}
+
+function buildGrid(posts){
+  var grid  = document.getElementById('lib-grid');
+  var count = document.getElementById('lib-count');
+  if(!posts.length){
+    grid.innerHTML = '<div class="lib-empty"><div class="lib-empty-title">Essays coming soon</div><div class="lib-empty-sub">Check back as the campaign builds.</div></div>';
+    return;
+  }
+  count.textContent = posts.length + ' ' + (posts.length === 1 ? 'essay' : 'essays');
+  grid.innerHTML = '';
+  posts.forEach(function(p){
+    var col = (TOPICS[p.cat] || {}).color || 'var(--si)';
+    var card = document.createElement('div');
+    card.className = 'lib-card';
+    card.onclick = function(){ openArt(p); };
+    card.innerHTML =
+      (p.cover
+        ? '<img class="lib-cover" src="'+esc(p.cover)+'" alt="">'
+        : '<div class="lib-cover-empty">&#10022;</div>') +
+      '<div class="lib-card-body">'+
+        '<div class="lib-card-tag" style="color:'+col+'">'+esc(p.tag||p.cat||'Essay')+'</div>'+
+        '<div class="lib-card-title">'+esc(p.title||'Untitled')+'</div>'+
+        '<div class="lib-card-date">'+fmtDate(p.date)+'</div>'+
+      '</div>';
+    grid.appendChild(card);
+  });
+}
+
+// ── ARTICLE READER ──────────────────────────────────
+function openArt(p){
+  document.getElementById('art-tag').textContent  = p.tag || p.cat || 'Essay';
+  document.getElementById('art-title').textContent = p.title || '';
+  document.getElementById('art-date').textContent  = fmtDate(p.date);
+  var cw = document.getElementById('art-cover-wrap');
+  var ci = document.getElementById('art-cover');
+  if(p.cover){ ci.src = p.cover; cw.style.display = 'block'; }
+  else{ cw.style.display = 'none'; }
+  document.getElementById('art-body').innerHTML = p.body || '';
+  document.getElementById('art-overlay').classList.add('open');
+  document.getElementById('art-panel').scrollTop = 0;
+  document.body.style.overflow = 'hidden';
+}
+
+function closeArt(){
+  document.getElementById('art-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.getElementById('art-overlay').addEventListener('click', function(e){
+  if(e.target === this) closeArt();
+});
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape') closeArt();
+});
+
+// ── RESIZE ──────────────────────────────────────────
+var resizeTimer;
+window.addEventListener('resize', function(){
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(function(){ buildConstellation(allPosts); }, 200);
+});
+
+// ── INIT ────────────────────────────────────────────
+loadPosts();
+</script>
+</body>
+</html>

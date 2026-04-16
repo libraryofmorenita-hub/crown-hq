@@ -347,6 +347,18 @@ body{font-family:var(--fb);background:var(--ivory);color:var(--ink);font-size:13
 .sf-submit:hover{opacity:.85;}
 .sf-note{font-size:10px;color:rgba(250,247,242,.25);text-align:center;margin-top:.5rem;}
 
+/* ── JOURNEY TIMELINE ── */
+#journey-timeline{position:relative;padding-left:1.75rem;}
+#journey-timeline::before{content:'';position:absolute;left:0;top:0;bottom:0;width:1px;background:var(--bd);}
+.journey-item{position:relative;padding-bottom:1.75rem;}
+.journey-item:last-child{padding-bottom:0;}
+.journey-dot{position:absolute;left:-1.875rem;top:.3rem;width:9px;height:9px;border-radius:50%;border:2px solid var(--bg2,#FAF7F2);}
+.journey-meta{display:flex;align-items:center;gap:.55rem;margin-bottom:.35rem;}
+.journey-type{font-family:var(--fm);font-size:.48rem;letter-spacing:1.5px;text-transform:uppercase;padding:.18rem .5rem;border-radius:2px;border:0.5px solid;}
+.journey-date{font-family:var(--fm);font-size:.6rem;letter-spacing:.5px;color:var(--muted);}
+.journey-title{font-family:var(--fd);font-size:18px;color:var(--ink);line-height:1.35;margin-bottom:.2rem;}
+.journey-desc{font-size:13px;color:var(--muted);line-height:1.55;}
+
 /* ── PRESS ── */
 .press-section{background:var(--iv2);}
 .press-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin:2.5rem 0 2rem;}
@@ -505,7 +517,7 @@ body{font-family:var(--fb);background:var(--ivory);color:var(--ink);font-size:13
   <div class="nav-links">
     <a href="#platform" class="nav-link">Platform</a>
     <a href="#about" class="nav-link">About</a>
-    <a href="#library" class="nav-link">Writing</a>
+    <a href="#library" class="nav-link">The Library</a>
     <a href="#press" class="nav-link">Journey</a>
     <a href="#team" class="nav-link">Team</a>
     <a href="#sponsor" class="nav-link">Sponsor</a>
@@ -517,9 +529,6 @@ body{font-family:var(--fb);background:var(--ivory);color:var(--ink);font-size:13
       </a>
       <a href="https://www.youtube.com/@ameliavarabe" target="_blank" class="nav-social-link" title="YouTube">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.97C18.88 4 12 4 12 4s-6.88 0-8.59.45A2.78 2.78 0 0 0 1.46 6.42 29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.95 1.97C5.12 20 12 20 12 20s6.88 0 8.59-.45a2.78 2.78 0 0 0 1.95-1.97A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="currentColor" stroke="none"/></svg>
-      </a>
-      <a href="https://substack.com/@musesofmorenita" target="_blank" class="nav-social-link" title="Substack">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z"/></svg>
       </a>
     </div>
     <a href="index.html" class="nav-btn nb-primary">Team login &#8599;</a>
@@ -564,12 +573,12 @@ body{font-family:var(--fb);background:var(--ivory);color:var(--ink);font-size:13
       <div class="cd-unit"><span class="cd-n" id="cd-s">--</span><span class="cd-u">Sec</span></div>
     </div>
     <div class="cd-prog-wrap">
-      <div class="cd-prog-lbl"><span class="cd-prog-title">Training</span><span class="cd-prog-pct">40%</span></div>
-      <div class="cd-bar"><div class="cd-fill cf-sage" style="width:40%"></div></div>
-      <div class="cd-prog-lbl"><span class="cd-prog-title">Sponsorships</span><span class="cd-prog-pct">15%</span></div>
-      <div class="cd-bar"><div class="cd-fill cf-gold" style="width:15%"></div></div>
-      <div class="cd-prog-lbl"><span class="cd-prog-title">Team Assembly</span><span class="cd-prog-pct">60%</span></div>
-      <div class="cd-bar" style="margin-bottom:0"><div class="cd-fill cf-si" style="width:60%"></div></div>
+      <div class="cd-prog-lbl"><span class="cd-prog-title">Training</span><span class="cd-prog-pct" id="prog-pct-training">40%</span></div>
+      <div class="cd-bar"><div class="cd-fill cf-sage" id="prog-fill-training" style="width:40%"></div></div>
+      <div class="cd-prog-lbl"><span class="cd-prog-title">Sponsorships</span><span class="cd-prog-pct" id="prog-pct-sponsorships">15%</span></div>
+      <div class="cd-bar"><div class="cd-fill cf-gold" id="prog-fill-sponsorships" style="width:15%"></div></div>
+      <div class="cd-prog-lbl"><span class="cd-prog-title">Team Assembly</span><span class="cd-prog-pct" id="prog-pct-team">60%</span></div>
+      <div class="cd-bar" style="margin-bottom:0"><div class="cd-fill cf-si" id="prog-fill-team" style="width:60%"></div></div>
     </div>
   </div>
 </section>
@@ -644,46 +653,23 @@ body{font-family:var(--fb);background:var(--ivory);color:var(--ink);font-size:13
 <!-- ══ LIBRARY ══ -->
 <section class="section" id="library" style="background:var(--iv2);padding-top:4rem;padding-bottom:4rem">
   <div class="section-inner">
-    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:1rem;margin-bottom:2.5rem;flex-wrap:wrap">
-      <div>
-        <div class="s-eyebrow ey-si reveal">Library of Morenita</div>
-        <h2 class="s-title reveal">Writing &amp; <em>Essays</em></h2>
-        <p class="s-sub reveal" style="margin-top:.5rem">Published writing on technology, culture, sustainability, and the ideas behind the campaign.</p>
-      </div>
-      <a href="https://substack.com/@musesofmorenita" target="_blank" class="btn" style="background:var(--iv2);color:var(--ink);white-space:nowrap;font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:9px 18px;border-radius:6px;text-decoration:none;border:0.5px solid var(--bd)">Read on Substack &rarr;</a>
+    <div class="s-eyebrow ey-si reveal">The Observatory</div>
+    <h2 class="s-title reveal">Library of <em>Morenita</em></h2>
+    <p class="s-sub reveal" style="margin-top:.5rem">Ideas and essays on technology, culture, sustainability, and the campaign &mdash; written and published by Amelia.</p>
+
+    <!-- Article preview grid — populated from published posts -->
+    <div id="library-grid" style="display:none;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:2.5rem"></div>
+
+    <!-- Placeholder shown until articles are published -->
+    <div id="library-placeholder" style="margin-top:2rem;display:none"></div>
+
+    <!-- Mobile: just the button -->
+    <div class="library-mobile" style="display:none;margin-top:1.5rem">
+      <a href="library.html" class="btn btn-dark">Read in the Observatory &rarr;</a>
     </div>
-    <div id="library-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;"></div>
-    <div id="library-placeholder" style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;">
-      <div style="background:white;border:0.5px dashed var(--bd);border-radius:10px;padding:1.4rem;opacity:.5">
-        <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--si);margin-bottom:.4rem">Essay &middot; Coming Soon</div>
-        <div style="font-family:var(--fd);font-size:15px;color:var(--ink);line-height:1.4">On building systems that breathe &mdash; engineering and the human condition</div>
-      </div>
-      <div style="background:white;border:0.5px dashed var(--bd);border-radius:10px;padding:1.4rem;opacity:.5">
-        <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--si);margin-bottom:.4rem">Culture &middot; Coming Soon</div>
-        <div style="font-family:var(--fd);font-size:15px;color:var(--ink);line-height:1.4">Fashion as infrastructure: the argument for sustainability policy</div>
-      </div>
-      <div style="background:white;border:0.5px dashed var(--bd);border-radius:10px;padding:1.4rem;opacity:.5">
-        <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--si);margin-bottom:.4rem">Technology &middot; Coming Soon</div>
-        <div style="font-family:var(--fd);font-size:15px;color:var(--ink);line-height:1.4">Solar in the underserved: what the green energy gap actually looks like</div>
-      </div>
-    </div>
-    <!-- Mobile-only: article titles + Substack link -->
-    <div class="library-mobile">
-      <div class="lib-mob-list">
-        <div class="lib-mob-item">
-          <div class="lib-mob-tag">Essay &middot; Coming Soon</div>
-          <div class="lib-mob-title">On building systems that breathe &mdash; engineering and the human condition</div>
-        </div>
-        <div class="lib-mob-item">
-          <div class="lib-mob-tag">Culture &middot; Coming Soon</div>
-          <div class="lib-mob-title">Fashion as infrastructure: the argument for sustainability policy</div>
-        </div>
-        <div class="lib-mob-item">
-          <div class="lib-mob-tag">Technology &middot; Coming Soon</div>
-          <div class="lib-mob-title">Solar in the underserved: what the green energy gap actually looks like</div>
-        </div>
-      </div>
-      <a href="https://substack.com/@musesofmorenita" target="_blank" class="lib-mob-btn">Read all on Substack &rarr;</a>
+
+    <div style="margin-top:2rem;text-align:center">
+      <a href="library.html" class="btn btn-dark reveal" style="display:inline-block">Enter the Observatory &rarr;</a>
     </div>
   </div>
 </section>
@@ -732,6 +718,9 @@ body{font-family:var(--fb);background:var(--ivory);color:var(--ink);font-size:13
         border-radius:50%;cursor:pointer;line-height:1;
       ">&times;</button>
     </div>
+
+    <!-- Journey Timeline — populated from dashboard -->
+    <div id="journey-timeline" style="display:none;margin:2.5rem 0 3rem"></div>
 
     <!-- Press contact bar — kept at bottom -->
     <div class="press-contact-bar reveal">
@@ -941,7 +930,7 @@ body{font-family:var(--fb);background:var(--ivory);color:var(--ink);font-size:13
     <div class="footer-links">
       <a href="https://instagram.com/ameliavarabe" target="_blank" class="footer-link">Instagram</a>
       <a href="https://www.youtube.com/@ameliavarabe" target="_blank" class="footer-link">YouTube</a>
-      <a href="https://substack.com/@musesofmorenita" target="_blank" class="footer-link">Substack</a>
+      <a href="library.html" class="footer-link">The Observatory</a>
       <a href="https://libraryofmorenita-hub.github.io/amelia-arabe/" target="_blank" class="footer-link">Portfolio</a>
       <a href="mailto:laneealovemgmt@gmail.com" class="footer-link">Press</a>
       <a href="mailto:missameliava@gmail.com" class="footer-link">Contact</a>
@@ -1050,13 +1039,10 @@ function submitSponsor(){
 
 var GALLERY_PHOTOS = [
   { src:'assets/portfolio-hero.jpeg', caption:'On stage &middot; Miss Temecula Valley USA 2026' },
-  // Add more photos here as you upload them:
-  // { src:'assets/training-01.jpg', caption:'Training with Donovan' },
-  // { src:'assets/gown-fitting.jpg', caption:'Gown consultation with Laneea' },
-  // { src:'assets/headshot-01.jpg', caption:'Official headshots by Dorian Qi' },
-  // { src:'assets/stage-swimsuit.jpg', caption:'Swimsuit competition' },
-  // { src:'assets/interview-day.jpg', caption:'Interview prep' },
 ];
+
+// Journey milestones — populated by dashboard or Supabase
+var JOURNEY_MILESTONES = [];
 
 function renderGallery() {
   var grid = document.getElementById('gallery-grid');
@@ -1107,8 +1093,38 @@ function closeLightbox() {
 }
 
 document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') closeLightbox();
+  if (e.key === 'Escape') { closeLightbox(); }
 });
+
+// ── JOURNEY TIMELINE ──────────────────────────────
+var JOURNEY_TYPE_COLORS={event:'#8B7355',award:'#C9A96E',press:'#6B8A7A',milestone:'#9B8BA8'};
+var JOURNEY_TYPE_LABELS={event:'Event',award:'Award',press:'Press',milestone:'Milestone'};
+
+function renderJourney(){
+  var el=document.getElementById('journey-timeline');
+  if(!el)return;
+  var milestones=JOURNEY_MILESTONES.filter(function(m){return m.title;});
+  if(!milestones.length){el.style.display='none';return;}
+  milestones.sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
+  el.style.display='block';
+  el.innerHTML=milestones.map(function(m,i){
+    var col=JOURNEY_TYPE_COLORS[m.type||'event']||'#8B7355';
+    var lbl=JOURNEY_TYPE_LABELS[m.type||'event']||'Event';
+    var dateStr='';
+    if(m.date){try{var d=new Date(m.date+'T00:00:00');dateStr=d.toLocaleDateString('en-US',{month:'long',year:'numeric'});}catch(e){dateStr=m.date;}}
+    return '<div class="journey-item reveal">' +
+      '<div class="journey-dot" style="background:'+col+'"></div>' +
+      '<div class="journey-content">' +
+        '<div class="journey-meta">' +
+          '<span class="journey-type" style="color:'+col+';border-color:'+col+'20;background:'+col+'10">'+lbl+'</span>' +
+          (dateStr?'<span class="journey-date">'+dateStr+'</span>':'') +
+        '</div>' +
+        '<div class="journey-title">'+m.title+'</div>' +
+        (m.desc?'<div class="journey-desc">'+m.desc+'</div>':'') +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
 
 // ── LIVE HERO IMAGE ─────────────────────────────────
 (function(){
@@ -1142,16 +1158,68 @@ document.addEventListener('keydown', function(e) {
 
 // ── LIVE GALLERY FROM DASHBOARD ─────────────────────
 (function(){
+  var SB_URL='https://haqfxrcsszjwiyrchqnm.supabase.co';
+  var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhcWZ4cmNzc3pqd2l5cmNocW5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMDY5NjIsImV4cCI6MjA4OTg4Mjk2Mn0.eioSLntQ0E1mIxUC_r4kmmVbzrIi-d69LLO4rnn0Nlg';
+  function sbGetKV(key){
+    return fetch(SB_URL+'/rest/v1/app_data?key=eq.'+encodeURIComponent(key),{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}})
+    .then(function(r){return r.json();}).then(function(rows){return rows&&rows.length?rows[0].value:null;}).catch(function(){return null;});
+  }
+  // Try localStorage first (instant)
   try {
     var raw = localStorage.getItem('chq-pub-gallery');
-    if(!raw) return;
-    var live = JSON.parse(raw);
-    if(!Array.isArray(live)||!live.length) return;
-    GALLERY_PHOTOS = live;
+    if(raw){
+      var live = JSON.parse(raw);
+      if(Array.isArray(live)&&live.length){ GALLERY_PHOTOS=live; renderGallery(); renderJourney(); return; }
+    }
   } catch(e){}
+  // No local cache — fetch both gallery and journey from Supabase
+  Promise.all([sbGetKV('pub_gallery'),sbGetKV('pub_journey')]).then(function(res){
+    var gal=res[0], jrn=res[1];
+    if(Array.isArray(gal)&&gal.length){
+      GALLERY_PHOTOS=gal;
+      try{localStorage.setItem('chq-pub-gallery',JSON.stringify(gal));}catch(e){}
+    }
+    if(Array.isArray(jrn)&&jrn.length){
+      JOURNEY_MILESTONES=jrn;
+      try{localStorage.setItem('chq-pub-journey',JSON.stringify(jrn));}catch(e){}
+    }
+    renderGallery();
+    renderJourney();
+  });
+  // Also try loading journey from localStorage
+  try {
+    var jraw = localStorage.getItem('chq-pub-journey');
+    if(jraw){ var jlive=JSON.parse(jraw); if(Array.isArray(jlive)&&jlive.length) JOURNEY_MILESTONES=jlive; }
+  } catch(e){}
+  renderGallery();
+  renderJourney();
 })();
 
-renderGallery();
+// ── LIVE PROGRESS BARS FROM DASHBOARD ───────────────
+(function(){
+  function applyProgress(prog){
+    var keys=['training','sponsorships','team'];
+    keys.forEach(function(k){
+      var v=prog[k];
+      if(v===undefined||v===null) return;
+      var pct=Math.max(0,Math.min(100,+v));
+      var fill=document.getElementById('prog-fill-'+k);
+      var label=document.getElementById('prog-pct-'+k);
+      if(fill) fill.style.width=pct+'%';
+      if(label) label.textContent=pct+'%';
+    });
+  }
+  try{
+    var raw=localStorage.getItem('chq-pub-progress');
+    if(raw){ var p=JSON.parse(raw); if(p&&typeof p==='object') applyProgress(p); return; }
+  }catch(e){}
+  // Fallback: Supabase
+  fetch('https://haqfxrcsszjwiyrchqnm.supabase.co/rest/v1/app_data?key=eq.pub_progress',{
+    headers:{'apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhcWZ4cmNzc3pqd2l5cmNocW5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMDY5NjIsImV4cCI6MjA4OTg4Mjk2Mn0.eioSLntQ0E1mIxUC_r4kmmVbzrIi-d69LLO4rnn0Nlg','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhcWZ4cmNzc3pqd2l5cmNocW5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMDY5NjIsImV4cCI6MjA4OTg4Mjk2Mn0.eioSLntQ0E1mIxUC_r4kmmVbzrIi-d69LLO4rnn0Nlg'}
+  }).then(function(r){return r.json();}).then(function(rows){
+    if(rows&&rows.length&&rows[0].value) applyProgress(rows[0].value);
+  }).catch(function(){});
+})();
 
 // ── LIVE SITE TEXT FROM DASHBOARD ───────────────────
 (function(){
@@ -1222,46 +1290,60 @@ function renderLiveTeam(team){
 loadLiveTeamData();
 
 // ── LIBRARY ARTICLES FROM DASHBOARD ───────────────
-// Reads published posts from localStorage written by app.js.
-// Shows placeholder cards if none found.
+var LIB_SB_URL='https://haqfxrcsszjwiyrchqnm.supabase.co';
+var LIB_SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhcWZ4cmNzc3pqd2l5cmNocW5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMDY5NjIsImV4cCI6MjA4OTg4Mjk2Mn0.eioSLntQ0E1mIxUC_r4kmmVbzrIi-d69LLO4rnn0Nlg';
+
+var LIB_CAT_COLORS = {
+  energy:'var(--si)', fashion:'var(--sa)', wellness:'var(--go)',
+  fitness:'var(--go)', morenita:'var(--si)', solarpunk:'var(--sa)'
+};
+
+function renderLibCard(p){
+  var catColor = LIB_CAT_COLORS[(p.cat||'').toLowerCase()] || 'var(--si)';
+  var dateStr = p.date ? new Date(p.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '';
+  var preview = (p.body||'').replace(/<[^>]*>/g,'').slice(0,120);
+  if(preview.length===120) preview += '\u2026';
+  return '<a href="library.html" style="text-decoration:none;display:block;background:white;border:0.5px solid var(--bd);border-radius:6px;padding:1.4rem;transition:border-color .15s,transform .15s;cursor:pointer" ' +
+    'onmouseover="this.style.borderColor=\'var(--sil)\';this.style.transform=\'translateY(-2px)\'" ' +
+    'onmouseout="this.style.borderColor=\'\';this.style.transform=\'\'">' +
+    '<div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:'+catColor+';margin-bottom:.4rem">'+(p.tag||p.cat||'Essay')+'</div>' +
+    '<div style="font-family:var(--fd);font-size:16px;color:var(--ink);line-height:1.4;margin-bottom:.4rem">'+p.title+'</div>' +
+    (preview ? '<div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:.6rem">'+preview+'</div>' : '') +
+    '<div style="font-size:10px;color:var(--faint)">'+dateStr+'</div>' +
+  '</a>';
+}
+
+function renderLibGrid(posts){
+  var grid = document.getElementById('library-grid');
+  var placeholder = document.getElementById('library-placeholder');
+  if(!grid) return;
+  var published = posts.filter(function(p){ return p.status==='published'; })
+    .sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); })
+    .slice(0, 3); // show up to 3 preview cards
+  if(!published.length) return;
+  grid.innerHTML = published.map(renderLibCard).join('');
+  if(placeholder) placeholder.style.display = 'none';
+  grid.style.display = 'grid';
+}
+
 function loadPublishedArticles(){
+  // Try localStorage first (dashboard device)
   try {
     var raw = localStorage.getItem('chq-po');
-    if(!raw) return;
-    var posts = JSON.parse(raw);
-    if(!Array.isArray(posts)) return;
-    var published = posts.filter(function(p){ return p.status==='published'; })
-      .sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
-    if(!published.length) return;
-
-    var grid = document.getElementById('library-grid');
-    var placeholder = document.getElementById('library-placeholder');
-    if(!grid) return;
-
-    var CAT_COLORS = {
-      essay:'var(--si)', culture:'var(--sa)', technology:'var(--go)',
-      advocacy:'var(--si)', fashion:'var(--sa)', platform:'var(--go)'
-    };
-
-    grid.innerHTML = published.map(function(p){
-      var catColor = CAT_COLORS[(p.cat||'').toLowerCase()] || 'var(--si)';
-      var dateStr = p.date ? new Date(p.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '';
-      // Truncate body for preview
-      var preview = (p.body||'').replace(/<[^>]*>/g,'').slice(0,120);
-      if(preview.length===120) preview += '\u2026';
-      return '<div style="background:white;border:0.5px solid var(--bd);border-radius:10px;padding:1.4rem;transition:border-color .15s,transform .15s;cursor:pointer" ' +
-        'onmouseover="this.style.borderColor=\'var(--sil)\';this.style.transform=\'translateY(-2px)\'" ' +
-        'onmouseout="this.style.borderColor=\'\';this.style.transform=\'\'">' +
-        '<div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:'+catColor+';margin-bottom:.4rem">'+(p.tag||p.cat||'Essay')+'</div>' +
-        '<div style="font-family:var(--fd);font-size:16px;color:var(--ink);line-height:1.4;margin-bottom:.4rem">'+p.title+'</div>' +
-        (preview ? '<div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:.6rem">'+preview+'</div>' : '') +
-        '<div style="font-size:10px;color:var(--faint)">'+dateStr+'</div>' +
-      '</div>';
-    }).join('');
-
-    if(placeholder) placeholder.style.display = 'none';
-    grid.style.display = 'grid';
+    if(raw){
+      var posts = JSON.parse(raw);
+      if(Array.isArray(posts) && posts.some(function(p){ return p.status==='published'; })){
+        renderLibGrid(posts);
+        return;
+      }
+    }
   } catch(e){}
+  // Fallback: fetch published posts from Supabase (works on any device)
+  fetch(LIB_SB_URL+'/rest/v1/posts?status=eq.published&order=date.desc&limit=3', {
+    headers:{'apikey':LIB_SB_KEY,'Authorization':'Bearer '+LIB_SB_KEY}
+  }).then(function(r){ return r.json(); }).then(function(posts){
+    if(Array.isArray(posts) && posts.length) renderLibGrid(posts);
+  }).catch(function(){});
 }
 
 loadPublishedArticles();
