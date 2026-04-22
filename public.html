@@ -72,8 +72,14 @@ body{font-family:var(--fb);background:var(--ivory);color:var(--ink);font-size:13
 }
 .hero-img{
   position:absolute;inset:0;
-  background:url('assets/portfolio-hero.jpeg') center 20%/cover no-repeat;
+  /* No default image — JS sets it from localStorage so there is never a flash of the old photo */
+  background-size:cover;
+  background-repeat:no-repeat;
+  /* Start invisible; JS fades it in once the image is ready */
+  opacity:0;
+  transition:opacity 1.8s ease;
 }
+.hero-img.loaded{opacity:1;}
 .hero-overlay{
   position:absolute;inset:0;
   background:linear-gradient(
@@ -1126,34 +1132,55 @@ function renderJourney(){
   }).join('');
 }
 
-// ── LIVE HERO IMAGE ─────────────────────────────────
+// ── LIVE HERO IMAGE + PARALLAX ───────────────────────
 (function(){
   var SB_URL='https://haqfxrcsszjwiyrchqnm.supabase.co';
   var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhcWZ4cmNzc3pqd2l5cmNocW5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMDY5NjIsImV4cCI6MjA4OTg4Mjk2Mn0.eioSLntQ0E1mIxUC_r4kmmVbzrIi-d69LLO4rnn0Nlg';
-  function applyHero(src,pos){
-    var el=document.querySelector('.hero-img');
-    if(el&&src)el.style.background='url(\''+src+'\') '+pos+'/cover no-repeat';
+
+  var el = document.querySelector('.hero-img');
+
+  // Apply a src + crop position to the hero div, then fade it in.
+  // Sets background properties individually so the opacity transition
+  // and transform are never clobbered by the background shorthand.
+  function applyHero(src, pos){
+    if(!el || !src) return;
+    el.style.backgroundImage    = 'url(\''+src+'\')';
+    el.style.backgroundPosition = pos || '50% 18%';
+    // Double rAF ensures the browser has painted the opacity:0 state
+    // before we add .loaded, so the CSS transition actually fires
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){
+        el.classList.add('loaded');
+      });
+    });
   }
+
   function sbGetKV(key){
-    return fetch(SB_URL+'/rest/v1/app_data?key=eq.'+encodeURIComponent(key),{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}})
-    .then(function(r){return r.json();}).then(function(rows){return rows&&rows.length?rows[0].value:null;}).catch(function(){return null;});
+    return fetch(SB_URL+'/rest/v1/app_data?key=eq.'+encodeURIComponent(key),
+      {headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}})
+      .then(function(r){return r.json();})
+      .then(function(rows){return rows&&rows.length?rows[0].value:null;})
+      .catch(function(){return null;});
   }
-  // Try localStorage first (instant), then fall back to Supabase
+
+  // localStorage is instant — no flash, no round-trip
   try{
-    var cached=localStorage.getItem('chq-pub-hero');
+    var cached = localStorage.getItem('chq-pub-hero');
     if(cached){
-      applyHero(cached,localStorage.getItem('chq-pub-hero-pos')||'50% 18%');
-      return;
+      applyHero(cached, localStorage.getItem('chq-pub-hero-pos')||'50% 18%');
+    } else {
+      // No local cache — fall back to Supabase (any device, any browser)
+      Promise.all([sbGetKV('pub_hero'), sbGetKV('pub_hero_pos')]).then(function(res){
+        if(res[0]){
+          applyHero(res[0], res[1]||'50% 18%');
+          try{localStorage.setItem('chq-pub-hero',res[0]);
+              localStorage.setItem('chq-pub-hero-pos',res[1]||'50% 18%');}catch(e){}
+        }
+      });
     }
   }catch(e){}
-  // No local cache — fetch from Supabase so any device sees the right image
-  Promise.all([sbGetKV('pub_hero'),sbGetKV('pub_hero_pos')]).then(function(res){
-    var src=res[0],pos=res[1]||'50% 18%';
-    if(src){
-      applyHero(src,pos);
-      try{localStorage.setItem('chq-pub-hero',src);localStorage.setItem('chq-pub-hero-pos',pos);}catch(e){}
-    }
-  });
+
+
 })();
 
 // ── LIVE GALLERY FROM DASHBOARD ─────────────────────

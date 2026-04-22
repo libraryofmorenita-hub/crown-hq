@@ -46,7 +46,8 @@ body{font-family:var(--fb);background:var(--ink);color:var(--ivory);font-size:13
 .bg-stars{position:absolute;inset:0;pointer-events:none;}
 .bg-star{
   position:absolute;border-radius:50%;background:white;
-  animation:twinkle var(--dur,3s) ease-in-out infinite var(--delay,0s);
+  /* opacity & animation are applied by JS after a random stagger delay */
+  opacity:0;
 }
 @keyframes twinkle{0%,100%{opacity:var(--lo,.08)}50%{opacity:var(--hi,.65)}}
 
@@ -167,10 +168,19 @@ body{font-family:var(--fb);background:var(--ink);color:var(--ivory);font-size:13
   .lib-grid{grid-template-columns:repeat(2,1fr);}
   .lib-section{padding:4rem 1.5rem 5rem;}
 }
+@media(max-width:600px){
+  /* Slightly smaller planet labels so they don't crowd on narrow viewports */
+  #cmap .planet-label{font-size:8px;letter-spacing:.08em;}
+  /* Larger invisible touch target around article stars for fat-finger tapping */
+  #cmap .art-node{touch-action:manipulation;}
+}
 @media(max-width:480px){
   .nav{padding:0 1rem;}
-  .obs-content{padding:0 1.2rem;}
-  .obs-title{font-size:52px;}
+  /* Push hero text toward the bottom so it doesn't sit on top of the constellation */
+  .obs{justify-content:flex-end;}
+  .obs-content{padding:0 1.2rem 5rem;max-width:100%;}
+  .obs-title{font-size:44px;}
+  .obs-sub{font-size:12px;margin-bottom:2rem;}
   .lib-grid{grid-template-columns:1fr;}
   .lib-section{padding:3.5rem 1.2rem 4rem;}
   .lib-title{font-size:30px;}
@@ -287,17 +297,49 @@ var TOPICS = {
 var TOPIC_KEYS = Object.keys(TOPICS);
 
 // ══ BACKGROUND TWINKLE STARS ═══════════════════════════════════
+// Stars start invisible (opacity:0 in CSS) and are revealed one by one
+// in a random shuffled order so they appear to "switch on" gradually.
 (function(){
   var c = document.getElementById('bg-stars');
-  for(var i = 0; i < 140; i++){
+  // Fewer stars on small screens to keep it readable and performant
+  var count = window.innerWidth < 480 ? 70 : 140;
+  var stars = [];
+
+  for(var i = 0; i < count; i++){
     var s = document.createElement('div');
     s.className = 'bg-star';
     var sz = Math.random() < .75 ? .5 + Math.random() * .5 : 1 + Math.random() * 1.8;
-    s.style.cssText = 'width:'+sz+'px;height:'+sz+'px;top:'+Math.random()*100+'%;left:'+Math.random()*100+'%;'+
+    // Store twinkle params as CSS custom properties; opacity stays 0 until JS reveals
+    s.style.cssText =
+      'width:'+sz+'px;height:'+sz+'px;'+
+      'top:'+Math.random()*100+'%;left:'+Math.random()*100+'%;'+
       '--lo:'+(0.04+Math.random()*.10)+';--hi:'+(0.3+Math.random()*.5)+';'+
-      '--dur:'+(2.5+Math.random()*5)+'s;--delay:'+(-Math.random()*6)+'s';
+      '--dur:'+(2.5+Math.random()*5)+'s;--delay:'+(-Math.random()*6)+'s;opacity:0;';
+    stars.push(s);
     c.appendChild(s);
   }
+
+  // Fisher-Yates shuffle for a fully random reveal order
+  for(var i = stars.length - 1; i > 0; i--){
+    var j = Math.floor(Math.random() * (i + 1));
+    var t = stars[i]; stars[i] = stars[j]; stars[j] = t;
+  }
+
+  // Reveal each star in the shuffled order:
+  // 1. Briefly fade the element in so it isn't a hard pop
+  // 2. Then hand opacity control off to the twinkle CSS animation
+  stars.forEach(function(s, idx){
+    setTimeout(function(){
+      s.style.transition = 'opacity 0.5s ease';
+      s.style.opacity = '0.5';
+      setTimeout(function(){
+        // Remove inline transition+opacity so CSS animation drives the oscillation
+        s.style.transition = '';
+        s.style.opacity = '';
+        s.style.animation = 'twinkle var(--dur,3s) ease-in-out infinite var(--delay,0s)';
+      }, 550);
+    }, idx * 20); // 20ms between each star → full field appears over ~1.4s (70) or ~2.8s (140)
+  });
 })();
 
 // ══ SUPABASE ═══════════════════════════════════════════════════
@@ -314,6 +356,15 @@ function fmtDate(d){
 // ══ CONSTELLATION ENGINE ═══════════════════════════════════════
 var W, H, CX, CY;
 var allPosts = [];
+
+// Fisher-Yates in-place shuffle — used for random reveal order
+function shuffle(arr){
+  for(var i = arr.length - 1; i > 0; i--){
+    var j = Math.floor(Math.random() * (i + 1));
+    var t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+  }
+  return arr;
+}
 
 function getViewport(){
   W = document.getElementById('obs').offsetWidth;
@@ -403,9 +454,11 @@ function buildConstellation(posts){
     var pb = planetPos[activeTopic[next]];
     var il = document.createElementNS('http://www.w3.org/2000/svg','line');
     il.setAttribute('class','c-line');
+    il.setAttribute('data-pa',activeTopic[i]);
+    il.setAttribute('data-pb',activeTopic[next]);
     il.setAttribute('x1',pa.x);il.setAttribute('y1',pa.y);
     il.setAttribute('x2',pb.x);il.setAttribute('y2',pb.y);
-    il.style.opacity = '.35';
+    il.style.opacity = '0';
     lines.appendChild(il);
   }
 
@@ -439,10 +492,11 @@ function buildConstellation(posts){
       var sl = document.createElementNS('http://www.w3.org/2000/svg','line');
       sl.setAttribute('class','c-line');
       sl.setAttribute('id','sl-'+post.id);
+      sl.setAttribute('data-star',String(post.id));
       sl.setAttribute('x1',pp.x);sl.setAttribute('y1',pp.y);
       sl.setAttribute('x2',ax);sl.setAttribute('y2',ay);
       sl.style.stroke = TOPICS[key].color;
-      sl.style.opacity = '.2';
+      sl.style.opacity = '0';
       lines.appendChild(sl);
     });
 
@@ -453,10 +507,12 @@ function buildConstellation(posts){
         var sb = starPos[key][j+1];
         var cl = document.createElementNS('http://www.w3.org/2000/svg','line');
         cl.setAttribute('class','c-line');
+        cl.setAttribute('data-star-a',String(starPos[key][j].post.id));
+        cl.setAttribute('data-star-b',String(starPos[key][j+1].post.id));
         cl.setAttribute('x1',sa.x);cl.setAttribute('y1',sa.y);
         cl.setAttribute('x2',sb.x);cl.setAttribute('y2',sb.y);
         cl.style.stroke = TOPICS[key].color;
-        cl.style.opacity = '.12';
+        cl.style.opacity = '0';
         lines.appendChild(cl);
       }
     }
@@ -512,6 +568,31 @@ function buildConstellation(posts){
     planets.appendChild(g);
   });
 
+  // ── Random slow-reveal planets ───────────────────────────────
+  var planetEls = Array.from(planets.querySelectorAll('.planet-group'));
+  var planetDelays = {};
+  planetEls.forEach(function(g){ g.style.opacity = '0'; });
+  shuffle(planetEls).forEach(function(g){
+    var key = g.getAttribute('data-key');
+    var delay = Math.floor(Math.random() * 1400) + 200;
+    planetDelays[key] = delay;
+    setTimeout(function(){
+      g.style.transition = 'opacity 0.8s ease';
+      g.style.opacity = '1';
+    }, delay);
+  });
+
+  // Reveal inter-planet constellation lines after both their planets appear
+  lines.querySelectorAll('[data-pa]').forEach(function(line){
+    var pa = line.getAttribute('data-pa');
+    var pb = line.getAttribute('data-pb');
+    var at = Math.max(planetDelays[pa]||200, planetDelays[pb]||200) + 300;
+    setTimeout(function(){
+      line.style.transition = 'opacity 0.8s ease';
+      line.style.opacity = '.35';
+    }, at);
+  });
+
   // Draw article stars
   activeTopic.forEach(function(key){
     var col = TOPICS[key].color;
@@ -551,6 +632,41 @@ function buildConstellation(posts){
     });
   });
 
+  // ── Random slow-reveal article stars ────────────────────────
+  var artEls = Array.from(arts.querySelectorAll('.art-node'));
+  var starDelays = {};
+  artEls.forEach(function(g){ g.style.opacity = '0'; });
+  shuffle(artEls).forEach(function(g){
+    var postId = String(g.getAttribute('data-id'));
+    var delay = Math.floor(Math.random() * 1800) + 700;
+    starDelays[postId] = delay;
+    setTimeout(function(){
+      g.style.transition = 'opacity 0.6s ease';
+      g.style.opacity = '1';
+    }, delay);
+  });
+
+  // Reveal planet-to-star lines when their star appears
+  lines.querySelectorAll('[data-star]').forEach(function(line){
+    var sid = line.getAttribute('data-star');
+    var at = (starDelays[sid] || 700) + 150;
+    setTimeout(function(){
+      line.style.transition = 'opacity 0.6s ease';
+      line.style.opacity = '.2';
+    }, at);
+  });
+
+  // Reveal star-to-star lines after both their stars appear
+  lines.querySelectorAll('[data-star-a]').forEach(function(line){
+    var sa = line.getAttribute('data-star-a');
+    var sb = line.getAttribute('data-star-b');
+    var at = Math.max(starDelays[sa]||700, starDelays[sb]||700) + 200;
+    setTimeout(function(){
+      line.style.transition = 'opacity 0.6s ease';
+      line.style.opacity = '.12';
+    }, at);
+  });
+
   // Enable SVG pointer events
   svg.style.pointerEvents = 'all';
   // Click on background: scroll to articles
@@ -582,6 +698,15 @@ function showTip(e, post, col){
   moveTip(e);
 }
 function moveTip(e){
+  // On touch/mobile, anchor the tooltip near the top of the screen
+  // so it doesn't get hidden under the finger
+  if(window.innerWidth < 600){
+    tip.style.left = '50%';
+    tip.style.top  = '72px';
+    tip.style.transform = 'translateX(-50%)';
+    return;
+  }
+  tip.style.transform = '';
   var x = (e.clientX || e.pageX) + 14;
   var y = (e.clientY || e.pageY) - 10;
   if(x + 230 > window.innerWidth) x = (e.clientX || e.pageX) - 230;
