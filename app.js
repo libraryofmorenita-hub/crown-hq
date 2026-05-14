@@ -1,5 +1,25 @@
 
 
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  CROWN HQ — Internal Campaign App for Amelia Arabe          ║
+// ║  Miss California USA 2026 · Grand Hyatt Indian Wells        ║
+// ╠══════════════════════════════════════════════════════════════╣
+// ║  ARCHITECTURE OVERVIEW                                       ║
+// ║  ─────────────────────────────────────────────────────────  ║
+// ║  • State (S): single object holding all live data           ║
+// ║  • localStorage: instant read/write cache (chq-* keys)      ║
+// ║  • Supabase: cloud backup, synced in background via REST     ║
+// ║  • lsSave(): writes localStorage THEN queues Supabase save  ║
+// ║  • inject(html): replaces #main content — all panels use it ║
+// ║  • showPanel(id): routes to the right panel builder fn (bX) ║
+// ║  • Edit Mode: toggleEM() makes data-e elements contenteditable,
+// ║    commitE() reads data-e="type:id:field" and saves changes  ║
+// ║  • Roles: amelia, laneea, hmu, trainer, sponsor, contributor,
+// ║    finance — each has its own nav and editable panel list    ║
+// ║  • Portal users: hmu/sponsor/contributor log in via their   ║
+// ║    portal profile credentials managed in Accounts tab       ║
+// ╚══════════════════════════════════════════════════════════════╝
+
 // ═══ SUPABASE ════════════════════════════════════════════════
 var SB_URL='https://haqfxrcsszjwiyrchqnm.supabase.co';
 var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhcWZ4cmNzc3pqd2l5cmNocW5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMDY5NjIsImV4cCI6MjA4OTg4Mjk2Mn0.eioSLntQ0E1mIxUC_r4kmmVbzrIi-d69LLO4rnn0Nlg';
@@ -108,8 +128,28 @@ function loadFromSupabase(){
     if(ev&&ev.length){S.calEvents=ev;lsWriteLocal('chq-ce',S.calEvents);}
     if(po&&po.length){S.posts=po;lsWriteLocal('chq-po',S.posts);}
     if(lk&&lk.length){
-      S.looks=lk.map(function(l){return{id:l.id,event:l.event_name,round:l.round_name,title:l.title,desc:l.description,img:l.img||''};});
-      lsWriteLocal('chq-lk',S.looks);
+      var prevLooks=lsGet('chq-lk',[]);
+      var looksV2=lsGet('chq-lk-v',0);
+      if(looksV2 < 2){
+        // Version upgrade pending — ignore stale Supabase data; seed() will handle the reset
+      } else {
+        S.looks=lk.map(function(l){
+          var prev=prevLooks.find(function(p){return p.id===l.id;})||{};
+          return{id:l.id,event:l.event_name,round:l.round_name,title:l.title,desc:l.description,img:l.img||'',
+            links:Array.isArray(prev.links)?prev.links:[],
+            pieces:Array.isArray(prev.pieces)?prev.pieces:[],
+            notes:prev.notes||''};
+        });
+        // Merge in any DEFAULT_LOOKS not yet pushed to Supabase
+        var sbIds=S.looks.map(function(l){return l.id;});
+        DEFAULT_LOOKS.forEach(function(dl){
+          if(sbIds.indexOf(dl.id)===-1){
+            var local=prevLooks.find(function(p){return p.id===dl.id;})||dl;
+            S.looks.push(local);
+          }
+        });
+        lsWriteLocal('chq-lk',S.looks);
+      }
     }
     if(wk&&wk.length){S.workouts=wk;lsWriteLocal('chq-wk',S.workouts);}
     if(ms&&ms.length){
@@ -164,9 +204,13 @@ function sbSaveFiles(){sbReplace('files',FILE_STORE.map(function(f){return{id:f.
 function sbSaveKV(key,value){sbSetKV(key,value);}
 
 // ═══ STATE ═══════════════════════════════════════════════════
+// S is the single source of truth for all live data. It's seeded
+// from localStorage on load and synced to Supabase in background.
+// Never write directly to S without also calling lsSave() or
+// lsWriteLocal() so the cache stays in sync.
 var S={
-  role:null,
-  portalProfile:null,
+  role:null,           // current logged-in role string (e.g. 'amelia')
+  portalProfile:null,  // portal profile object for hmu/sponsor/contributor users
   sponsors:lsGet('chq-sp',[]),
   appts:lsGet('chq-ap',[]),
   messages:lsGet('chq-ms',[]),
@@ -194,7 +238,9 @@ var S={
   saveTimer:null
 };
 
+// lsGet: safe localStorage read with JSON parse and fallback default
 function lsGet(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
+// lsWriteLocal: write to localStorage only — no Supabase side-effect
 function lsWriteLocal(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 
 // ── PERFORMANCE: debounced Supabase saves ─────────────────────
@@ -206,6 +252,8 @@ function debouncedSbSave(key, fn){
   _sbDebounce[key] = setTimeout(fn, 1200);
 }
 
+// lsSave: write to localStorage AND queue a debounced Supabase save.
+// Use this everywhere data changes. Never call sbSave* directly.
 function lsSave(k,v){
   lsWriteLocal(k,v);
   if(SB_SYNC_SUSPENDED)return;
@@ -334,6 +382,10 @@ function getPortalProfiles(){
     contributor:[
       {id:'dorian-qi',name:'Dorian Qi',company:'Dorian QD Photo',email:'dorianqiqd@gmail.com',username:'dorianqi',password:'photo2026',status:'active',active:true,specialty:'Official headshots and stage photography',notes:'Photo drop portal for official stills',goals:[{text:'Upload official headshot selects',done:false},{text:'Send vertical stage images for portfolio',done:false}]},
       {id:'media-team',name:'Media Team',company:'Contributor Team',email:'contributor@example.com',username:'contributor',password:'contrib2026',status:'active',active:true,specialty:'Photo and media uploads',notes:'Shared contributor access',goals:[{text:'Upload event photos',done:false}]}
+    ],
+    // ── STARS — celestial community (formerly "fans") ─────────────
+    star: [
+      {id:'morenita-star-community',name:'Morenita Stars',company:'Library of Morenita',email:'',username:'morenita',password:'fans2026',status:'active',active:true,notes:'Shared community access — change password from Team Admin',goals:[]}
     ]
   };
   var saved=lsGet('chq-portal-profiles',null)||{};
@@ -345,7 +397,8 @@ function getPortalProfiles(){
       return merged;
     });
   }
-  return {sponsor:merge('sponsor'),hmu:merge('hmu'),contributor:merge('contributor')};
+  // Include star role alongside existing portal roles
+  return {sponsor:merge('sponsor'),hmu:merge('hmu'),contributor:merge('contributor'),star:merge('star')};
 }
 
 function getPortalProfile(role,id){
@@ -371,9 +424,11 @@ function savePortalProfiles(data){
 }
 
 function addPortalProfile(role){
-  var name=prompt(role==='sponsor'?'Sponsor contact name:':role==='contributor'?'Contributor name:':'Artist name:');
+  // Prompt labels vary by role
+  var nameLbl = role==='sponsor'?'Sponsor contact name:':role==='contributor'?'Contributor name:':role==='star'?'Star name:':'Artist name:';
+  var name=prompt(nameLbl);
   if(!name)return;
-  var company=prompt(role==='sponsor'?'Company / sponsor name:':role==='contributor'?'Studio / publication / company:':'Studio / brand name:', '');
+  var company=prompt(role==='sponsor'?'Company / sponsor name:':role==='contributor'?'Studio / publication / company:':role==='star'?'Handle or community (optional):':'Studio / brand name:', '');
   var email=prompt('Login email:', '');
   var username=prompt('Username:', '');
   var password=prompt('Password:', '');
@@ -432,7 +487,105 @@ function removePortalProfile(role,id){
   if(window._spTab==='accounts')bSponsors();
 }
 
+// ═══ COMPETITION LOOKS MASTER LIST ══════════════════════════
+// All 11 looks for Miss California USA 2026 — Grand Hyatt Indian Wells July 10-12
+// Sourced from CAUSA Contestant Handbook (updated 4/22/26) + Amelia's handbook notes
+var DEFAULT_LOOKS = [
+  {id:1, event:'Final Show', round:'Opening Number — Sunday July 12', title:'Opening Number',
+   notes:'Azazie dress provided by sponsor (org will send ordering link + style). Silver shoes + silver earrings concept. Arrive in dress.',
+   img:'', links:[{title:'Azazie (sponsor)', url:'https://azazie.com'}],
+   pieces:[
+    {id:1,label:'Dress',   item:'Azazie mini dress',   status:'pending',  source:'Azazie — sponsor provided',           notes:'Style TBD — org provides ordering instructions',      url:'https://azazie.com'},
+    {id:2,label:'Shoes',   item:'Silver heels',         status:'sourcing', source:'Contestant provides',                  notes:'Color of choice — silver concept',                    url:''},
+    {id:3,label:'Earrings',item:'Silver earrings',      status:'sourcing', source:'Contestant provides',                  notes:'Matching dress',                                      url:''}
+   ]},
+  {id:2, event:'Preliminary Show', round:'Swimwear — Saturday July 11', title:'Prelim Swimwear',
+   notes:'Two piece. Love Bodee Swim. Any color for prelims. Nude heels — must match skin tone, max 6 inches. Gold hoops. Use code MISSCA20 for 20% off 11NIL.',
+   img:'', links:[{title:'Bodee Swim', url:'https://bodeee.com'},{title:'11NIL (MISSCA20 = 20% off)', url:'https://11-nil.com'}],
+   pieces:[
+    {id:1,label:'Swimsuit', item:'Two-piece — Bodee Swim concept', status:'sourcing', source:'Contestant provides (11NIL recommended)', notes:'Any color for prelims. MISSCA20 = 20% off 11NIL.', url:'https://11-nil.com'},
+    {id:2,label:'Shoes',    item:'Nude heels',                     status:'sourcing', source:'Contestant provides',                     notes:'Must match skin tone. No platform over 6 inches.', url:''},
+    {id:3,label:'Earrings', item:'Gold hoops',                     status:'sourcing', source:'Contestant provides',                     notes:'Gold concept — jewelry optional but gold preferred', url:''}
+   ]},
+  {id:3, event:'Preliminary Show', round:'Evening Gown — Saturday July 11', title:'Prelim Evening Gown',
+   notes:'Floor length — long runway energy. Considering orange or green. Silver heels. Silver statement necklace BAM. Rings + simple bracelet. Simple earrings. Gown sponsor: Johnathan Kayne.',
+   img:'', links:[{title:'Johnathan Kayne (sponsor)', url:'https://johnathankayne.com'}],
+   pieces:[
+    {id:1,label:'Gown',      item:'Floor length evening gown',        status:'sourcing', source:'Contestant provides — Johnathan Kayne sponsor option', notes:'Considering orange or green. Must be floor length.', url:'https://johnathankayne.com'},
+    {id:2,label:'Shoes',     item:'Silver heels',                     status:'sourcing', source:'Contestant provides',                                  notes:'Color of choice — silver concept',                  url:''},
+    {id:3,label:'Necklace',  item:'Silver statement necklace (BAM)',  status:'sourcing', source:'Contestant provides',                                  notes:'Statement piece',                                   url:''},
+    {id:4,label:'Earrings',  item:'Simple earrings',                  status:'sourcing', source:'Contestant provides',                                  notes:'Simple, not distracting',                           url:''},
+    {id:5,label:'Accessories',item:'Rings + simple bracelet',         status:'sourcing', source:'Contestant provides',                                  notes:'Elegant and minimal',                               url:''}
+   ]},
+  {id:4, event:'Final Show', round:'Swimwear — Sunday July 12', title:'Finals Swimwear',
+   notes:'Top 15 semi-finalists receive complimentary swimwear from 11NIL sponsor. Nude heels. Jewelry optional. If not top 15, use code MISSCA20 for 20% off.',
+   img:'', links:[{title:'11NIL (MISSCA20 = 20% off)', url:'https://11-nil.com'}],
+   pieces:[
+    {id:1,label:'Swimsuit', item:'11NIL — complimentary for top 15 semi-finalists', status:'pending',  source:'11NIL sponsor (provided if top 15)',       notes:'Use MISSCA20 for 20% off if purchasing separately', url:'https://11-nil.com'},
+    {id:2,label:'Shoes',    item:'Nude heels',                                       status:'sourcing', source:'Contestant provides',                     notes:'Matching skin tone, max 6"',                        url:''},
+    {id:3,label:'Earrings', item:'Gold hoops or studs',                              status:'sourcing', source:'Contestant provides',                     notes:'Jewelry optional',                                  url:''}
+   ]},
+  {id:5, event:'Final Show', round:'Evening Gown — Sunday July 12', title:'Finals Evening Gown',
+   notes:'Floor length — long runway. Silver heels. Silver statement necklace BAM. Simple earrings. Rings + simple bracelet. Johnathan Kayne is official gown sponsor.',
+   img:'', links:[{title:'Johnathan Kayne (sponsor)', url:'https://johnathankayne.com'}],
+   pieces:[
+    {id:1,label:'Gown',       item:'Floor length gown',               status:'sourcing', source:'Contestant provides — Johnathan Kayne sponsor option', notes:'No specific color. Must reflect personality/style.', url:'https://johnathankayne.com'},
+    {id:2,label:'Shoes',      item:'Silver heels',                    status:'sourcing', source:'Contestant provides',                                  notes:'Color of choice — silver concept',                  url:''},
+    {id:3,label:'Necklace',   item:'Silver statement necklace (BAM)', status:'sourcing', source:'Contestant provides',                                  notes:'Statement piece',                                   url:''},
+    {id:4,label:'Earrings',   item:'Simple earrings',                 status:'sourcing', source:'Contestant provides',                                  notes:'Simple, elegant',                                   url:''},
+    {id:5,label:'Accessories',item:'Rings + simple bracelet',         status:'sourcing', source:'Contestant provides',                                  notes:'Minimal and refined',                               url:''}
+   ]},
+  {id:6, event:'Pageant Weekend', round:'Interview — Saturday July 11', title:'Interview Look',
+   notes:'Job interview + press conference energy. Fashion forward but tasteful and professional. Nice leather stiletto — black or nude depending on outfit. Filipino traditional fashion forward. Bright blue. Pants. Panel format, 2-3 min. Questions from bio sheet — be ready for anything.',
+   img:'', links:[],
+   pieces:[
+    {id:1,label:'Outfit', item:'Filipino traditional fashion forward — bright blue pants look', status:'sourcing', source:'Contestant provides', notes:'Fashion forward, professional. Press conference or TV interview appropriate.', url:''},
+    {id:2,label:'Shoes',  item:'Nice leather stiletto',                                        status:'sourcing', source:'Contestant provides', notes:'Black or nude depending on outfit',                                         url:''}
+   ]},
+  {id:7, event:'Pageant Weekend', round:'Arrival — Friday July 10', title:'Arrival Look',
+   notes:'Arrive in outfit of choice. Check in + photos with sponsors in Wellness Lounge. Rehearsing all day after — cute but comfortable. Workout outfit + hot day outfit concept. Reppeto or Frankies Bikinis.',
+   img:'', links:[{title:'Frankies Bikinis', url:'https://frankiesbikinis.com'},{title:'Reppeto', url:'https://reppeto.com'}],
+   pieces:[
+    {id:1,label:'Option A', item:'Workout outfit — Reppeto or Frankies Bikinis', status:'sourcing', source:'Contestant provides', notes:'Cute and comfortable for all-day rehearsal', url:'https://frankiesbikinis.com'},
+    {id:2,label:'Option B', item:'Hot day outfit + bikinis',                      status:'sourcing', source:'Contestant provides', notes:'Summer/resort aesthetic for arrival photos',  url:''}
+   ]},
+  {id:8, event:'Pageant Weekend', round:'Welcome Party — Friday July 10 at 7pm', title:'Welcome Dinner Look',
+   notes:'Hosted Friday night — all delegates attend. Friends/family can buy tickets online. Cocktail attire. Theme TBD — outfit will be on theme once announced.',
+   img:'', links:[],
+   pieces:[
+    {id:1,label:'Outfit', item:'Cocktail attire — on theme TBD', status:'pending', source:'Contestant provides', notes:'Theme TBD — align to organization theme once announced', url:''}
+   ]},
+  {id:9, event:'Pageant Weekend', round:'Rehearsal Day 1 — Friday July 10', title:'Rehearsal Look 1',
+   notes:'Demonstrate personal style — cute but comfortable. Fitness/balletgirl energy. Always bring competition heels to practice + comfortable backup pair (training heels). Light jacket for chilly ballroom.',
+   img:'', links:[],
+   pieces:[
+    {id:1,label:'Outfit', item:'Fitness/balletgirl look',            status:'sourcing', source:'Contestant provides', notes:'Cute + comfortable, personal style',                      url:''},
+    {id:2,label:'Shoes',  item:'Training heels + comfortable backup',status:'sourcing', source:'Contestant provides', notes:'Must bring competition heels to every rehearsal',         url:''},
+    {id:3,label:'Layer',  item:'Light jacket or sweater',            status:'sourcing', source:'Contestant provides', notes:'Ballroom can be chilly',                                  url:''}
+   ]},
+  {id:10, event:'Pageant Weekend', round:'Rehearsal Day 2 — Saturday July 11', title:'Rehearsal Look 2',
+   notes:'Cute but comfortable. Personal style. Bring competition heels + comfortable backup. Light jacket for ballroom.',
+   img:'', links:[],
+   pieces:[
+    {id:1,label:'Outfit', item:'Personal style, cute + comfortable', status:'sourcing', source:'Contestant provides', notes:'', url:''},
+    {id:2,label:'Shoes',  item:'Training heels + comfortable backup',status:'sourcing', source:'Contestant provides', notes:'', url:''},
+    {id:3,label:'Layer',  item:'Light jacket or sweater',            status:'sourcing', source:'Contestant provides', notes:'', url:''}
+   ]},
+  {id:11, event:'Pageant Weekend', round:'Rehearsal Day 3 — Sunday July 12', title:'Rehearsal Look 3',
+   notes:'Cute but comfortable. Personal style. Final day — bring ALL competition looks packed and ready. Dress Rehearsal is ticketed public event at 11:30am.',
+   img:'', links:[],
+   pieces:[
+    {id:1,label:'Outfit', item:'Personal style, cute + comfortable', status:'sourcing', source:'Contestant provides', notes:'', url:''},
+    {id:2,label:'Shoes',  item:'Training heels + comfortable backup',status:'sourcing', source:'Contestant provides', notes:'', url:''},
+    {id:3,label:'Layer',  item:'Light jacket or sweater',            status:'sourcing', source:'Contestant provides', notes:'', url:''}
+   ]}
+];
+
 // ═══ SEED DATA ═══════════════════════════════════════════════
+// seed() runs once on every login. It fills in any missing S.*
+// arrays from defaults. Data already in localStorage is preserved.
+// Version checks (e.g. chq-lk-v) handle schema migrations so users
+// don't get stale data after an app update.
 function seed(){
   var portalProfiles=lsGet('chq-portal-profiles',null);
   if(!portalProfiles||!portalProfiles.sponsor||!portalProfiles.hmu||!portalProfiles.contributor){
@@ -520,14 +673,16 @@ function seed(){
     ];
     lsSave('chq-wk',S.workouts);
   }
-  if(!S.looks.length){
-    S.looks=[
-      {id:1,event:'Evening Gown',round:'Competition Night',title:'Sustainable Silk Gown',desc:'Custom design. Deadstock silk, natural dye. Tanzanite and champagne tones.',img:''},
-      {id:2,event:'Swimsuit Round',round:'Competition Day 2',title:'ECONYL Ocean Plastic',desc:'H2OM partnership. Made from regenerated ocean plastic.',img:''},
-      {id:3,event:'Interview Look',round:'Competition Day 1',title:'Power Suit',desc:'Tailored, structured, sustainable fabric. Engineer energy.',img:''},
-      {id:4,event:'Opening Night',round:'Pre-Competition',title:'Statement Arrival',desc:'First impression. Sustainable brand, bold color.',img:''},
-    ];
-    lsSave('chq-lk',S.looks);
+  // Version 2: wipe old 4-look seed and replace with the full 11-look CAUSA set
+  var looksV = lsGet('chq-lk-v', 0);
+  if(looksV < 2){
+    S.looks = DEFAULT_LOOKS.slice();
+    lsSave('chq-lk', S.looks);
+    lsSave('chq-lk-v', 2);
+    sbSaveLooks(); // push all 11 looks to Supabase, replacing old data
+  } else {
+    // Ensure pieces arrays exist (safe guard for any look missing them)
+    S.looks.forEach(function(l){ if(!Array.isArray(l.pieces)) l.pieces = []; });
   }
   if(!S.posts.length){ seedLibrary(); }
   if(!S.todos||!Object.keys(S.todos).length){
@@ -578,6 +733,9 @@ function seedLibrary(){
 }
 
 // ═══ PASSWORDS ════════════════════════════════════════════════
+// Hard-coded defaults merged with any saved overrides (chq-pw).
+// Portal users (hmu/sponsor/contributor) have passwords stored
+// inside their portal profile objects, not here.
 var PASSWORDS=Object.assign({amelia:'serph',laneea:'withlove',kathy:'finance2026'},lsGet('chq-pw',{}));
 
 // ═══ UNIFIED LOGIN ═══════════════════════════════════════════
@@ -619,8 +777,8 @@ function submitUnifiedLogin(){
     showLoginError(); return;
   }
 
-  // 5. Check portal profiles across all portal roles
-  var portalRoles=['hmu','sponsor','contributor'];
+  // 5. Check portal profiles across all portal roles (stars included)
+  var portalRoles=['hmu','sponsor','contributor','star'];
   for(var ri=0;ri<portalRoles.length;ri++){
     var role=portalRoles[ri];
     var profile=findPortalProfileByUsername(role,username);
@@ -699,20 +857,22 @@ function openPortalLogin(role){
   var password=g('portal-login-password');
   var submit=g('portal-login-submit');
   var hint=g('portal-login-hint');
-  if(title)title.textContent=role==='sponsor'?'Sponsor Portal Access':role==='contributor'?'Contributor Portal Access':'Hair & Makeup Portal Access';
+  if(title)title.textContent=role==='sponsor'?'Sponsor Portal Access':role==='contributor'?'Contributor Portal Access':role==='star'?'Enter the Starfield':'Hair & Makeup Portal Access';
   if(nameEl)nameEl.value='';
   if(companyEl)companyEl.value='';
   if(email)email.value='';
   if(username)username.value='';
   if(password)password.value='';
   modal.dataset.role=role;
-  modal.dataset.mode='login';
-  if(modeLbl)modeLbl.textContent='Sign In';
-  if(nameWrap)nameWrap.style.display='none';
-  if(companyWrap)companyWrap.style.display='none';
-  if(email)email.parentElement.style.display='none';
-  if(submit)submit.textContent='Sign In';
-  if(hint)hint.textContent=role==='sponsor'?'First time here? Create an account with your email, then sign back in anytime with your username and password.':role==='contributor'?'First-time contributors can create an account with email, then sign back in anytime with a username and password.':'First-time artists can create an account with email, then return anytime with a username and password.';
+  // Stars default to create mode so new subscribers flow straight into account setup
+  var defaultMode = role==='star' ? 'create' : 'login';
+  modal.dataset.mode=defaultMode;
+  if(modeLbl)modeLbl.textContent=defaultMode==='create'?'Create Account':'Sign In';
+  if(nameWrap)nameWrap.style.display=defaultMode==='create'?'block':'none';
+  if(companyWrap)companyWrap.style.display='none'; // stars don't need company field
+  if(email)email.parentElement.style.display=defaultMode==='create'?'block':'none';
+  if(submit)submit.textContent=defaultMode==='create'?'Join the Starfield':'Sign In';
+  if(hint)hint.textContent=role==='star'?'Choose a username and password to claim your star. You\'ll enter the space right after.':role==='sponsor'?'First time here? Create an account with your email, then sign back in anytime with your username and password.':role==='contributor'?'First-time contributors can create an account with email, then sign back in anytime with a username and password.':'First-time artists can create an account with email, then return anytime with a username and password.';
   openM('m-portal-login');
   setTimeout(function(){if(username)username.focus();},60);
 }
@@ -730,13 +890,13 @@ function setPortalAuthMode(mode){
   var hint=g('portal-login-hint');
   if(modeLbl)modeLbl.textContent=mode==='create'?'Create Account':'Sign In';
   if(nameWrap)nameWrap.style.display=mode==='create'?'block':'none';
-  if(companyWrap)companyWrap.style.display=mode==='create'?'block':'none';
+  if(companyWrap)companyWrap.style.display=(mode==='create'&&role!=='star')?'block':'none';
   if(email)email.parentElement.style.display=mode==='create'?'block':'none';
-  if(submit)submit.textContent=mode==='create'?'Create Account':'Sign In';
+  if(submit)submit.textContent=mode==='create'?(role==='star'?'Join the Starfield':'Create Account'):'Sign In';
   if(hint){
     hint.textContent=mode==='create'
-      ? (role==='sponsor'?'Create your sponsor portal with email first, then come back with your username and password.':role==='contributor'?'Create your contributor account with email first, then come back with your username and password.':'Create your artist account with email first, then come back with your username and password.')
-      : (role==='sponsor'?'Sign in with the username and password tied to your sponsor portal.':role==='contributor'?'Sign in with the username and password tied to your contributor account.':'Sign in with the username and password tied to your artist account.');
+      ? (role==='sponsor'?'Create your sponsor portal with email first, then come back with your username and password.':role==='contributor'?'Create your contributor account with email first, then come back with your username and password.':role==='star'?'Choose a username and password to claim your star. You\'ll enter the space right after.':'Create your artist account with email first, then come back with your username and password.')
+      : (role==='sponsor'?'Sign in with the username and password tied to your sponsor portal.':role==='contributor'?'Sign in with the username and password tied to your contributor account.':role==='star'?'Welcome back, star. Sign in with your username and password to re-enter the space.':'Sign in with the username and password tied to your artist account.');
   }
 }
 
@@ -898,6 +1058,10 @@ function renderPortalGoalsCard(title){
 }
 
 // ═══ ROLES ═══════════════════════════════════════════════════
+// Each role has: name/abbr/color for display, nav array for the
+// sidebar (ico, lbl, id), and editable array listing which panel
+// types can be modified via Edit Mode. Roles not in editable[] still
+// see content but cannot use the Edit Mode button.
 var ROLES={
   amelia:{name:'Amelia Arabe',abbr:'AA',color:'var(--ch)',
     nav:[
@@ -913,6 +1077,7 @@ var ROLES={
       {ico:'📣',lbl:'Advocacy',id:'advocacy'},
       {ico:'🖼',lbl:'Mood Board',id:'moodboard'},
       {ico:'👗',lbl:'Looks',id:'looks'},
+      {ico:'📋',lbl:'Pageant Rules',id:'pageant-rules'},
       {ico:'🌿',lbl:'Wellness',id:'fitness'},
       {ico:'📱',lbl:'Social Media',id:'social'},
       {ico:'📬',lbl:'Inbox',id:'inbox'},
@@ -928,6 +1093,7 @@ var ROLES={
       {ico:'💰',lbl:'Sponsors',id:'sponsors',badge:true},
       {ico:'📅',lbl:'Calendar',id:'calendar'},
       {ico:'👗',lbl:'Looks & Styling',id:'looks'},
+      {ico:'📋',lbl:'Pageant Rules',id:'pageant-rules'},
       {ico:'🖼',lbl:'Mood Board',id:'moodboard'},
       {ico:'📬',lbl:'Inbox',id:'inbox'},
       {ico:'🗂',lbl:'Discussion',id:'board'},
@@ -984,10 +1150,24 @@ var ROLES={
       {ico:'📁',lbl:'Files',id:'files'},
     ],
     editable:['expenses','invoices','looks']
+  },
+  // ── STAR ROLE — celestial community portal (read-only) ─────────
+  // Stars subscribe and "visit space" — they see prep progress,
+  // published posts, and the mood board. Nothing is editable.
+  star:{name:'Star',abbr:'✦',color:'var(--go)',
+    nav:[
+      {ico:'✦',lbl:'The Starfield',id:'star-dash'},
+      {ico:'🖼',lbl:'Mood Board',id:'star-moodboard'},
+      {ico:'✍️',lbl:'The Observatory',id:'star-posts'},
+    ],
+    editable:[] // stars are read-only
   }
 };
 
 // ═══ LOGIN/LOGOUT ═════════════════════════════════════════════
+// doLogin(): completes a successful auth — sets role, seeds data,
+// shows the app shell, and fires a background Supabase sync ~800ms
+// later so the UI renders instantly from localStorage first.
 function doLogin(role,portalProfileId){
   S.role=role;
   S.portalProfile=portalProfileId?getPortalProfile(role,portalProfileId):null;
@@ -1040,6 +1220,8 @@ function doSwitch(){
 }
 
 // ═══ SIDEBAR ══════════════════════════════════════════════════
+// buildSB(): generates nav items from the role's nav array.
+// Badge items (badge:true) show a live count of new-status sponsors.
 function buildSB(nav){
   g('sb-nav').innerHTML=nav.map(function(n){
     return '<div class="nav-i" onclick="showPanel(\''+n.id+'\',this)" id="ni-'+n.id+'">' +
@@ -1053,10 +1235,11 @@ function toggleSB(){g('sidebar').classList.toggle('open');}
 function closeSB(){if(window.innerWidth<=768)g('sidebar').classList.remove('open');}
 
 // ═══ PANELS ═══════════════════════════════════════════════════
-// ── Remove duplicate dashboard functions defined earlier ──────
-// (bHMUDash, bSponsorPortal, bContributorDash were redefined)
-// The correct versions are further down — showPanel uses a lazy
-// lookup so forward references work fine.
+// showPanel(id): the main router. Highlights the nav item, clears
+// #main, then calls the matching panel builder function (bX).
+// All panel builders use inject(html) to set #main content.
+// After render, if Edit Mode is active it calls applyEM() so any
+// new data-e elements become contenteditable immediately.
 
 function showPanel(id,navEl){
   S.panel=id;
@@ -1082,6 +1265,7 @@ function showPanel(id,navEl){
     'brand':            function(){ bBrand(); },
     'moodboard':        function(){ bMoodboard(); },
     'looks':            function(){ bLooks(); },
+    'pageant-rules':    function(){ bPageantRules(); },
     'fitness':          function(){ bFitness(); },
     'profile':          function(){ bProfile(); },
     'team-admin':       function(){ bTeamAdmin(); },
@@ -1097,6 +1281,10 @@ function showPanel(id,navEl){
     'advocacy':         function(){ bAdvocacy(); },
     'lookbook':         function(){ bLookbook(); },
     'campaign-site':    function(){ bCampaignEditor(); },
+    // ── Star portal panels (celestial community — visit space) ────
+    'star-dash':        function(){ bStarDash(); },
+    'star-moodboard':   function(){ bStarMoodboard(); },
+    'star-posts':       function(){ bStarPosts(); },
   }[id];
   if(panelFn) panelFn();
   else bPlaceholder(id);
@@ -1105,8 +1293,10 @@ function showPanel(id,navEl){
 }
 
 // ═══ HELPERS ══════════════════════════════════════════════════
-function g(id){return document.getElementById(id);}
-function inject(html){g('main').innerHTML=html;}
+function g(id){return document.getElementById(id);}      // getElementById shorthand
+function inject(html){g('main').innerHTML=html;}          // replace #main content
+// rerenderKeepScroll: re-runs a render fn and restores scroll position.
+// Use instead of inject() when re-rendering a panel the user is scrolled into.
 function rerenderKeepScroll(renderFn){
   var main=g('main');
   var pb=main?main.querySelector('.pb'):null;
@@ -1170,6 +1360,11 @@ function renderRegistrationCard(){
 }
 
 // ═══ AMELIA DASHBOARD ════════════════════════════════════════
+// bDash(): Amelia's main dashboard. Shows morning brief, oath hero,
+// north star cards, countdown stats, career goals progress tracker,
+// key timeline, registration card, pageant contacts, to-dos,
+// messages snapshot, and personal mood board.
+// Most text elements have data-e attributes for inline Edit Mode editing.
 function bDash(){
   var raised=S.sponsors.filter(function(s){return s.status==='closed';}).reduce(function(a,s){return a+(s.amount||0);},0);
   var closed=S.sponsors.filter(function(s){return s.status==='closed';}).length;
@@ -1301,6 +1496,9 @@ function bDash(){
 }
 
 // ═══ OTHER DASHBOARDS ════════════════════════════════════════
+// bPlaceholderDash(): shared template for Laneea/HMU/Trainer/etc
+// dashboards that share the same layout: role quote + focus note
+// (both editable via data-e) + to-do list + mood board section.
 function bPlaceholderDash(role,ns,first){
   var rp=getRolePages()[role]||{quote:ns,focus:''};
   var dmb=(S.dashMood&&S.dashMood[role])||[];
@@ -1608,6 +1806,172 @@ function bContributorDash(){
   );
 }
 
+// ═══ STAR PORTAL — celestial community, "visit space" ════════════
+// Stars are Amelia's subscribed community. They get a read-only view
+// into the journey: interview count (no content), weekly training
+// progress, published posts, and the mood board. Nothing editable.
+// Panel IDs: star-dash, star-moodboard, star-posts.
+
+// bStarDash(): main landing panel for stars entering the starfield.
+function bStarDash(){
+  var fd = lsGet('chq-fitness',{});
+  fd.days = fd.days || {};
+
+  // Count days with completed workouts this week (Mon–Sun)
+  var weekKeys = ['mon','tue','wed','thu','fri','sat','sun'];
+  var doneThisWeek = weekKeys.filter(function(k){ return fd.days[k] && fd.days[k].done; }).length;
+
+  // Pull only published posts for the star feed
+  var publishedPosts = S.posts.filter(function(p){ return p.status === 'published'; }).slice(0,5);
+
+  // First 4 mood board images for the preview grid
+  var moodPreview = S.mood.slice(0,4);
+
+  var daysLeft = Math.ceil((new Date('2026-07-10') - new Date()) / (1000*60*60*24));
+
+  // Star's display name from portal profile (if they have one)
+  var starName = S.portalProfile ? (S.portalProfile.name || 'Star') : 'Star';
+
+  inject(
+    '<div class="ph"><div>' +
+    '<div class="ph-tag">STARDOM &middot; Miss California USA 2026</div>' +
+    '<div class="ph-title">The <em>Starfield</em></div>' +
+    '</div></div>' +
+    '<div class="pb">' +
+
+    // Welcome banner — dark cosmos aesthetic
+    '<div style="background:linear-gradient(135deg,var(--ink) 0%,#1a1228 100%);border-radius:10px;padding:1.5rem;margin-bottom:1.25rem;border:0.5px solid rgba(201,168,76,.12);position:relative;overflow:hidden">' +
+    '<div style="font-family:var(--fm);font-size:.48rem;letter-spacing:4px;text-transform:uppercase;color:rgba(201,168,76,.45);margin-bottom:.45rem">You\'re in the starfield</div>' +
+    '<div style="font-family:var(--fd);font-size:1.35rem;font-style:italic;color:rgba(250,247,242,.88);margin-bottom:.25rem">Welcome, '+escHtml(starName)+'.</div>' +
+    '<div style="font-size:.78rem;color:rgba(250,247,242,.38);line-height:1.8">You\'re watching the journey in real time. &nbsp;✦&nbsp; Competition day: <strong style="color:rgba(201,168,76,.55)">July 10 &middot; '+daysLeft+' days away</strong></div>' +
+    '</div>' +
+
+    // Stats row: interview count + workout week
+    '<div class="g2" style="margin-bottom:1.25rem">' +
+
+    // Interview prep stat — count only, no questions or answers exposed
+    '<div class="card" style="border-top:3px solid var(--go)">' +
+    '<div style="font-family:var(--fm);font-size:.48rem;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted);margin-bottom:.55rem">Interview Prep ✦</div>' +
+    '<div style="font-family:var(--fd);font-size:2rem;font-style:italic;color:var(--go);line-height:1;margin-bottom:.2rem">'+S.quiz.total+'</div>' +
+    '<div style="font-size:.74rem;color:var(--muted)">questions practiced</div>' +
+    '<div style="font-size:.68rem;color:var(--faint);margin-top:.3rem">'+S.quiz.sessions+' practice sessions</div>' +
+    '</div>' +
+
+    // Weekly workout progress — days active only, no exercise names
+    '<div class="card" style="border-top:3px solid var(--sg)">' +
+    '<div style="font-family:var(--fm);font-size:.48rem;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted);margin-bottom:.55rem">Weekly Training ✦</div>' +
+    '<div style="font-family:var(--fd);font-size:2rem;font-style:italic;color:var(--sg);line-height:1;margin-bottom:.2rem">'+doneThisWeek+' <span style="font-size:1.1rem;opacity:.5">/ 7</span></div>' +
+    '<div style="font-size:.74rem;color:var(--muted)">days active this week</div>' +
+    '<div style="height:4px;background:var(--iv2);border-radius:2px;overflow:hidden;margin-top:.55rem">' +
+    '<div style="height:100%;width:'+(Math.round(doneThisWeek/7*100))+'%;background:var(--sg);border-radius:2px;transition:width .6s"></div>' +
+    '</div>' +
+    '</div>' +
+
+    '</div>' + // end g2
+
+    // Recent published posts
+    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">The Observatory — Recent Posts</div>' +
+    (publishedPosts.length
+      ? '<div style="display:flex;flex-direction:column;gap:.45rem;margin-bottom:1.25rem">' +
+        publishedPosts.map(function(p){
+          var raw = (p.body||'').replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim();
+          var excerpt = raw.length > 120 ? raw.slice(0,120)+'…' : raw;
+          var tagColors = {morenita:'var(--lv2)',energy:'var(--ch2)',fashion:'var(--sg2)',personal:'var(--si)'};
+          var tc = tagColors[p.cat] || 'var(--muted)';
+          return '<div class="card" style="padding:.85rem;cursor:pointer" onclick="showPanel(\'star-posts\')">' +
+            '<div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.35rem">' +
+            '<span style="font-family:var(--fm);font-size:.44rem;letter-spacing:1.5px;text-transform:uppercase;color:'+tc+';padding:.15rem .45rem;background:'+tc.replace(')',', .1)').replace('var(','rgba(')+';border-radius:3px">'+escHtml(p.tag||p.cat||'')+'</span>' +
+            '<span style="font-family:var(--fm);font-size:.5rem;color:var(--faint);letter-spacing:.5px">'+escHtml(p.date||'')+'</span>' +
+            '</div>' +
+            '<div style="font-family:var(--fd);font-size:1rem;font-style:italic;color:var(--ink);margin-bottom:.25rem">'+escHtml(p.title)+'</div>' +
+            '<div style="font-size:.72rem;color:var(--muted);line-height:1.6">'+escHtml(excerpt)+'</div>' +
+            '</div>';
+        }).join('') +
+        '</div>'
+      : '<div class="card" style="margin-bottom:1.25rem;padding:1.25rem;text-align:center;color:var(--muted);font-size:.8rem">No posts published yet — check back soon.</div>'
+    ) +
+
+    // Mood board preview — read-only, first 4 images
+    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">Mood Board</div>' +
+    (moodPreview.length
+      ? '<div class="g2" style="margin-bottom:.5rem">' +
+        moodPreview.map(function(m){
+          return '<div style="aspect-ratio:1;background:var(--iv2);border-radius:8px;overflow:hidden;border:0.5px solid var(--iv3)">' +
+            '<img src="'+m.src+'" alt="'+escHtml(m.label)+'" style="width:100%;height:100%;object-fit:cover">' +
+            '</div>';
+        }).join('') +
+        '</div>' +
+        (S.mood.length > 4
+          ? '<button class="btn bg" style="margin-bottom:1.5rem;font-size:.6rem" onclick="showPanel(\'star-moodboard\')">See all '+S.mood.length+' images →</button>'
+          : '<div style="margin-bottom:1.5rem"></div>'
+        )
+      : '<div class="card" style="margin-bottom:1.5rem;padding:1.25rem;text-align:center;color:var(--muted);font-size:.8rem">Mood board is empty.</div>'
+    ) +
+
+    '</div>' // end pb
+  );
+}
+
+// ── bStarMoodboard(): Full read-only mood board for stars ──────────
+// Renders all mood board images without edit/delete controls.
+function bStarMoodboard(){
+  inject(
+    '<div class="ph"><div>' +
+    '<div class="ph-tag">STARDOM &middot; The Starfield</div>' +
+    '<div class="ph-title"><em>Mood</em> Board</div>' +
+    '</div></div>' +
+    '<div class="pb">' +
+    (S.mood.length
+      ? '<div class="mb-grid">' +
+        S.mood.map(function(m){
+          // No delete button or edit controls — stars are view-only
+          return '<div class="mb-item"><img src="'+m.src+'" alt="'+escHtml(m.label)+'"><div class="mb-lbl">'+escHtml(m.label)+'</div></div>';
+        }).join('') +
+        '</div>'
+      : '<div style="text-align:center;padding:3rem;color:var(--muted);font-size:.85rem">Nothing here yet — check back soon.</div>'
+    ) +
+    '</div>'
+  );
+}
+
+// ── bStarPosts(): Published articles list for stars ────────────────
+// Shows published posts with title, tag, date, and excerpt only.
+// No body content or editor access.
+function bStarPosts(){
+  var publishedPosts = S.posts.filter(function(p){ return p.status === 'published'; });
+  var tagColors = {morenita:'var(--lv2)',energy:'var(--ch2)',fashion:'var(--sg2)',personal:'var(--si)',wellness:'var(--sg)'};
+
+  inject(
+    '<div class="ph"><div>' +
+    '<div class="ph-tag">STARDOM &middot; The Starfield</div>' +
+    '<div class="ph-title">The <em>Observatory</em></div>' +
+    '</div>' +
+    '<div class="ph-acts"><a href="library.html" target="_blank" class="btn bg" style="text-decoration:none;font-size:.6rem">Read on site ↗</a></div>' +
+    '</div>' +
+    '<div class="pb">' +
+
+    (publishedPosts.length
+      ? '<div style="display:flex;flex-direction:column;gap:.65rem">' +
+        publishedPosts.map(function(p){
+          var raw = (p.body||'').replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim();
+          var excerpt = raw.length > 200 ? raw.slice(0,200)+'…' : raw;
+          var tc = tagColors[p.cat] || 'var(--muted)';
+          return '<div class="card" style="padding:1.1rem">' +
+            '<div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem">' +
+            '<span style="font-family:var(--fm);font-size:.44rem;letter-spacing:1.5px;text-transform:uppercase;color:'+tc+'">'+escHtml(p.tag||p.cat||'')+'</span>' +
+            '<span style="font-family:var(--fm);font-size:.5rem;color:var(--faint)">'+escHtml(p.date||'')+'</span>' +
+            '</div>' +
+            '<div style="font-family:var(--fd);font-size:1.25rem;font-style:italic;color:var(--ink);margin-bottom:.4rem;line-height:1.15">'+escHtml(p.title)+'</div>' +
+            '<div style="font-size:.78rem;color:var(--muted);line-height:1.75">'+escHtml(excerpt)+'</div>' +
+            '</div>';
+        }).join('') +
+        '</div>'
+      : '<div style="text-align:center;padding:3rem;color:var(--muted);font-size:.85rem">No published posts yet — essays are coming soon.</div>'
+    ) +
+    '</div>'
+  );
+}
+
 function bTrainerDash(){
   var fd = lsGet('chq-fitness',{});
   fd.measurements = fd.measurements || {};
@@ -1683,6 +2047,10 @@ function bTrainerDash(){
 }
 
 // ═══ TODO ════════════════════════════════════════════════════
+// renderTodos(): returns HTML for a role's to-do list.
+// Todo text is contenteditable with an onblur save via saveTodoText().
+// toggleTodo() flips done state. addTodo() appends a new item.
+// All stored in S.todos[role] → lsSave('chq-td', S.todos).
 function renderTodos(role){
   var items=(S.todos&&S.todos[role])||[];
   return '<div id="todo-list-'+role+'">' +
@@ -1789,6 +2157,11 @@ function removeDashMood(role,i){
 }
 
 // ═══ SPONSORS ════════════════════════════════════════════════
+// bSponsors(): multi-tab panel (Pipeline, Pitch Decks, Emails,
+// Objections, Accounts). Sponsor rows have data-e on name and ask
+// for inline editing. Notes use a direct <input> with onblur.
+// Status changes open openStatusModal() which updates amount + notes.
+// Portal accounts tab managed via renderPortalAccounts().
 var spFilter='all';
 function setSpFilter(f){spFilter=f;bSponsors();}
 function getSpTabContent(spTab, raised){
@@ -1965,9 +2338,11 @@ function renderPortalAccounts(){
           ? (p.status==='actual'?'Actual Sponsor':'Possible Sponsor')
           : role==='contributor'
             ? (p.status==='active'?'Active Contributor':'Possible Contributor')
-            : (p.status==='active'?'Active Artist':'Possible Artist');
+            : role==='star'
+              ? (p.active?'Active Star':'Inactive')
+              : (p.status==='active'?'Active Artist':'Possible Artist');
         return '<div class="pc-row">' +
-          '<div><div class="pc-name">'+p.name+'</div><div class="pc-role">'+(p.company||'')+(p.specialty?' · '+p.specialty:'')+'<br>'+p.email+'<br>username: '+(p.username||'')+'</div></div>' +
+          '<div><div class="pc-name">'+p.name+'</div><div class="pc-role">'+(p.company||'')+(p.specialty?' · '+p.specialty:'')+(p.email?'<br>'+p.email:'')+'<br>username: '+(p.username||'')+'</div></div>' +
           '<div class="pc-meta">' +
           '<span class="pc-chip">'+stage+'</span>' +
           '<span class="pc-chip">'+(p.active?'Login Active':'Login Off')+'</span>' +
@@ -1977,10 +2352,14 @@ function renderPortalAccounts(){
       }).join('') +
       '</div>';
   }
+  // ── Fan accounts section spans full width below the 2-col grid ──
   return '<div class="g2">' +
     renderList('sponsor','Sponsor Accounts') +
     renderList('hmu','Hair & Makeup Accounts') +
     renderList('contributor','Contributor Accounts') +
+    '</div>' +
+    '<div style="margin-top:.5rem">' +
+    renderList('star','Stars — Celestial Community') +
     '</div>';
 }
 function openSponsorLink(id){
@@ -2325,6 +2704,7 @@ function editPost(id){
     '<button class="btn" style="background:transparent;border:0.5px solid var(--iv4);color:var(--muted);flex-shrink:0" onclick="deletePost('+p.id+')">Delete</button>' +
     '</div></div>' +
     '<div class="ed-bar">' +
+    '<button class="t-btn" onclick="ins(\'p\')">¶ Para</button>' +
     '<button class="t-btn" onclick="ins(\'hero\')">Headline</button>' +
     '<button class="t-btn" onclick="ins(\'byline\')">Byline</button>' +
     '<button class="t-btn" onclick="ins(\'drop\')">Drop Cap</button>' +
@@ -2338,7 +2718,7 @@ function editPost(id){
     '<button class="t-btn" onclick="document.execCommand(\'bold\')"><strong>B</strong></button>' +
     '<button class="t-btn" onclick="document.execCommand(\'italic\')"><em>I</em></button>' +
     '</div>' +
-    '<div class="ed-canvas"><div class="ed-body" id="ed-body" contenteditable="true">'+(p.body||'')+'</div></div>' +
+    '<div class="ed-canvas" onclick="if(event.target===this){var el=g(\'ed-body\');el.focus();var r=document.createRange();r.selectNodeContents(el);r.collapse(false);var s=window.getSelection();s.removeAllRanges();s.addRange(r);}"><div class="ed-body" id="ed-body" contenteditable="true">'+(p.body||'')+'</div></div>' +
     '</div>'
   );
 }
@@ -2346,6 +2726,7 @@ function editPost(id){
 function ins(type){
   var el=g('ed-body');if(!el)return;
   var t={
+    p:'<p>Write your paragraph here.</p>',
     hero:'<div class="mag-hero">Your <em>Headline</em><br>Here</div>',
     byline:'<div class="mag-byline">By Amelia Arabe · Library of Morenita</div>',
     drop:'<p class="mag-drop">Your paragraph starts here with a drop cap.</p>',
@@ -2353,7 +2734,30 @@ function ins(type){
     br:'<div class="mag-br">✦ ✦ ✦</div>',
     '2col':'<div class="mag-2col"><div class="mag-img" style="height:180px;display:flex;align-items:center;justify-content:center;color:var(--wg);font-size:.75rem">Image 1</div><div class="mag-img" style="height:180px;display:flex;align-items:center;justify-content:center;color:var(--wg);font-size:.75rem">Image 2</div></div>'
   };
-  el.focus();document.execCommand('insertHTML',false,t[type]||'');
+  var html=t[type];if(!html)return;
+  el.focus();
+  // Use Range API — execCommand('insertHTML') is deprecated and unreliable
+  var sel=window.getSelection();
+  if(!sel||!sel.rangeCount){
+    // No active cursor — place at end of ed-body
+    var r=document.createRange();r.selectNodeContents(el);r.collapse(false);
+    sel=window.getSelection();sel.removeAllRanges();sel.addRange(r);
+  }
+  var range=sel.getRangeAt(0);
+  // Only insert inside ed-body — if selection is outside, move to end
+  if(!el.contains(range.commonAncestorContainer)){
+    range=document.createRange();range.selectNodeContents(el);range.collapse(false);
+    sel.removeAllRanges();sel.addRange(range);
+  }
+  range.deleteContents();
+  var frag=range.createContextualFragment(html);
+  var last=frag.lastChild;
+  range.insertNode(frag);
+  // Move cursor after inserted block
+  if(last){
+    var after=document.createRange();after.setStartAfter(last);after.collapse(true);
+    sel.removeAllRanges();sel.addRange(after);
+  }
 }
 
 function insImg(e){
@@ -2361,7 +2765,17 @@ function insImg(e){
   var r=new FileReader();
   r.onload=function(ev){
     var el=g('ed-body');if(!el)return;
-    el.focus();document.execCommand('insertHTML',false,'<div class="mag-img"><img src="'+ev.target.result+'"><div class="mag-cap">Caption — click to edit</div></div>');
+    el.focus();
+    var html='<div class="mag-img"><img src="'+ev.target.result+'"><div class="mag-cap">Caption — click to edit</div></div>';
+    var sel=window.getSelection();
+    if(!sel||!sel.rangeCount||!el.contains(sel.getRangeAt(0).commonAncestorContainer)){
+      var rc=document.createRange();rc.selectNodeContents(el);rc.collapse(false);
+      sel=window.getSelection();sel.removeAllRanges();sel.addRange(rc);
+    }
+    var range=sel.getRangeAt(0);range.deleteContents();
+    var frag=range.createContextualFragment(html);var last=frag.lastChild;
+    range.insertNode(frag);
+    if(last){var after=document.createRange();after.setStartAfter(last);after.collapse(true);sel.removeAllRanges();sel.addRange(after);}
   };
   r.readAsDataURL(file);
 }
@@ -2643,52 +3057,370 @@ function addMoodImg(e){
 function removeMoodImg(i){S.mood.splice(i,1);lsSave('chq-md',S.mood);bMoodboard();}
 
 // ═══ LOOKS ═══════════════════════════════════════════════════
+var _looksTab = 'looks';   // 'looks' | 'sourcing'
+var _looksView = 'grid';   // 'grid'  | 'gallery'
+var _galleryIdx = 0;       // current slide index in gallery mode
+
 function bLooks(){
+  // Tab bar: Looks | Sourcing
+  var tabBar =
+    '<div style="display:flex;align-items:center;border-bottom:0.5px solid var(--iv3);background:var(--wh);padding:0 1.75rem;flex-shrink:0;gap:.25rem">' +
+    [['looks','👗 Looks'],['sourcing','🔍 Sourcing']].map(function(t){
+      var on = _looksTab === t[0];
+      return '<button onclick="_looksTab=\''+t[0]+'\';bLooks()" style="font-family:var(--fm);font-size:.55rem;letter-spacing:2px;text-transform:uppercase;padding:.75rem 1rem;border:none;background:transparent;cursor:pointer;border-bottom:2px solid '+(on?'var(--si)':'transparent')+';color:'+(on?'var(--si)':'var(--muted)')+';transition:all .15s">'+t[1]+'</button>';
+    }).join('') +
+    // View toggle buttons — only show on the looks tab
+    (_looksTab === 'looks'
+      ? '<div style="flex:1"></div>' +
+        [['grid','⊞'],['gallery','▷']].map(function(v){
+          var on = _looksView === v[0];
+          return '<button onclick="_looksView=\''+v[0]+'\';bLooks()" title="'+(v[0]==='grid'?'Grid view':'Gallery view')+'" style="font-size:.9rem;padding:.35rem .55rem;border:none;background:'+(on?'var(--sip)':'transparent')+';border-radius:4px;color:'+(on?'var(--si)':'var(--muted)')+';cursor:pointer;transition:all .15s">'+v[1]+'</button>';
+        }).join('')
+      : '') +
+    '</div>';
+
+  // Choose content renderer based on active tab and view
+  var content;
+  if (_looksTab === 'sourcing') {
+    content = _renderSourcingTab();
+  } else if (_looksView === 'gallery') {
+    content = _renderLooksGallery();
+  } else {
+    content = _renderLooksGrid();
+  }
+
   inject(
-    '<div class="ph"><div><div class="ph-tag">Competition</div><div class="ph-title">Event <em>Looks</em></div></div>' +
-    '<div class="ph-acts"><button class="btn bp" onclick="addLook()">+ Add Look</button></div></div>' +
-    '<div class="pb"><div class="g2">' +
+    '<div class="ph"><div><div class="ph-tag">Competition · Miss California USA 2026</div><div class="ph-title">Event <em>Looks</em></div></div>' +
+    '<div class="ph-acts">'+(_looksTab==='looks'?'<button class="btn bp" onclick="addLook()">+ Add Look</button>':'')+'</div></div>' +
+    tabBar + content
+  );
+}
+
+function _renderLooksGrid(){
+  // g3 = 3 columns on desktop, 2 on tablet, 1 on mobile (existing CSS class)
+  return '<div class="pb"><div class="g3 looks-grid">' +
     S.looks.map(function(l){
       var links=Array.isArray(l.links)?l.links:[];
+      var pieces=Array.isArray(l.pieces)?l.pieces:[];
+      var statusColors={pending:'var(--gold)',sourcing:'var(--si)',ordered:'var(--sg2)',confirmed:'var(--sg2)'};
+      var statusBgs={pending:'rgba(201,168,76,.12)',sourcing:'rgba(139,64,47,.1)',ordered:'rgba(90,138,82,.12)',confirmed:'rgba(90,138,82,.22)'};
       return '<div class="look-card">' +
-        // Image
         '<div class="look-img">' +
         (l.img
           ? '<img src="'+l.img+'" alt="'+escHtml(l.title)+'" onclick="openLookImg(\''+l.id+'\')">' +
-            '<label class="look-img-upload-btn" style="display:none;position:absolute;bottom:.5rem;right:.5rem;cursor:pointer;background:rgba(28,23,20,.65);border:0.5px solid rgba(255,255,255,.2);border-radius:3px;padding:.25rem .55rem;font-family:var(--fm);font-size:.48rem;letter-spacing:1px;color:rgba(255,255,255,.75);text-transform:uppercase;align-items:center;gap:.3rem">' +
-              'Change<input type="file" accept="image/*" style="display:none" onchange="setLookImg('+l.id+',event)">' +
-            '</label>'
-          : '<div class="look-add-img"><label style="cursor:pointer;text-align:center;display:flex;flex-direction:column;align-items:center;gap:.35rem;color:var(--muted)">' +
-            '<input type="file" accept="image/*" style="display:none" onchange="setLookImg('+l.id+',event)">' +
-            '<div style="font-size:2rem;opacity:.4">📷</div>' +
-            '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:1.5px;text-transform:uppercase">Add Photo</div>' +
-            '</label></div>') +
+            '<label class="look-img-upload-btn" style="display:none;position:absolute;bottom:.5rem;right:.5rem;cursor:pointer;background:rgba(28,23,20,.65);border:0.5px solid rgba(255,255,255,.2);border-radius:3px;padding:.25rem .55rem;font-family:var(--fm);font-size:.48rem;letter-spacing:1px;color:rgba(255,255,255,.75);text-transform:uppercase;align-items:center;gap:.3rem">Change<input type="file" accept="image/*" style="display:none" onchange="setLookImg('+l.id+',event)"></label>'
+          : '<div class="look-add-img"><label style="cursor:pointer;text-align:center;display:flex;flex-direction:column;align-items:center;gap:.35rem;color:var(--muted)"><input type="file" accept="image/*" style="display:none" onchange="setLookImg('+l.id+',event)"><div style="font-size:2rem;opacity:.4">📷</div><div style="font-family:var(--fm);font-size:.52rem;letter-spacing:1.5px;text-transform:uppercase">Add Photo</div></label></div>') +
         '</div>' +
-        // Body
         '<div class="look-body">' +
         '<div class="look-ev" data-e="look:'+l.id+':event">'+escHtml(l.event)+'</div>' +
-        '<div class="look-title" data-e="look:'+l.id+':title">'+escHtml(l.title)+'</div>' +
-        '<div class="look-notes" data-e="look:'+l.id+':notes" data-placeholder="Notes, details, inspiration...">'+escHtml(l.notes||'')+'</div>' +
-        // Links
-        '<div class="look-links">' +
-        links.map(function(lk,li){
-          return '<a href="'+escHtml(lk.url)+'" target="_blank" class="look-link-chip">'+escHtml(lk.title)+
-            '<button class="look-link-rm" onclick="event.preventDefault();removeLookLink('+l.id+','+li+')">×</button></a>';
-        }).join('') +
+        // Title is clickable to open the look editor modal
+        '<div class="look-title look-title-link" onclick="openLookEditor('+l.id+')" title="Click to edit look" data-e="look:'+l.id+':title">'+escHtml(l.title)+'</div>' +
+        '<div style="font-family:var(--fm);font-size:.46rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:.3rem">'+escHtml(l.round||'')+'</div>' +
+        '<div class="look-notes" data-e="look:'+l.id+':notes" data-placeholder="Notes, details, inspiration...">'+escHtml(l.notes||l.desc||'')+'</div>' +
+        (pieces.length ? '<div style="margin-top:.5rem;display:flex;flex-wrap:wrap;gap:.25rem">'+
+          pieces.map(function(p){return '<span style="font-family:var(--fm);font-size:.44rem;letter-spacing:1px;text-transform:uppercase;padding:.16rem .4rem;border-radius:3px;background:'+(statusBgs[p.status]||statusBgs.sourcing)+';color:'+(statusColors[p.status]||statusColors.sourcing)+'">'+escHtml(p.label)+'</span>';}).join('')+'</div>' : '') +
+        '<div class="look-links">'+
+        links.map(function(lk,li){return '<a href="'+escHtml(lk.url)+'" target="_blank" class="look-link-chip">'+escHtml(lk.title)+'<button class="look-link-rm" onclick="event.preventDefault();removeLookLink('+l.id+','+li+')">×</button></a>';}).join('')+
         '</div>' +
-        // Add link form (visible in edit mode via CSS)
         '<div class="look-add-link">' +
         '<div style="font-family:var(--fm);font-size:.48rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:.1rem">Add Link</div>' +
-        '<input id="ll-title-'+l.id+'" class="fi" placeholder="Link title (e.g. Shop ECONYL)" style="font-size:.72rem;padding:.3rem .55rem">' +
+        '<input id="ll-title-'+l.id+'" class="fi" placeholder="Link title" style="font-size:.72rem;padding:.3rem .55rem">' +
         '<input id="ll-url-'+l.id+'" class="fi" placeholder="https://..." style="font-size:.72rem;padding:.3rem .55rem">' +
         '<button onclick="addLookLink('+l.id+')" class="btn bp" style="font-size:.52rem;padding:.25rem .7rem;align-self:flex-start">Add</button>' +
         '</div>' +
-        // Remove button (edit mode)
         '<button onclick="if(confirm(\'Remove this look?\'))removeLook('+l.id+')" style="margin-top:auto;padding-top:.75rem;background:transparent;border:none;font-family:var(--fm);font-size:.48rem;letter-spacing:1px;color:var(--faint);cursor:pointer;text-align:left;text-transform:uppercase;display:none" class="look-rm-btn">Remove look</button>' +
         '</div></div>';
-    }).join('') +
-    '</div></div>'
+    }).join('')+
+    '</div></div>';
+}
+
+function _renderSourcingTab(){
+  var statusMeta={
+    pending: {label:'Pending',  color:'var(--gold)', bg:'rgba(201,168,76,.1)'},
+    sourcing:{label:'Sourcing', color:'var(--si)',   bg:'rgba(139,64,47,.1)'},
+    ordered: {label:'Ordered',  color:'var(--sg2)',  bg:'rgba(90,138,82,.12)'},
+    confirmed:{label:'Confirmed',color:'var(--sg2)', bg:'rgba(90,138,82,.22)'}
+  };
+  // Summary counts
+  var total=0, confirmed=0, ordered=0, sourcing=0, pending=0;
+  S.looks.forEach(function(l){(Array.isArray(l.pieces)?l.pieces:[]).forEach(function(p){total++;if(p.status==='confirmed')confirmed++;else if(p.status==='ordered')ordered++;else if(p.status==='sourcing')sourcing++;else pending++;});});
+
+  var html='<div class="pb" style="display:flex;flex-direction:column;gap:0">';
+  // Status summary bar
+  html+='<div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1.5rem;padding:.85rem 1rem;background:var(--wh);border:0.5px solid var(--bd);border-radius:6px">';
+  [{l:'Total Pieces',v:total,c:'var(--ink)'},{l:'Confirmed',v:confirmed,c:'var(--sg2)'},{l:'Ordered',v:ordered,c:'var(--sg2)'},{l:'Sourcing',v:sourcing,c:'var(--si)'},{l:'Pending',v:pending,c:'var(--gold)'}].forEach(function(s){
+    html+='<div style="text-align:center;min-width:64px"><div style="font-family:var(--fd);font-size:1.5rem;color:'+s.c+';line-height:1">'+s.v+'</div><div style="font-family:var(--fm);font-size:.44rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-top:.15rem">'+s.l+'</div></div>';
+  });
+  html+='</div>';
+  // Per-look piece tables
+  S.looks.forEach(function(l){
+    var pieces=Array.isArray(l.pieces)?l.pieces:[];
+    if(!pieces.length)return;
+    html+='<div style="margin-bottom:1.25rem">';
+    html+='<div style="display:flex;align-items:baseline;gap:.6rem;margin-bottom:.35rem">';
+    html+='<div style="font-family:var(--fm);font-size:.48rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)">'+escHtml(l.round)+'</div>';
+    html+='<div style="font-family:var(--fd);font-size:1rem;color:var(--ink)">'+escHtml(l.title)+'</div>';
+    html+='</div>';
+    html+='<div style="display:flex;flex-direction:column;gap:.3rem">';
+    pieces.forEach(function(p,idx){
+      var sm=statusMeta[p.status]||statusMeta.sourcing;
+      html+='<div style="display:grid;grid-template-columns:70px 1fr 1.2fr auto;gap:.6rem;align-items:center;padding:.5rem .75rem;background:var(--wh);border:0.5px solid var(--bd);border-radius:5px">';
+      html+='<div style="font-family:var(--fm);font-size:.48rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted)">'+escHtml(p.label)+'</div>';
+      html+='<div><div style="font-size:.78rem;color:var(--ink);font-weight:500;line-height:1.3">'+escHtml(p.item)+'</div><div style="font-size:.68rem;color:var(--muted);margin-top:.1rem">'+escHtml(p.source)+'</div></div>';
+      html+='<div style="font-size:.7rem;color:var(--muted);line-height:1.5">'+escHtml(p.notes)+(p.url?'<br><a href="'+escHtml(p.url)+'" target="_blank" style="color:var(--si);text-decoration:none">Shop →</a>':'')+'</div>';
+      html+='<select onchange="updatePieceStatus('+l.id+','+idx+',this.value)" style="font-family:var(--fm);font-size:.46rem;letter-spacing:1px;text-transform:uppercase;padding:.22rem .4rem;border:0.5px solid var(--bd);border-radius:3px;background:'+sm.bg+';color:'+sm.color+';cursor:pointer;outline:none">'+
+        ['pending','sourcing','ordered','confirmed'].map(function(s){var m=statusMeta[s];return'<option value="'+s+'"'+(p.status===s?' selected':'')+'>'+m.label+'</option>';}).join('')+
+      '</select>';
+      html+='</div>';
+    });
+    html+='</div></div>';
+  });
+  html+='</div>';
+  return html;
+}
+
+// ═══ LOOKS GALLERY MODE ══════════════════════════════════════
+// _renderLooksGallery(): Horizontal swipe-style carousel.
+// One look per slide, large image, prev/next arrows, dot nav.
+// _galleryIdx tracks the current slide.
+function _renderLooksGallery(){
+  if(!S.looks.length){
+    return '<div class="pb" style="text-align:center;padding:3rem;color:var(--muted)">No looks yet. Add one with the button above.</div>';
+  }
+  // Clamp index to valid range
+  _galleryIdx = Math.max(0, Math.min(_galleryIdx, S.looks.length - 1));
+  var l = S.looks[_galleryIdx];
+  var links = Array.isArray(l.links) ? l.links : [];
+  var pieces = Array.isArray(l.pieces) ? l.pieces : [];
+  var statusColors = {pending:'var(--gold)',sourcing:'var(--si)',ordered:'var(--sg2)',confirmed:'var(--sg2)'};
+  var statusBgs = {pending:'rgba(201,168,76,.12)',sourcing:'rgba(139,64,47,.1)',ordered:'rgba(90,138,82,.12)',confirmed:'rgba(90,138,82,.22)'};
+
+  // Dot navigation row
+  var dots = S.looks.map(function(_,i){
+    return '<button onclick="_galleryIdx='+i+';bLooks()" class="lg-dot'+(i===_galleryIdx?' on':'')+'" title="Look '+(i+1)+'"></button>';
+  }).join('');
+
+  return '<div class="pb">' +
+    '<div class="looks-gallery-wrap">' +
+
+    // Prev arrow
+    (_galleryIdx > 0
+      ? '<button class="lg-arrow lg-prev" onclick="_galleryIdx--;bLooks()">&#8249;</button>'
+      : '<button class="lg-arrow lg-prev" style="opacity:.2;cursor:default" disabled>&#8249;</button>') +
+
+    // Main card — two-column layout: image left, details right
+    '<div class="looks-gallery-card">' +
+
+    // Image panel
+    '<div class="looks-gallery-img">' +
+    (l.img
+      ? '<img src="'+l.img+'" alt="'+escHtml(l.title)+'" onclick="openLookImg(\''+l.id+'\')" style="width:100%;height:100%;object-fit:cover;cursor:zoom-in">'
+      : '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:.5rem;color:var(--muted)">' +
+        '<label style="cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:.35rem">' +
+        '<input type="file" accept="image/*" style="display:none" onchange="setLookImg('+l.id+',event)">' +
+        '<div style="font-size:2.5rem;opacity:.3">📷</div>' +
+        '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:1.5px;text-transform:uppercase">Add Photo</div>' +
+        '</label></div>') +
+    '</div>' +
+
+    // Details panel — title is clickable to open editor
+    '<div class="looks-gallery-details">' +
+    '<div style="font-family:var(--fm);font-size:.44rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:.2rem">'+escHtml(l.event||'')+'</div>' +
+    // Click title to open the look editor
+    '<div class="look-title look-title-link" onclick="openLookEditor('+l.id+')" style="margin-bottom:.3rem;cursor:pointer" title="Click to edit">'+escHtml(l.title)+'</div>' +
+    '<div style="font-family:var(--fm);font-size:.44rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:.6rem">'+escHtml(l.round||'')+'</div>' +
+    (l.notes||l.desc
+      ? '<div style="font-size:.78rem;color:var(--muted);line-height:1.7;margin-bottom:.7rem">'+escHtml(l.notes||l.desc)+'</div>'
+      : '') +
+    // Piece status chips
+    (pieces.length
+      ? '<div style="display:flex;flex-wrap:wrap;gap:.25rem;margin-bottom:.6rem">'+
+        pieces.map(function(p){return '<span style="font-family:var(--fm);font-size:.44rem;letter-spacing:1px;text-transform:uppercase;padding:.16rem .4rem;border-radius:3px;background:'+(statusBgs[p.status]||statusBgs.sourcing)+';color:'+(statusColors[p.status]||statusColors.sourcing)+'">'+escHtml(p.label)+'</span>';}).join('')+
+        '</div>'
+      : '') +
+    // Source links
+    (links.length
+      ? '<div style="display:flex;flex-wrap:wrap;gap:.35rem;margin-bottom:.6rem">'+
+        links.map(function(lk){return '<a href="'+escHtml(lk.url)+'" target="_blank" class="look-link-chip">'+escHtml(lk.title)+'</a>';}).join('')+
+        '</div>'
+      : '') +
+    // Edit button
+    '<button class="btn bc" style="font-size:.6rem;margin-top:auto" onclick="openLookEditor('+l.id+')">Edit Look</button>' +
+    '</div>' + // end details
+    '</div>' + // end card
+
+    // Next arrow
+    (_galleryIdx < S.looks.length - 1
+      ? '<button class="lg-arrow lg-next" onclick="_galleryIdx++;bLooks()">&#8250;</button>'
+      : '<button class="lg-arrow lg-next" style="opacity:.2;cursor:default" disabled>&#8250;</button>') +
+
+    '</div>' + // end gallery-wrap
+
+    // Dot navigation
+    '<div class="lg-dots">'+dots+'</div>' +
+
+    // Look counter
+    '<div style="text-align:center;font-family:var(--fm);font-size:.5rem;letter-spacing:2px;color:var(--faint);text-transform:uppercase;padding-bottom:1.5rem">'+
+    (_galleryIdx+1)+' of '+S.looks.length+' looks</div>' +
+
+    '</div>'; // end pb
+}
+
+// ── openLookEditor(id): open the look editor modal for a given look ──
+// Populates all fields from the look object and stores the ID.
+function openLookEditor(id){
+  var l = S.looks.find(function(x){ return x.id === id; });
+  if(!l) return;
+  S._editingLookId = id;
+  var titleEl = g('le-title');
+  if(titleEl) titleEl.textContent = 'Edit Look — '+l.title;
+  var ev = g('le-event'); if(ev) ev.value = l.event || '';
+  var rnd = g('le-round'); if(rnd) rnd.value = l.round || '';
+  var lt = g('le-look-title'); if(lt) lt.value = l.title || '';
+  var notes = g('le-notes'); if(notes) notes.value = l.notes || l.desc || '';
+  // Image preview
+  var prev = g('le-img-preview');
+  if(prev){
+    if(l.img){
+      prev.innerHTML = '<img src="'+l.img+'" style="width:100%;height:100%;object-fit:cover">';
+    } else {
+      prev.innerHTML = 'No photo';
+      prev.style.color = 'var(--muted)';
+    }
+  }
+  openM('m-look-editor');
+}
+
+// ── setLookEditorImg(e): handle photo selection inside the editor modal ──
+function setLookEditorImg(e){
+  var file = e.target.files[0];
+  if(!file) return;
+  var r = new FileReader();
+  r.onload = function(ev){
+    var l = S.looks.find(function(x){ return x.id === S._editingLookId; });
+    if(l){
+      l.img = ev.target.result;
+      var prev = g('le-img-preview');
+      if(prev) prev.innerHTML = '<img src="'+l.img+'" style="width:100%;height:100%;object-fit:cover">';
+    }
+  };
+  r.readAsDataURL(file);
+}
+
+// ── saveLookEditor(): write edited look fields back to S.looks ────────
+function saveLookEditor(){
+  var l = S.looks.find(function(x){ return x.id === S._editingLookId; });
+  if(!l) return;
+  l.event = (g('le-event') && g('le-event').value.trim()) || l.event;
+  l.round = (g('le-round') && g('le-round').value.trim()) || l.round;
+  l.title = (g('le-look-title') && g('le-look-title').value.trim()) || l.title;
+  l.notes = (g('le-notes') && g('le-notes').value) || '';
+  lsSave('chq-lk', S.looks);
+  closeM('m-look-editor');
+  bLooks();
+  showToast('Look saved');
+}
+
+// ── deleteLookFromEditor(): remove a look via the editor modal ────────
+function deleteLookFromEditor(){
+  if(!confirm('Remove this look?')) return;
+  S.looks = S.looks.filter(function(x){ return x.id !== S._editingLookId; });
+  lsSave('chq-lk', S.looks);
+  // Reset gallery index if we deleted the last slide
+  if(_galleryIdx >= S.looks.length) _galleryIdx = Math.max(0, S.looks.length - 1);
+  closeM('m-look-editor');
+  bLooks();
+  showToast('Look removed');
+}
+
+function bPageantRules(){
+  inject(
+    '<div class="ph"><div><div class="ph-tag">Miss California USA 2026 · Grand Hyatt Indian Wells · July 10–12</div><div class="ph-title">Pageant <em>Rules & Criteria</em></div></div></div>' +
+    _renderRulesContent()
   );
+}
+
+function _renderRulesContent(){
+  function section(label,content){
+    return '<div style="margin-bottom:1.75rem"><div style="font-family:var(--fm);font-size:.5rem;letter-spacing:2.5px;text-transform:uppercase;color:var(--si);padding-bottom:.45rem;border-bottom:1px solid var(--si);margin-bottom:.65rem;opacity:.8">'+label+'</div>'+content+'</div>';
+  }
+  function row(left,right,bold){
+    return '<div style="display:flex;gap:.75rem;padding:.42rem 0;border-bottom:0.5px solid var(--iv3)">'+'<div style="font-family:var(--fm);font-size:.5rem;letter-spacing:.5px;color:var(--si);min-width:120px;padding-top:.05rem;flex-shrink:0">'+left+'</div>'+'<div style="font-size:.8rem;color:var(--charcoal);line-height:1.6;'+(bold?'font-weight:500':'')+'">'+right+'</div>'+'</div>';
+  }
+  function bullet(text,warn){
+    return '<div style="display:flex;gap:.55rem;padding:.3rem 0;border-bottom:0.5px solid var(--iv3)">'+'<div style="color:'+(warn?'#c04040':'var(--si)')+';font-size:.65rem;flex-shrink:0;margin-top:.05rem">'+( warn?'⚠':'✦')+'</div>'+'<div style="font-size:.8rem;color:var(--charcoal);line-height:1.55">'+text+'</div>'+'</div>';
+  }
+
+  var html='<div class="pb" style="max-width:800px;display:flex;flex-direction:column;gap:0">';
+
+  html+=section('Key Deadlines',
+    row('June 1, 2026','Full entry fee due — $1,995 total ($495 deposit already paid)',true)+
+    row('June 1, 2026','Official headshot via Contestant Portal — 300dpi, white background, 3/4 length (head, shoulder, elbow). Do NOT crop tight.')+
+    row('June 1, 2026','All required paperwork submitted via Contestant Portal')+
+    row('June 1, 2026','Program book ad pages (optional — $500/page, sells to sponsors for $1,000)')+
+    row('June 17, 2026','Host hotel reservation deadline — Grand Hyatt Indian Wells')+
+    row('July 10, 2026','Pageant check-in 8:30am — arrive ready for rehearsal (room may not be ready)')
+  );
+
+  html+=section('Competition Schedule — Grand Hyatt Indian Wells, Indian Wells CA',
+    row('Fri July 10','8:30am Check-in · 9am–5pm Wellness Experience + Rehearsals · 7pm Welcome Party (cocktail attire)')+
+    row('Sat July 11','8:30am Check-in · 9am–5pm Interviews + Rehearsals · 7pm Preliminary Show (public ticketed — Swimwear + Evening Gown judged)')+
+    row('Sun July 12','8:30am Check-in · 11:30am Ticketed Dress Rehearsal (public) · 4pm Final Show (Opening Number → Semi-finalists → Top 5 Q&A → Winner)')
+  );
+
+  html+=section('Outfit Criteria by Round',
+    row('Arrival','Outfit of choice — cute but comfortable. Photos with sponsors in Wellness Lounge. Rehearsing all day after check-in.')+
+    row('Interview','Fashion forward but tasteful + professional. Press conference or TV interview appropriate. Panel format 2–3 min. Questions from bio sheet — be ready for anything.')+
+    row('Welcome Dinner (Fri 7pm)','Cocktail attire. Theme TBD — outfit will be on theme once announced by organization.')+
+    row('Rehearsals (3 outfits)','Personal style, cute but comfortable. Need 3 outfits (Fri, Sat, Sun). Always bring competition heels + comfortable backup. Light jacket for chilly ballroom.')+
+    row('Opening Number','Azazie dress provided by sponsor (instructions TBD). Heels — color of choice. Any matching jewelry.')+
+    row('Miss Swimwear — Prelim','Two piece or one piece, appropriate coverage. Any color for prelims. NUDE HEELS ONLY — must match skin tone, max 6". Jewelry optional. Recommend 11NIL (code MISSCA20).')+
+    row('Evening Gown — Prelim + Finals','Floor length required. All types permitted. No specific color. Must reflect age/personality/style. Judges: poise, presentation, elegance. Heels — color of choice.')+
+    row('Finals Swimwear','Top 15 semi-finalists receive complimentary from 11NIL. Nude heels.')
+  );
+
+  html+=section('Judging Categories',
+    row('Interview','Panel style. 2–3 minutes. Express clearly, intelligently, confidently. Not looking for rehearsed answers — questions from bio sheet, be ready for anything.')+
+    row('Activewear / Swimwear','Healthy, fit, confident. Role model exhibiting active lifestyle. Command the stage with poise. Judges want someone who owns the room.')+
+    row('Evening Gown','Poise, presentation, sense of fashion and style. Overall effect: elegant and sophisticated. Reflect your personality.')
+  );
+
+  html+=section('Special Awards (No bearing on final outcome)',
+    row('Miss Photogenic','Separate panel of judges. Submit 1 photo ($25), 2 photos ($40), 3 photos ($50). Cash prize based on total entries. Announced at Final Show.')+
+    row('Non-finalist Awards','Best in Interview, Activewear, Swimwear, and Evening Gown.')+
+    row('Miss Congeniality','Voted by contestants. Announced at Final Show.')+
+    row("People's Choice",'Public vote — 1 month before competition. Winner auto-advances as a semi-finalist.')
+  );
+
+  html+=section('Rules — Follow at All Times',
+    bullet('Wear pageant sash at ALL TIMES. One sash given — do not lose it. Cannot be cut, folded, or altered.')+
+    bullet('BE ON TIME. Schedule is very busy.')+
+    bullet('No coaches, parents, or visitors backstage or in hair/makeup areas. PRE-APPROVED ARTISTS + CONTESTANTS ONLY.',true)+
+    bullet('No consumption of alcohol or illicit drugs — regardless of age.',true)+
+    bullet('Do not engage judges or auditors in conversation before or after pageant.',true)+
+    bullet('No interviews (radio, TV, newspaper) without prior consent of State Director.')+
+    bullet('No photography, videography, or live streaming by audience members during pageant.')+
+    bullet('No soliciting or selling products to contestants, friends, family, or staff during pageant weekend.')+
+    bullet('$50 incidental credit card deposit required at hotel check-in.')+
+    bullet('Must depart ballroom/theater immediately following pageant completion.')+
+    bullet('Security provided — cannot be responsible for your safety if you disregard rules. Do not bring expensive jewelry or large cash.')
+  );
+
+  html+=section('Hair & Makeup Options',
+    row('Official Team','Beauty by Lady Code — fee applies. Book at beautybyladycode.com for Fri/Sat/Sun package.')+
+    row('Personal Artist','Must work in designated backstage area. Register artist in advance ($100/day/artist). No going back to rooms the hour before show time (Sat + Sun).')+
+    row('DIY','You may do your own hair and makeup. Hair/makeup seminar available pre-pageant via Lisa G. Artistry (lisagartistry@gmail.com).')
+  );
+
+  html+=section('Host Hotel — Grand Hyatt Indian Wells Resort & Villas',
+    row('Address','44600 Indian Wells Ln, Indian Wells CA · 760-776-1234')+
+    row('Pageant Rooms','Shared rooms provided July 10–12, Sunday morning check-out. Room with another contestant.')+
+    row('Own Room','Book via group link with friends/family discount. Discount available July 6–16. Reservation deadline June 17.')+
+    row('Transportation','Each contestant responsible for own transportation and parking.')
+  );
+
+  html+='</div>';
+  return html;
 }
 
 function setLookImg(id,e){
@@ -2710,7 +3442,7 @@ function openLookImg(id){
 }
 
 function addLook(){
-  S.looks.push({id:Date.now(),event:'New Event',round:'Competition',title:'New Look',notes:'',links:[],img:''});
+  S.looks.push({id:Date.now(),event:'New Event',round:'Competition',title:'New Look',notes:'',links:[],pieces:[],img:''});
   lsSave('chq-lk',S.looks);bLooks();
 }
 
@@ -2734,6 +3466,13 @@ function removeLookLink(id,idx){
   if(!l||!Array.isArray(l.links))return;
   l.links.splice(idx,1);
   lsSave('chq-lk',S.looks);bLooks();
+}
+
+function updatePieceStatus(lookId,pieceIdx,status){
+  var l=S.looks.find(function(x){return x.id===lookId;});
+  if(!l||!Array.isArray(l.pieces)||!l.pieces[pieceIdx])return;
+  l.pieces[pieceIdx].status=status;
+  lsSave('chq-lk',S.looks);
 }
 
 
@@ -3870,7 +4609,8 @@ var CATEGORY_LABELS = {
   'Finance & Operations':'Finance & Operations',
   'Press & Media':       'Press & Media',
   'Sponsor':             'Sponsor',
-  'Volunteer / General': 'Volunteer / General'
+  'Volunteer / General': 'Volunteer / General',
+  'star': 'Stars · Library of Morenita'
 };
 
 // Get the profile key for the current user
@@ -4552,65 +5292,221 @@ function removeBoardCard(colId,cardId){
 }
 
 // (from original app.js)
+// ═══ SOCIAL MEDIA — BRAND GUIDELINES ════════════════════════
+// bSocial(): Brand guidelines reference page based on the Six Series
+// content guide. Replaces old post-calendar / pipeline view.
+// Keeps growth tracker metrics (editable). All series content is
+// static reference — not a planning tool.
+var _socialSeries = null; // ID of currently expanded series accordion
+
 function bSocial(){
   var defaults={
-    strategy:{ig:'',yt:'',substack:'',tiktok:''},
-    pillars:['Clean Energy & Policy','Fashion Accountability','Personal Story','Behind the Scenes','Library of Morenita'],
-    cadence:{ig:'3x per week',yt:'1x per week',substack:'1x per week',tiktok:'Paused — relaunching for competition'},
-    metrics:{ig_followers:'1.4K',ig_goal:'100K',yt_followers:'0',yt_goal:'5K',substack_subs:'0',substack_goal:'1K'},
-    calendar:[],
-    videos:[
-      {id:1,title:'Why I Entered a Pageant',platform:'YouTube',status:'planned',notes:'Walk and talk, ocean background. No script, just talking points. Film this week.'},
-      {id:2,title:'SB 707 Explained',platform:'YouTube',status:'planned',notes:'Desk setup. Policy explainer. Text overlays for the numbers.'},
-      {id:3,title:'What Keel Labs Is Doing With Algae',platform:'YouTube',status:'planned',notes:'Nature location. Engineer meets innovator energy.'},
-      {id:4,title:'The Supply Chain of What You Are Wearing',platform:'YouTube',status:'planned',notes:'B-roll heavy. Investigative tone.'},
-      {id:5,title:'Cello, Engineering, and Why I Need Both',platform:'YouTube',status:'planned',notes:'Film at home. Cello in frame. Most personal video.'},
-      {id:6,title:'San Diego as a Clean Fashion Capital',platform:'YouTube',status:'planned',notes:'Film around SD. City + ocean + tech. Local pride.'},
-    ]
+    metrics:{ig_followers:'1.4K',ig_goal:'100K',yt_followers:'0',yt_goal:'5K',substack_subs:'0',substack_goal:'1K'}
   };
-  var saved=lsGet('chq-social',null)||{};
-  var sd={
-    strategy:Object.assign({},defaults.strategy,saved.strategy||{}),
-    pillars:Array.isArray(saved.pillars)&&saved.pillars.length?saved.pillars:defaults.pillars.slice(),
-    cadence:Object.assign({},defaults.cadence,saved.cadence||{}),
-    metrics:Object.assign({},defaults.metrics,saved.metrics||{}),
-    calendar:Array.isArray(saved.calendar)?saved.calendar:defaults.calendar.slice(),
-    videos:Array.isArray(saved.videos)&&saved.videos.length?saved.videos:defaults.videos.slice()
-  };
-  var socialStrategy=sd.strategy&&typeof sd.strategy==='object'?sd.strategy:defaults.strategy;
-  var socialPillars=Array.isArray(sd.pillars)?sd.pillars:defaults.pillars.slice();
-  var socialCadence=sd.cadence&&typeof sd.cadence==='object'?sd.cadence:defaults.cadence;
-  var socialMetrics=sd.metrics&&typeof sd.metrics==='object'?sd.metrics:defaults.metrics;
-  var socialVideos=Array.isArray(sd.videos)?sd.videos:defaults.videos.slice();
-  lsWriteLocal('chq-social',{
-    strategy:socialStrategy,
-    pillars:socialPillars,
-    cadence:socialCadence,
-    metrics:socialMetrics,
-    calendar:Array.isArray(sd.calendar)?sd.calendar:[],
-    videos:socialVideos
-  });
+  // Load saved metrics and merge with defaults
+  var saved = lsGet('chq-social', null) || {};
+  var socialMetrics = Object.assign({}, defaults.metrics, saved.metrics || {});
 
-  var statColors={ig:'var(--lv2)',yt:'var(--bl2)',substack:'var(--ch2)',tiktok:'var(--sg2)'};
-  var platforms=['ig','yt','substack'];
-  var platformLabels={ig:'Instagram',yt:'YouTube',substack:'Substack'};
+  // ── Six Series data (static reference — not editable) ────────────
+  var SERIES = [
+    {
+      id:'pageant', num:'01', name:'Pageant Queen', color:'var(--go)',
+      voice:'Confident. Self-aware. Not taking herself too seriously, but absolutely taking the work seriously.',
+      aesthetic:'Crown energy — polished, editorial, gold accents. Stage-ready.',
+      audience:'Pageant community + women who love process content + aspiring title holders',
+      reels:[
+        ['Fashionista fit check strut','POV: you have a pageant in [X] weeks','Walking/strut, trending audio'],
+        ['Runway walk practice','Day [X] of training my walk','Side-by-side or single take, raw'],
+        ['Competition morning routine','Miss Temecula Valley USA getting ready for [event]','Vlog-style, talking head + b-roll'],
+        ['Interview prep in real time','Practicing my platform answers out loud','Talking head, no script'],
+        ['Hair & makeup trial run','Trial run [#]. Here\'s what I\'m changing.','Before/after, selfie cam'],
+        ['Event coverage','Day at [event] as Miss Temecula Valley USA','Vlog, upbeat audio']
+      ],
+      carousels:[
+        '"What nobody tells you about competing" — highest save potential on this list',
+        '"My pageant prep system — the actual one" — people want the infrastructure, not the result',
+        '"Hair & makeup trial run [#]" — series format builds return viewers',
+        '"My interview prep method" — positions you as thoughtful, not just pretty',
+        '"Fashionista fit check carousel" — high engagement, easy to produce'
+      ]
+    },
+    {
+      id:'athlete', num:'02', name:'Homegrown Athlete', color:'var(--sg)',
+      voice:'Humble about the process. Proud of the discipline. Never performative.',
+      aesthetic:'Raw, natural light, actual gym/court/pool. No overly produced workout content.',
+      audience:'Fitness community + people who feel behind + pageant prep crossover',
+      reels:[
+        ['Tennis: current state','Week [X] of teaching myself tennis. Here\'s where I am.','Court footage, honest voiceover'],
+        ['Swim technique in progress','Working on [specific technique]. Still messy, but improving.','Pool footage, overlay text'],
+        ['Pilates session','Pageant prep pilates. What I actually do.','Studio or mat, clean b-roll'],
+        ['Full workout day','Training day. Engineer by morning, athlete by afternoon.','Vlog-style'],
+        ['Personal record / milestone','I finally did [thing] today.','Reaction, short, genuine']
+      ],
+      carousels:[
+        '"Teaching myself tennis: [milestone update]" — underdog narrative, people root for self-taught athletes',
+        '"My pilates guide for pageant prep — save this" — saved content = algorithm signal',
+        '"My full training week broken down" — real schedules outperform aspirational ones'
+      ]
+    },
+    {
+      id:'diary', num:'03', name:"Amelia's Diary", color:'var(--si)',
+      voice:'Your actual voice. Silly, sharp, self-aware, occasionally deep. No performance.',
+      aesthetic:'Loose. Phone camera. Natural. Not produced.',
+      audience:'People who follow people, not content.',
+      reels:[
+        ['Day in the life','A day in my life that is genuinely too much to explain.','Vlog, fast cuts, real captions'],
+        ['Silly thought of the week','Whatever is actually on your mind','Talking head, 30–60 sec'],
+        ['The unglamorous day','Today was not the content.','Honest, relatable, funny'],
+        ['Things I\'m currently obsessed with','My current rotation.','List format, quick cuts'],
+        ['Honest reflection','Something I\'ve been thinking about.','Quiet, one take, no music']
+      ],
+      carousels:[
+        '"Things on my mind this week" — text carousels get read, this format builds intimacy',
+        '"Photo dump — [month]" — authenticity is the differentiator in a produced feed landscape'
+      ]
+    },
+    {
+      id:'temecula', num:'04', name:'Temecula Townie', color:'var(--sil)',
+      voice:'Dry, warm, slightly funny. You actually live here and have opinions.',
+      aesthetic:'SoCal natural light. Real locations. Nothing staged.',
+      audience:'Locals, SoCal followers, people who love hyper-local content',
+      reels:[
+        ['Coffee shop review','Rating Temecula coffee shops so you don\'t have to.','Walking vlog, order, honest review'],
+        ['Hike I love','My favorite hike near Temecula.','Hike footage, talking head'],
+        ['Restaurant review','[Restaurant]. Is it worth it? Honest answer:','B-roll, talking head verdict'],
+        ['Things only locals know','Things to do in Temecula that aren\'t the winery tour.','List format, quick cuts'],
+        ['Wine country on a budget','Temecula wine country without spending $300.','Vlog, honest tips']
+      ],
+      carousels:[
+        '"Best coffee shops in Temecula — ranked" — local content gets shared; high save + send rate',
+        '"My favorite hikes near Temecula" — people send hike guides to friends constantly',
+        '"Old Town Temecula — the local version" — local vs tourist framing travels well',
+        '"Wine country on a budget" — budget + wine = extremely shareable combination'
+      ]
+    },
+    {
+      id:'morenita', num:'05', name:'Library of Morenita', color:'var(--lv)',
+      voice:'Intellectual but warm. Honest about difficulty. Never performs expertise — demonstrates it.',
+      aesthetic:'Studio, desk, sketchbooks, engineering notes, oil paints. Real workspace.',
+      audience:'Women in STEM / creative entrepreneurs / founder community / pageant crossover',
+      reels:[
+        ['Working on MAXINE','Building an open-source hospital device. Here\'s today\'s session.','Desk footage, talking head'],
+        ['Engineering + design crossover','When your CE/EE brain tries to do graphic design.','Talking head, funny or honest'],
+        ['School day in the life','Engineering student, company founder, pageant queen. One day.','Vlog, fast cuts'],
+        ['Oil painting session','Painting today. Come watch.','Time-lapse or real-time footage'],
+        ['Struggle is real','The part of building a company nobody posts about.','Talking head, one take'],
+        ['What I\'m studying','Currently studying [topic]. Here\'s what I\'m taking from it.','Talking head, conversational']
+      ],
+      carousels:[
+        '"What it\'s actually like to build MAXINE" — nobody in your space is building hardware, most unique content',
+        '"The creative engineer problem" — names an experience people haven\'t seen named; high share + save',
+        '"What my CE/EE degree taught me about design" — bridges designers and engineers, you\'re the bridge',
+        '"Miss Artist — painting process" — art process content has extremely high save rates',
+        '"Struggles of being a creative engineer" — vulnerability + specificity = trust'
+      ]
+    },
+    {
+      id:'observatory', num:'06', name:'The Observatory', color:'var(--muted)',
+      voice:'Sharp. Opinionated. Culturally fluent. Like a really good essayist in carousel form.',
+      aesthetic:'Text-forward. Minimal. Clean ivory or white background. Lora serif font.',
+      audience:'Readers, thinkers, creatives — people who follow for the mind not the look.',
+      reels:[
+        ['Audio essay','I\'ve been thinking about [topic] and I can\'t stop.','Talking head, no script, 60–90 seconds'],
+        ['Cultural argument','Record yourself making an argument. No visual needed beyond your face.','Original audio, 60–90 seconds']
+      ],
+      carousels:[
+        '"On what pageantry actually teaches you about performance"',
+        '"On why fashion sustainability is an engineering problem, not a marketing one"',
+        '"On the difference between making art and making content"',
+        '"On what it means to be building something when you\'re still becoming someone"',
+        '"On self-teaching as a philosophy"',
+        '"On beauty as a form of intelligence"',
+        'Format: Slide 1 = "On [topic]." · Slides 2–7 = one idea each · Last slide = link to The Observatory'
+      ]
+    }
+  ];
+
+  // ── Build the six series accordion HTML ──────────────────────────
+  function renderSeriesAccordion(){
+    return SERIES.map(function(s){
+      var isOpen = _socialSeries === s.id;
+      return '<div class="bg-series-wrap" style="margin-bottom:.35rem;border-radius:6px;overflow:hidden;border:0.5px solid var(--iv3)">' +
+        // Accordion header — click to expand/collapse
+        '<div class="bg-series-head" onclick="_socialSeries=\''+s.id+'\'===_socialSeries?null:\''+s.id+'\';bSocial()" style="display:flex;align-items:center;gap:.75rem;padding:.85rem 1rem;cursor:pointer;background:var(--wh);border-left:3px solid '+s.color+';user-select:none">' +
+        '<div style="font-family:var(--fm);font-size:.44rem;letter-spacing:2px;color:'+s.color+';min-width:22px;text-transform:uppercase">'+s.num+'</div>' +
+        '<div style="flex:1">' +
+        '<div style="font-family:var(--fd);font-size:1rem;font-style:italic;color:var(--ink);line-height:1.1">'+s.name+'</div>' +
+        '<div style="font-family:var(--fm);font-size:.5rem;color:var(--muted);letter-spacing:.5px;margin-top:.15rem">'+s.voice.split('.')[0]+'.</div>' +
+        '</div>' +
+        '<div style="font-family:var(--fm);font-size:.7rem;color:var(--muted);transition:transform .2s;'+(isOpen?'transform:rotate(180deg)':'')+'">▾</div>' +
+        '</div>' +
+        // Accordion body — only rendered when open
+        (isOpen
+          ? '<div style="padding:.85rem 1rem 1rem;background:var(--iv);border-top:0.5px solid var(--iv3)">' +
+
+            // Voice / Aesthetic / Audience row
+            '<div class="g3" style="margin-bottom:.85rem">' +
+            [['Voice',s.voice,'var(--si)'],['Aesthetic',s.aesthetic,'var(--go)'],['Audience',s.audience,'var(--sg)']].map(function(x){
+              return '<div style="padding:.6rem .75rem;background:var(--wh);border-radius:5px;border:0.5px solid var(--iv3)">' +
+                '<div style="font-family:var(--fm);font-size:.44rem;letter-spacing:2px;text-transform:uppercase;color:'+x[2]+';margin-bottom:.3rem">'+x[0]+'</div>' +
+                '<div style="font-size:.74rem;color:var(--muted);line-height:1.6">'+x[1]+'</div>' +
+                '</div>';
+            }).join('') +
+            '</div>' +
+
+            // Reel ideas table
+            '<div style="font-family:var(--fm);font-size:.46rem;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem">Reel Ideas</div>' +
+            '<table class="bg-reel-table" style="margin-bottom:.85rem">' +
+            '<thead><tr>' +
+            '<th style="text-align:left;font-family:var(--fm);font-size:.44rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--faint);padding:.2rem .5rem .35rem;border-bottom:1px solid var(--iv3)">Idea</th>' +
+            '<th style="text-align:left;font-family:var(--fm);font-size:.44rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--faint);padding:.2rem .5rem .35rem;border-bottom:1px solid var(--iv3)">Hook</th>' +
+            '<th style="text-align:left;font-family:var(--fm);font-size:.44rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--faint);padding:.2rem .5rem .35rem;border-bottom:1px solid var(--iv3)">Format</th>' +
+            '</tr></thead>' +
+            '<tbody>' +
+            s.reels.map(function(r){
+              return '<tr>' +
+                '<td style="font-size:.73rem;font-weight:500;color:var(--ink)">'+r[0]+'</td>' +
+                '<td style="font-size:.71rem;color:var(--muted);font-style:italic">"'+r[1]+'"</td>' +
+                '<td style="font-size:.68rem;color:var(--faint)">'+r[2]+'</td>' +
+                '</tr>';
+            }).join('') +
+            '</tbody></table>' +
+
+            // Carousel formats
+            '<div style="font-family:var(--fm);font-size:.46rem;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem">Key Carousels</div>' +
+            '<div style="display:flex;flex-direction:column;gap:.25rem">' +
+            s.carousels.map(function(c){
+              return '<div style="display:flex;gap:.5rem;padding:.3rem 0;border-bottom:0.5px solid var(--iv3)">' +
+                '<div style="color:'+s.color+';font-size:.65rem;flex-shrink:0;margin-top:.05rem">✦</div>' +
+                '<div style="font-size:.76rem;color:var(--charcoal);line-height:1.55">'+c+'</div>' +
+                '</div>';
+            }).join('') +
+            '</div>' +
+
+            '</div>'
+          : '') +
+        '</div>';
+    }).join('');
+  }
 
   inject(
-    '<div class="ph"><div><div class="ph-tag">Platform</div><div class="ph-title"><em>Social Media</em></div></div>' +
-    '<div class="ph-acts"><button class="btn bc" onclick="saveSocial()">Save</button></div></div>' +
+    '<div class="ph"><div>' +
+    '<div class="ph-tag">@ameliavarabe · Instagram Primary</div>' +
+    '<div class="ph-title">Brand <em>Guidelines</em></div>' +
+    '</div>' +
+    '<div class="ph-acts"><button class="btn bc" onclick="saveSocial()">Save Numbers</button></div>' +
+    '</div>' +
     '<div class="pb">' +
 
-    // METRICS
+    // ── GROWTH TRACKER (editable numbers) ───────────────────────────
     '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">Growth Tracker</div>' +
     '<div class="g4" style="margin-bottom:1.25rem">' +
-    '<div class="stat st-lv"><div class="sn" id="sm-ig-f">'+socialMetrics.ig_followers+'</div><div class="sl">Instagram</div><div class="prog"><div class="pf" style="background:var(--lv2);width:'+Math.min(100,Math.round((parseFloat(socialMetrics.ig_followers)||0)/(parseFloat(socialMetrics.ig_goal)||100)*100))+'%"></div></div><div class="pl">Goal: '+socialMetrics.ig_goal+'</div></div>' +
-    '<div class="stat st-bl"><div class="sn" id="sm-yt-f">'+socialMetrics.yt_followers+'</div><div class="sl">YouTube</div><div class="prog"><div class="pf" style="background:var(--bl2);width:'+Math.min(100,Math.round((parseFloat(socialMetrics.yt_followers)||0)/(parseFloat(socialMetrics.yt_goal)||5000)*100))+'%"></div></div><div class="pl">Goal: '+socialMetrics.yt_goal+'</div></div>' +
-    '<div class="stat st-ch"><div class="sn" id="sm-sub-f">'+socialMetrics.substack_subs+'</div><div class="sl">Substack</div><div class="prog"><div class="pf pf-c" style="width:'+Math.min(100,Math.round((parseFloat(socialMetrics.substack_subs)||0)/(parseFloat(socialMetrics.substack_goal)||1000)*100))+'%"></div></div><div class="pl">Goal: '+socialMetrics.substack_goal+'</div></div>' +
+    '<div class="stat st-lv"><div class="sn">'+socialMetrics.ig_followers+'</div><div class="sl">Instagram</div><div class="prog"><div class="pf" style="background:var(--lv2);width:'+Math.min(100,Math.round((parseFloat(socialMetrics.ig_followers)||0)/(parseFloat(socialMetrics.ig_goal)||100)*100))+'%"></div></div><div class="pl">Goal: '+socialMetrics.ig_goal+'</div></div>' +
+    '<div class="stat st-bl"><div class="sn">'+socialMetrics.yt_followers+'</div><div class="sl">YouTube</div><div class="prog"><div class="pf" style="background:var(--bl2);width:'+Math.min(100,Math.round((parseFloat(socialMetrics.yt_followers)||0)/(parseFloat(socialMetrics.yt_goal)||5000)*100))+'%"></div></div><div class="pl">Goal: '+socialMetrics.yt_goal+'</div></div>' +
+    '<div class="stat st-ch"><div class="sn">'+socialMetrics.substack_subs+'</div><div class="sl">Substack</div><div class="prog"><div class="pf pf-c" style="width:'+Math.min(100,Math.round((parseFloat(socialMetrics.substack_subs)||0)/(parseFloat(socialMetrics.substack_goal)||1000)*100))+'%"></div></div><div class="pl">Goal: '+socialMetrics.substack_goal+'</div></div>' +
     '<div class="stat st-tz"><div class="sn">'+((parseFloat(socialMetrics.ig_followers)||0)+(parseFloat(socialMetrics.yt_followers)||0)+'').replace(/\B(?=(\d{3})+(?!\d))/g,',')+'</div><div class="sl">Total Reach</div></div>' +
     '</div>' +
-
-    // UPDATE METRICS
-    '<div class="card" style="margin-bottom:1.25rem">' +
+    '<div class="card" style="margin-bottom:1.5rem">' +
     '<div class="cl">Update Numbers</div>' +
     '<div class="g4">' +
     ['ig_followers','yt_followers','substack_subs'].map(function(k){
@@ -4619,134 +5515,142 @@ function bSocial(){
     }).join('') +
     '</div></div>' +
 
-    // CONTENT PILLARS
-    '<div class="g2" style="margin-bottom:1.25rem">' +
-    '<div class="card">' +
-    '<div class="cl">Content Pillars</div>' +
-    socialPillars.map(function(p,i){
-      return '<div style="display:flex;align-items:center;gap:.5rem;padding:.3rem 0;border-bottom:1px solid var(--ch4)">' +
-        '<div style="width:6px;height:6px;border-radius:50%;background:var(--tz3);flex-shrink:0"></div>' +
-        '<span style="font-size:.8rem;color:var(--ink);flex:1">'+p+'</span>' +
-        '</div>';
-    }).join('') +
+    // ── THE PHILOSOPHY ───────────────────────────────────────────────
+    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">The Philosophy</div>' +
+    '<div class="card" style="border-left:3px solid var(--si);padding:1rem 1.1rem;margin-bottom:1.5rem">' +
+    '<div style="font-family:var(--fd);font-size:1rem;font-style:italic;color:var(--ink);line-height:1.5;margin-bottom:.75rem">' +
+    'You are not a content creator who also has a life. You are a person with a genuinely unusual life, and content is how you let people into it.' +
     '</div>' +
-
-    '<div class="card">' +
-    '<div class="cl">Posting Cadence</div>' +
-    Object.keys(socialCadence).map(function(k){
-      var labels={ig:'Instagram',yt:'YouTube',substack:'Substack',tiktok:'TikTok'};
-      return '<div style="display:flex;align-items:center;gap:.5rem;padding:.35rem 0;border-bottom:1px solid var(--ch4)">' +
-        '<div style="font-family:var(--fm);font-size:.5rem;letter-spacing:1px;color:var(--wg);min-width:70px">'+labels[k]+'</div>' +
-        '<input style="border:none;outline:none;font-size:.78rem;color:var(--st);background:transparent;flex:1" value="'+socialCadence[k]+'" onblur="updateSocialCadence(\''+k+'\',this.value)">' +
-        '</div>';
-    }).join('') +
-    '</div>' +
-    '</div>' +
-
-    // PLATFORM STRATEGY
-    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">Platform Strategy</div>' +
-    '<div style="display:flex;flex-direction:column;gap:.65rem;margin-bottom:1.25rem">' +
-    platforms.map(function(k){
-      var tips={ig:'Visual platform. Aesthetic consistency. Reels get reach. Carousels get saves. Stories get intimacy. Link in bio drives everything else.',yt:'Long-form essay videos. 8-15 minutes. SEO matters here — title and description. Each video is a Library of Morenita article brought to life.',substack:'Your most loyal audience. Write like you talk. One exclusive paragraph per post that is not in the app or on IG. Build the list before you need it.'};
-      return '<div class="card" style="border-left:3px solid '+statColors[k]+';padding:.85rem">' +
-        '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:2px;color:'+statColors[k]+';text-transform:uppercase;margin-bottom:.4rem">'+platformLabels[k]+'</div>' +
-        '<div style="font-family:var(--fm);font-size:.55rem;color:var(--wg);margin-bottom:.45rem;line-height:1.6">'+tips[k]+'</div>' +
-        '<textarea class="social-strategy" data-key="'+k+'" placeholder="Your specific strategy notes for '+platformLabels[k]+'..." style="width:100%;min-height:65px;border:1.5px dashed var(--du);border-radius:3px;padding:.5rem .65rem;font-family:var(--fb);font-size:.75rem;color:var(--st);line-height:1.7;resize:vertical;outline:none;background:var(--ch5)">'+( socialStrategy[k]||'')+'</textarea>' +
-        '</div>';
-    }).join('') +
-    '</div>' +
-
-    // VIDEO PRODUCTION PIPELINE
-    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">YouTube Video Pipeline</div>' +
-    '<div style="display:flex;flex-direction:column;gap:.45rem;margin-bottom:1.25rem" id="video-pipeline">' +
-    socialVideos.map(function(v,i){
-      var sc={planned:'var(--du)',filming:'var(--ch2)',editing:'var(--lv2)',published:'var(--sg2)'};
-      return '<div class="card" style="padding:.75rem;border-left:3px solid '+(sc[v.status]||'var(--du)')+'">' +
-        '<div style="display:flex;align-items:center;gap:.65rem;flex-wrap:wrap">' +
-        '<div style="font-family:var(--fm);font-size:.5rem;color:var(--wg);min-width:18px">'+(i+1)+'</div>' +
-        '<div style="flex:1;font-size:.82rem;font-weight:600;color:var(--ink)">'+v.title+'</div>' +
-        '<select onchange="updateVideoStatus('+v.id+',this.value)" style="font-family:var(--fm);font-size:.55rem;border:1px solid var(--du);border-radius:3px;padding:.2rem .45rem;background:var(--wh);color:'+(sc[v.status]||'var(--du)')+';outline:none">' +
-        ['planned','filming','editing','published'].map(function(s){return '<option value="'+s+'" '+(v.status===s?'selected':'')+'>'+s.charAt(0).toUpperCase()+s.slice(1)+'</option>';}).join('') +
-        '</select>' +
-        '</div>' +
-        '<div style="font-size:.72rem;color:var(--wg);margin-top:.25rem;padding-left:1.35rem">'+v.notes+'</div>' +
-        '</div>';
-    }).join('') +
-    '</div>' +
-
-    // CROSS-POST SYSTEM
-    '<div class="card" style="margin-bottom:1.25rem;border-top:3px solid var(--tz3)">' +
-    '<div class="cl">Cross-Post System</div>' +
-    '<div style="display:grid;grid-template-columns:1fr auto auto auto auto;gap:.5rem;align-items:center;font-family:var(--fm);font-size:.5rem;color:var(--wg);text-transform:uppercase;padding:.35rem 0;border-bottom:2px solid var(--ch4);margin-bottom:.35rem">' +
-    '<div>Content</div><div>Library</div><div>Substack</div><div>YouTube</div><div>IG Reel</div>' +
-    '</div>' +
+    '<div style="font-family:var(--fm);font-size:.5rem;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem">Your unfair advantages</div>' +
+    '<div style="display:flex;flex-direction:column;gap:.3rem">' +
     [
-      {title:'Why I Entered a Pageant',lib:true,sub:true,yt:true,ig:true},
-      {title:'SB 707 Explained',lib:true,sub:true,yt:true,ig:true},
-      {title:'Keel Labs & Algae',lib:true,sub:true,yt:true,ig:false},
-      {title:'Supply Chain Story',lib:true,sub:true,yt:true,ig:true},
-      {title:'Cello & Engineering',lib:true,sub:true,yt:true,ig:true},
-      {title:'SD Clean Fashion Capital',lib:true,sub:true,yt:true,ig:false},
-    ].map(function(r){
-      return '<div style="display:grid;grid-template-columns:1fr auto auto auto auto;gap:.5rem;align-items:center;padding:.3rem 0;border-bottom:1px solid var(--ch4)">' +
-        '<div style="font-size:.75rem;color:var(--st)">'+r.title+'</div>' +
-        '<div style="text-align:center">'+(r.lib?'✓':'—')+'</div>' +
-        '<div style="text-align:center">'+(r.sub?'✓':'—')+'</div>' +
-        '<div style="text-align:center">'+(r.yt?'✓':'—')+'</div>' +
-        '<div style="text-align:center">'+(r.ig?'✓':'—')+'</div>' +
-        '</div>';
+      'You are the only CE/EE engineer competing for Miss California USA',
+      'You dress brides for a living while building a tech company',
+      'You are self-teaching tennis and swimming while training for a state pageant',
+      'You are doing all of this in Temecula, which people find both funny and deeply relatable'
+    ].map(function(a){
+      return '<div style="display:flex;gap:.5rem;font-size:.78rem;color:var(--charcoal);line-height:1.5">' +
+        '<div style="color:var(--si);flex-shrink:0">✦</div><div>'+a+'</div></div>';
     }).join('') +
     '</div>' +
+    '<div style="font-family:var(--fd);font-size:.88rem;font-style:italic;color:var(--si);margin-top:.75rem">Never hide any of this. The contradiction IS the brand.</div>' +
+    '</div>' +
 
-    // FILMING TIPS
-    '<div class="card" style="margin-bottom:1.5rem;background:var(--tz);border-radius:3px">' +
-    '<div style="font-family:var(--fm);font-size:.5rem;letter-spacing:3px;color:rgba(240,216,152,.3);text-transform:uppercase;margin-bottom:.65rem">iPhone Filming Setup</div>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.85rem">' +
-    [
-      {label:'Settings',text:'4K 24fps. Lock exposure before recording. ProRes if your phone supports it.'},
-      {label:'Audio',text:'Bluetooth mic always on. Test before every shoot. Audio makes or breaks it.'},
-      {label:'Locations',text:'Ocean for materials/sustainability. Desk for policy. Walking for personal essays.'},
-      {label:'Aesthetic',text:'Natural light only. Golden hour or overcast. Tanzanite + champagne wardrobe tones.'},
-    ].map(function(t){
-      return '<div><div style="font-family:var(--fm);font-size:.48rem;letter-spacing:2px;color:rgba(240,216,152,.4);text-transform:uppercase;margin-bottom:.2rem">'+t.label+'</div>' +
-        '<div style="font-size:.75rem;color:rgba(216,212,236,.7);line-height:1.6">'+t.text+'</div></div>';
-    }).join('') +
-    '</div></div>' +
+    // ── THE SIX SERIES ACCORDION ─────────────────────────────────────
+    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">The Six Series</div>' +
+    '<div style="margin-bottom:1.5rem">' +
+    renderSeriesAccordion() +
+    '</div>' +
 
-    // BRAND ASSETS
-    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">Brand Assets</div>' +
+    // ── UNIVERSAL RULES ──────────────────────────────────────────────
+    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">Universal Rules</div>' +
     '<div class="g2" style="margin-bottom:1.5rem">' +
-    Object.entries(DA).map(function(entry){
-      var k=entry[0],a=entry[1];
-      return '<div class="card" style="padding:.85rem">' +
-        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem">' +
-        '<div style="font-family:var(--fm);font-size:.5rem;letter-spacing:2px;color:var(--wg);text-transform:uppercase">'+a.title+'</div>' +
-        '<button class="btn bg" style="font-size:.52rem;padding:.18rem .5rem" onclick="copyAsset(\'sba-'+k+'\',this)">Copy</button>' +
-        '</div>' +
-        '<textarea class="ba-ta" id="sba-'+k+'" oninput="S.brand[\''+k+'\']=this.value" style="min-height:55px;font-size:.75rem">'+(S.brand[k]||a.text)+'</textarea>' +
+
+    // Carousel rules
+    '<div class="card">' +
+    '<div class="cl">Carousel Rules</div>' +
+    [
+      ['Slide 1 — The Hook','Lead with the most interesting thing, not a title. If someone wouldn\'t stop scrolling, rewrite it.'],
+      ['Slides 2–8 — Deliver','One idea per slide. Never more than 2–3 lines. If you need more words, it\'s two slides.'],
+      ['Last Slide — CTA','Always. "Save this." / "Send to [person]." / "Follow for [series]." / "Drop your answer below."'],
+      ['Design','Each series gets its own cover identity. Core palette: white/ivory background, sienna accents, Lora serif.'],
+      ['Captions','Always write a real caption. Your voice is an asset. One paragraph minimum. End with a question or CTA.']
+    ].map(function(r){
+      return '<div style="padding:.4rem 0;border-bottom:0.5px solid var(--iv3)">' +
+        '<div style="font-family:var(--fm);font-size:.46rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--si);margin-bottom:.15rem">'+r[0]+'</div>' +
+        '<div style="font-size:.76rem;color:var(--muted);line-height:1.55">'+r[1]+'</div>' +
         '</div>';
     }).join('') +
-    '<div class="card" style="padding:.85rem;grid-column:1/-1">' +
-    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem">' +
-    '<div style="font-family:var(--fm);font-size:.5rem;letter-spacing:2px;color:var(--wg);text-transform:uppercase">Voice Principles</div>' +
-    '<button class="btn bg" style="font-size:.52rem;padding:.18rem .5rem" onclick="copyAsset(\'sba-voice\',this)">Copy</button>' +
     '</div>' +
-    '<textarea class="ba-ta" id="sba-voice" oninput="S.brand[\'voice\']=this.value" style="min-height:45px;font-size:.75rem">'+(S.brand.voice||'Name the number. Name the bill. State, do not apologize. Curious, never preachy. Not for a crown, but for a microphone.')+'</textarea>' +
+
+    // Reels rules
+    '<div class="card">' +
+    '<div class="cl">Reels Rules</div>' +
+    [
+      ['First 3 seconds','Hook. Text overlay or spoken. Must make someone stop.'],
+      ['Middle','Deliver. Fast if energetic, slower if thoughtful. Match the series tone.'],
+      ['Last 3 seconds','CTA or loop — tell them what to do, or end so they rewatch.'],
+      ['Audio','Trending for Pageant Queen, Athlete, Temecula Townie. Original voice for Morenita, Observatory, Diary.'],
+      ['Length by series','Pageant / Athlete: 15–30s · Diary / Temecula: 30–60s · Morenita / Observatory: 60–90s']
+    ].map(function(r){
+      return '<div style="padding:.4rem 0;border-bottom:0.5px solid var(--iv3)">' +
+        '<div style="font-family:var(--fm);font-size:.46rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--go);margin-bottom:.15rem">'+r[0]+'</div>' +
+        '<div style="font-size:.76rem;color:var(--muted);line-height:1.55">'+r[1]+'</div>' +
+        '</div>';
+    }).join('') +
     '</div>' +
+    '</div>' + // end g2
+
+    // ── POSTING CADENCE ──────────────────────────────────────────────
+    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">Weekly Cadence — 5 to 6 Posts</div>' +
+    '<div class="card" style="margin-bottom:1.5rem;padding:.5rem">' +
+    '<table style="width:100%;border-collapse:collapse">' +
+    '<thead><tr>' +
+    '<th style="font-family:var(--fm);font-size:.44rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--faint);text-align:left;padding:.3rem .6rem;border-bottom:1px solid var(--iv3)">Day</th>' +
+    '<th style="font-family:var(--fm);font-size:.44rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--faint);text-align:left;padding:.3rem .6rem;border-bottom:1px solid var(--iv3)">Series</th>' +
+    '<th style="font-family:var(--fm);font-size:.44rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--faint);text-align:left;padding:.3rem .6rem;border-bottom:1px solid var(--iv3)">Format</th>' +
+    '</tr></thead>' +
+    '<tbody>' +
+    [
+      ['Monday','Library of Morenita','Reel or Carousel','var(--lv)'],
+      ['Tuesday','Pageant Queen','Carousel','var(--go)'],
+      ['Wednesday','Temecula Townie or Amelia\'s Diary','Reel','var(--si)'],
+      ['Thursday','The Observatory','Carousel','var(--muted)'],
+      ['Friday','Homegrown Athlete','Reel','var(--sg)'],
+      ['Weekend','Pageant Queen','Reel — event or fit check','var(--go)']
+    ].map(function(r){
+      return '<tr><td style="font-family:var(--fm);font-size:.55rem;letter-spacing:.5px;color:var(--muted);padding:.4rem .6rem;border-bottom:0.5px solid var(--iv3)">'+r[0]+'</td>' +
+        '<td style="padding:.4rem .6rem;border-bottom:0.5px solid var(--iv3)"><span style="font-size:.76rem;font-weight:500;color:var(--ink)">'+r[1]+'</span></td>' +
+        '<td style="font-size:.72rem;color:var(--muted);padding:.4rem .6rem;border-bottom:0.5px solid var(--iv3)">'+r[2]+'</td>' +
+        '</tr>';
+    }).join('') +
+    '</tbody></table>' +
+    '<div style="font-family:var(--fm);font-size:.48rem;color:var(--faint);letter-spacing:.5px;padding:.5rem .6rem 0">Stories: daily. Behind the scenes of whatever you\'re doing. No production required.</div>' +
+    '</div>' +
+
+    // ── START HERE — FIRST 5 POSTS ───────────────────────────────────
+    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">Start Here — First 5 Posts</div>' +
+    '<div style="display:flex;flex-direction:column;gap:.4rem;margin-bottom:1.5rem">' +
+    [
+      {n:1,title:'"What nobody tells you about competing"',series:'Pageant Queen',color:'var(--go)',note:'Write it in 20 minutes. Highest save potential on this entire list.'},
+      {n:2,title:'"Best coffee shops in Temecula — ranked"',series:'Temecula Townie',color:'var(--sil)',note:'Go shoot this weekend. Locals will share it immediately.'},
+      {n:3,title:'"The creative engineer problem"',series:'Library of Morenita',color:'var(--lv)',note:'Your most original content. Nobody else is posting this.'},
+      {n:4,title:'"My pilates guide for pageant training"',series:'Homegrown Athlete',color:'var(--sg)',note:'Save-bait. Produce once, keeps working.'},
+      {n:5,title:'"What it\'s actually like to build MAXINE"',series:'Library of Morenita',color:'var(--lv)',note:'Builds your founder credibility faster than any bio.'}
+    ].map(function(p){
+      return '<div class="card" style="padding:.75rem 1rem;border-left:3px solid '+p.color+'">' +
+        '<div style="display:flex;align-items:flex-start;gap:.75rem">' +
+        '<div style="font-family:var(--fd);font-size:1.4rem;font-style:italic;color:'+p.color+';line-height:1;flex-shrink:0;min-width:22px">'+p.n+'</div>' +
+        '<div>' +
+        '<div style="font-size:.82rem;font-weight:600;color:var(--ink);margin-bottom:.15rem">'+p.title+'</div>' +
+        '<span style="font-family:var(--fm);font-size:.44rem;letter-spacing:1.5px;text-transform:uppercase;color:'+p.color+'">'+p.series+'</span> ' +
+        '<span style="font-size:.72rem;color:var(--muted)">— '+p.note+'</span>' +
+        '</div></div></div>';
+    }).join('') +
     '</div>' +
 
     '</div>' // close pb
   );
+}
 
-  // Wire up strategy textareas
-  document.querySelectorAll('.social-strategy').forEach(function(el){
-    el.addEventListener('blur',function(){
-      var sd2=lsGet('chq-social',{strategy:{}});
-      if(!sd2.strategy)sd2.strategy={};
-      sd2.strategy[el.dataset.key]=el.value;
-      lsSave('chq-social',sd2);
-    });
+// ── saveSocial(): persist growth metrics to localStorage ─────────────
+function saveSocial(){
+  var saved = lsGet('chq-social', {}) || {};
+  if(!saved.metrics) saved.metrics = {};
+  ['ig_followers','yt_followers','substack_subs'].forEach(function(k){
+    var el = document.getElementById('sm-inp-'+k);
+    if(el) saved.metrics[k] = el.value;
   });
+  lsSave('chq-social', saved);
+  showToast('Numbers saved');
+}
+
+// ── updateSocialMetric(k, v): live update a metric input ──────────────
+function updateSocialMetric(k, v){
+  var saved = lsGet('chq-social', {}) || {};
+  if(!saved.metrics) saved.metrics = {};
+  saved.metrics[k] = v;
+  lsWriteLocal('chq-social', saved);
 }
 
 // (from original app.js)

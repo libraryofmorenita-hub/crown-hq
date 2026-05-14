@@ -814,3 +814,140 @@ body.em .look-rm-btn { display: block !important; }
 /* ── COUNTDOWN URGENCY ──────────────────────────────── */
 .countdown-urgent .oath { background: linear-gradient(135deg, var(--ink), #3D1B10) !important; }
 .countdown-urgent .sb-bot .sb-mn { color: var(--sil) !important; }
+
+/* ══════════════════════════════════════════════════════
+   TOPBAR — minimal sync indicator
+   Dot-only by default; full label appears on hover
+   ══════════════════════════════════════════════════════ */
+#tb-sync-text { display: none; transition: opacity .15s; }
+.tb-sync:hover #tb-sync-text { display: inline; }
+
+/* ══════════════════════════════════════════════════════
+   LOOKS — gallery mode styles
+   ══════════════════════════════════════════════════════ */
+
+/* Looks grid: g3 handles the columns; looks-grid adds a small gap tweak */
+.looks-grid { gap: .75rem; }
+
+/* Clickable look title — subtle underline cue */
+.look-title-link {
+  cursor: pointer;
+  transition: color .15s;
+}
+.look-title-link:hover { color: var(--si); }
+
+/* Gallery wrapper — relative so arrows can be positioned */
+.looks-gallery-wrap {
+  position: relative;
+  margin-bottom: .5rem;
+}
+
+/* Two-column gallery card: image left, details right */
+.looks-gallery-card {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  background: var(--wh);
+  border: 0.5px solid var(--iv3);
+  border-radius: var(--rl, 8px);
+  overflow: hidden;
+  min-height: 420px;
+}
+
+/* Image panel fills its cell */
+.looks-gallery-img {
+  background: var(--iv2);
+  overflow: hidden;
+}
+
+/* Details panel gets padding */
+.looks-gallery-details {
+  padding: 1.75rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Prev / Next arrow buttons */
+.lg-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(28,23,20,.55);
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  color: white;
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 2;
+  transition: background .15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lg-arrow:hover:not(:disabled) { background: rgba(139,74,47,.75); }
+.lg-prev { left: .65rem; }
+.lg-next { right: .65rem; }
+
+/* Dot navigation row */
+.lg-dots {
+  display: flex;
+  justify-content: center;
+  gap: .4rem;
+  padding: .65rem 0 .25rem;
+}
+.lg-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--iv3);
+  border: none;
+  cursor: pointer;
+  transition: background .15s, transform .15s;
+  padding: 0;
+}
+.lg-dot.on {
+  background: var(--si);
+  transform: scale(1.25);
+}
+
+/* Stack gallery card on narrow screens */
+@media(max-width: 768px) {
+  .looks-gallery-card {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+  .looks-gallery-img { aspect-ratio: 4/3; }
+}
+
+/* ══════════════════════════════════════════════════════
+   BRAND GUIDELINES — series accordion
+   ══════════════════════════════════════════════════════ */
+
+/* Reel ideas table shared across all series */
+.bg-reel-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .72rem;
+}
+.bg-reel-table td {
+  padding: .35rem .5rem;
+  border-bottom: 0.5px solid var(--iv3);
+  vertical-align: top;
+  line-height: 1.5;
+}
+.bg-reel-table tr:last-child td { border-bottom: none; }
+
+/* Series accordion header hover */
+.bg-series-head:hover { background: var(--iv) !important; }
+
+/* ══════════════════════════════════════════════════════
+   FAN PORTAL — fan dashboard styles
+   ══════════════════════════════════════════════════════ */
+
+/* Fan mood board items (read-only — no delete button) */
+/* Reuses existing .mb-item and .mb-grid styles */
+/* No additional rules needed — .mb-rm buttons are simply not rendered */

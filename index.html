@@ -127,6 +127,37 @@
     onmouseout="this.style.color='rgba(240,216,152,.25)'">
       &larr; View Campaign Site
     </a>
+
+    <!-- Stars portal entry — self-serve subscription -->
+    <div style="
+      margin-top:2rem;width:100%;
+      border-top:0.5px solid rgba(240,216,152,.08);
+      padding-top:1.5rem;text-align:center;
+    ">
+      <div style="
+        font-family:var(--fm);font-size:.48rem;letter-spacing:2.5px;
+        text-transform:uppercase;color:rgba(240,216,152,.2);
+        margin-bottom:.85rem;
+      ">Library of Morenita Community</div>
+      <button onclick="openPortalLogin('star')" style="
+        width:100%;padding:.75rem;
+        background:rgba(240,216,152,.05);
+        border:0.5px solid rgba(240,216,152,.15);
+        border-radius:9px;cursor:pointer;
+        transition:all .2s;
+      "
+      onmouseover="this.style.background='rgba(240,216,152,.1)';this.style.borderColor='rgba(240,216,152,.3)'"
+      onmouseout="this.style.background='rgba(240,216,152,.05)';this.style.borderColor='rgba(240,216,152,.15)'">
+        <div style="
+          font-family:var(--fd);font-size:1rem;font-style:italic;
+          color:rgba(240,216,152,.7);letter-spacing:.01em;margin-bottom:.2rem;
+        ">✦ Become a Star</div>
+        <div style="
+          font-family:var(--fm);font-size:.46rem;letter-spacing:1.5px;
+          text-transform:uppercase;color:rgba(240,216,152,.25);
+        ">Subscribe to visit the space</div>
+      </button>
+    </div>
   </div>
 </div>
 
@@ -138,7 +169,9 @@
       <div class="tb-logo">STARDOM <span style="font-family:var(--fm);font-size:.6rem;letter-spacing:2px;opacity:.5" id="logo-slot"><!-- LOGO --></span><span>✦ Amelia Arabe</span></div>
     </div>
     <div class="tb-r" id="tb-r">
-      <div class="tb-date" id="tb-date" style="font-family:var(--fm);font-size:.55rem;letter-spacing:2px;color:rgba(240,216,152,.25);text-transform:uppercase"></div>
+      <!-- Date hidden by default — redundant with OS clock -->
+      <div class="tb-date" id="tb-date" style="display:none"></div>
+      <!-- Sync indicator: dot-only; full label shows on hover (see CSS) -->
       <div class="tb-sync idle" id="tb-sync" title="Supabase sync status">
         <span class="tb-sync-dot"></span>
         <span id="tb-sync-text">Supabase ready</span>
@@ -150,7 +183,8 @@
       <button class="tb-btn" onclick="toggleSearch()">Search</button>
       <button class="tb-btn" onclick="toggleQC()">+ Quick Add</button>
       <button id="em-btn" onclick="toggleEM()" style="display:none;font-family:var(--fm);font-size:.48rem;letter-spacing:2px;text-transform:uppercase;padding:.28rem .75rem;border-radius:20px;border:0.5px solid rgba(201,168,76,.25);background:transparent;color:rgba(201,168,76,.5);cursor:pointer;transition:all .18s" onmouseover="this.style.color='rgba(201,168,76,.9)';this.style.borderColor='rgba(201,168,76,.5)'" onmouseout="if(!this.classList.contains('on')){this.style.color='rgba(201,168,76,.5)';this.style.borderColor='rgba(201,168,76,.25)'}">Edit Mode</button>
-      <button class="tb-btn" onclick="doSwitch()">Switch</button>
+      <!-- Switch button minimized to icon — title tooltip preserves discoverability -->
+      <button class="tb-btn" onclick="doSwitch()" title="Switch user">↩</button>
     </div>
   </div>
   <div class="layout">
@@ -233,6 +267,29 @@
   <div class="fg-row"><div class="fg"><label>Duration (hrs)</label><input class="fi" id="ev-dur" type="number" value="1" min="0.5" step="0.5"></div><div class="fg"><label>Type</label><select class="fs" id="ev-type"><option value="coach">Pageant Coach</option><option value="styling">Styling</option><option value="hair">Hair & Makeup</option><option value="fitness">Fitness</option><option value="photo">Photography</option></select></div></div>
   <div class="fg"><label>With</label><input class="fi" id="ev-who" placeholder="Who"></div>
   <div class="m-acts"><button class="btn bg" onclick="S._editingEvId=null;var sb=document.querySelector('#m-ev .btn.bp');if(sb)sb.textContent='Save';closeM('m-ev')">Cancel</button><button class="btn bd" id="ev-del-btn" style="display:none" onclick="deleteCalEvent()">Delete</button><button class="btn bp" onclick="addEvent()">Save</button></div>
+</div></div>
+
+<!-- LOOK EDITOR MODAL — opened by clicking a look's title in grid or gallery -->
+<div class="ov" id="m-look-editor"><div class="modal" style="max-width:540px">
+  <h3 id="le-title">Edit Look</h3>
+  <div class="fg-row">
+    <div class="fg"><label>Event</label><input class="fi" id="le-event" placeholder="e.g. Miss California USA 2026"></div>
+    <div class="fg"><label>Round</label><input class="fi" id="le-round" placeholder="e.g. Evening Gown"></div>
+  </div>
+  <div class="fg"><label>Look Title</label><input class="fi" id="le-look-title" placeholder="Name this look"></div>
+  <div class="fg"><label>Notes / Inspiration</label><textarea class="ft" id="le-notes" placeholder="Details, styling notes, inspiration..." style="min-height:80px"></textarea></div>
+  <div class="fg">
+    <label>Photo</label>
+    <div id="le-img-preview" style="width:80px;height:80px;border-radius:6px;background:var(--iv2);border:0.5px solid var(--iv3);overflow:hidden;margin-bottom:.5rem;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.7rem">No photo</div>
+    <label style="cursor:pointer;display:inline-flex;align-items:center;gap:.4rem;font-size:.72rem;color:var(--si)">
+      Change photo <input type="file" accept="image/*" style="display:none" onchange="setLookEditorImg(event)">
+    </label>
+  </div>
+  <div class="m-acts">
+    <button class="btn bg" onclick="closeM('m-look-editor')">Cancel</button>
+    <button class="btn bd" onclick="deleteLookFromEditor()" style="margin-right:auto">Delete</button>
+    <button class="btn bp" onclick="saveLookEditor()">Save</button>
+  </div>
 </div></div>
 
 <!-- SEARCH OVERLAY -->
