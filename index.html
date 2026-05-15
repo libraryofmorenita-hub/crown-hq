@@ -50,7 +50,7 @@
         font-family:var(--fm);font-size:.52rem;letter-spacing:2.5px;
         text-transform:uppercase;color:rgba(240,216,152,.35);
         margin-bottom:1.4rem;
-      ">Sign in to your workspace</div>
+      ">Sign into Crown HQ</div>
 
       <div style="margin-bottom:.9rem;">
         <label style="
@@ -128,35 +128,59 @@
       &larr; View Campaign Site
     </a>
 
-    <!-- Stars portal entry — self-serve subscription -->
-    <div style="
-      margin-top:2rem;width:100%;
-      border-top:0.5px solid rgba(240,216,152,.08);
-      padding-top:1.5rem;text-align:center;
-    ">
-      <div style="
-        font-family:var(--fm);font-size:.48rem;letter-spacing:2.5px;
-        text-transform:uppercase;color:rgba(240,216,152,.2);
-        margin-bottom:.85rem;
-      ">Library of Morenita Community</div>
-      <button onclick="openPortalLogin('star')" style="
-        width:100%;padding:.75rem;
+    <!-- Stars portal entry -->
+    <div style="margin-top:2rem;width:100%;border-top:0.5px solid rgba(240,216,152,.08);padding-top:1.5rem;">
+
+      <!-- New stars: sign up -->
+      <a href="star.html" style="
+        display:block;width:100%;padding:.75rem;
         background:rgba(240,216,152,.05);
         border:0.5px solid rgba(240,216,152,.15);
         border-radius:9px;cursor:pointer;
-        transition:all .2s;
+        transition:all .2s;text-decoration:none;text-align:center;
       "
       onmouseover="this.style.background='rgba(240,216,152,.1)';this.style.borderColor='rgba(240,216,152,.3)'"
       onmouseout="this.style.background='rgba(240,216,152,.05)';this.style.borderColor='rgba(240,216,152,.15)'">
-        <div style="
-          font-family:var(--fd);font-size:1rem;font-style:italic;
-          color:rgba(240,216,152,.7);letter-spacing:.01em;margin-bottom:.2rem;
-        ">✦ Become a Star</div>
-        <div style="
-          font-family:var(--fm);font-size:.46rem;letter-spacing:1.5px;
-          text-transform:uppercase;color:rgba(240,216,152,.25);
-        ">Subscribe to visit the space</div>
+        <div style="font-family:var(--fd);font-size:1rem;font-style:italic;color:rgba(240,216,152,.7);letter-spacing:.01em;margin-bottom:.2rem;">✦ Become a Star</div>
+        <div style="font-family:var(--fm);font-size:.46rem;letter-spacing:1.5px;text-transform:uppercase;color:rgba(240,216,152,.25);">New here? Join the Starfield</div>
+      </a>
+
+      <!-- Divider -->
+      <div style="display:flex;align-items:center;gap:.75rem;margin:.9rem 0;">
+        <div style="flex:1;height:0.5px;background:rgba(240,216,152,.08)"></div>
+        <div style="font-family:var(--fm);font-size:.44rem;letter-spacing:2px;text-transform:uppercase;color:rgba(240,216,152,.18)">or</div>
+        <div style="flex:1;height:0.5px;background:rgba(240,216,152,.08)"></div>
+      </div>
+
+      <!-- Returning stars: sign in -->
+      <div style="font-family:var(--fm);font-size:.48rem;letter-spacing:2.5px;text-transform:uppercase;color:rgba(240,216,152,.28);margin-bottom:.85rem;text-align:center;">Sign into the Starfield</div>
+      <div style="margin-bottom:.65rem;">
+        <input id="star-login-username" type="text" autocomplete="username" placeholder="Username"
+          onkeydown="if(event.key==='Enter')document.getElementById('star-login-password').focus()"
+          style="width:100%;padding:.65rem .85rem;background:rgba(250,247,242,.04);border:0.5px solid rgba(240,216,152,.12);border-radius:7px;color:rgba(250,247,242,.82);font-family:var(--fb);font-size:.8rem;outline:none;transition:border-color .2s;"
+          onfocus="this.style.borderColor='rgba(240,216,152,.35)'"
+          onblur="this.style.borderColor='rgba(240,216,152,.12)'">
+      </div>
+      <div style="margin-bottom:.8rem;">
+        <input id="star-login-password" type="password" autocomplete="current-password" placeholder="Password"
+          onkeydown="if(event.key==='Enter')submitStarLogin()"
+          style="width:100%;padding:.65rem .85rem;background:rgba(250,247,242,.04);border:0.5px solid rgba(240,216,152,.12);border-radius:7px;color:rgba(250,247,242,.82);font-family:var(--fb);font-size:.8rem;outline:none;letter-spacing:.12em;transition:border-color .2s;"
+          onfocus="this.style.borderColor='rgba(240,216,152,.35)'"
+          onblur="this.style.borderColor='rgba(240,216,152,.12)'">
+      </div>
+      <button onclick="submitStarLogin()" style="
+        width:100%;padding:.72rem;
+        background:rgba(201,168,76,.1);border:0.5px solid rgba(201,168,76,.25);
+        border-radius:7px;font-family:var(--fm);font-size:.54rem;
+        letter-spacing:2px;text-transform:uppercase;
+        color:rgba(240,216,152,.7);cursor:pointer;transition:all .2s;
+      "
+      onmouseover="this.style.background='rgba(201,168,76,.2)';this.style.borderColor='rgba(201,168,76,.45)'"
+      onmouseout="this.style.background='rgba(201,168,76,.1)';this.style.borderColor='rgba(201,168,76,.25)'">
+        Enter the Starfield ✦
       </button>
+      <div id="star-login-error" style="font-family:var(--fm);font-size:.5rem;letter-spacing:1px;color:rgba(255,120,80,.6);text-align:center;margin-top:.65rem;min-height:.8rem;"></div>
+
     </div>
   </div>
 </div>
@@ -180,9 +204,6 @@
         <div class="tb-av" id="tb-av">AA</div>
         <span class="tb-un" id="tb-un">Amelia</span>
       </div>
-      <button class="tb-btn" onclick="toggleSearch()">Search</button>
-      <button class="tb-btn" onclick="toggleQC()">+ Quick Add</button>
-      <button id="em-btn" onclick="toggleEM()" style="display:none;font-family:var(--fm);font-size:.48rem;letter-spacing:2px;text-transform:uppercase;padding:.28rem .75rem;border-radius:20px;border:0.5px solid rgba(201,168,76,.25);background:transparent;color:rgba(201,168,76,.5);cursor:pointer;transition:all .18s" onmouseover="this.style.color='rgba(201,168,76,.9)';this.style.borderColor='rgba(201,168,76,.5)'" onmouseout="if(!this.classList.contains('on')){this.style.color='rgba(201,168,76,.5)';this.style.borderColor='rgba(201,168,76,.25)'}">Edit Mode</button>
       <!-- Switch button minimized to icon — title tooltip preserves discoverability -->
       <button class="tb-btn" onclick="doSwitch()" title="Switch user">↩</button>
     </div>
@@ -292,29 +313,6 @@
   </div>
 </div></div>
 
-<!-- SEARCH OVERLAY -->
-<div id="search-overlay" style="display:none;position:fixed;inset:0;background:rgba(26,19,64,.92);z-index:800;padding:5rem 1rem 1rem;backdrop-filter:blur(8px)">
-  <div style="max-width:560px;margin:0 auto">
-    <div style="display:flex;gap:.5rem;margin-bottom:1rem">
-      <input id="search-input" placeholder="Search sponsors, articles, events, cards..." style="flex:1;background:rgba(255,255,255,.08);border:1px solid rgba(216,212,236,.2);border-radius:3px;padding:.65rem 1rem;font-family:var(--fb);font-size:.9rem;color:var(--ch);outline:none" oninput="runSearch(this.value)">
-      <button onclick="toggleSearch()" style="background:none;border:1px solid rgba(216,212,236,.2);border-radius:3px;padding:.65rem .85rem;color:var(--ch);cursor:pointer;font-family:var(--fm);font-size:.6rem">ESC</button>
-    </div>
-    <div id="search-results" style="display:flex;flex-direction:column;gap:.35rem;max-height:60vh;overflow-y:auto"></div>
-  </div>
-</div>
-
-<!-- QUICK CAPTURE OVERLAY -->
-<div id="qc-overlay" style="display:none;position:fixed;inset:0;background:rgba(26,19,64,.92);z-index:800;padding:5rem 1rem 1rem;backdrop-filter:blur(8px)">
-  <div style="max-width:480px;margin:0 auto">
-    <div style="font-family:var(--fd);font-size:1.4rem;font-style:italic;color:var(--ch);margin-bottom:.85rem;text-align:center">Quick Capture</div>
-    <textarea id="qc-text" placeholder="Drop a thought, link, task, or idea..." style="width:100%;min-height:100px;background:rgba(255,255,255,.08);border:1px solid rgba(216,212,236,.2);border-radius:3px;padding:.85rem 1rem;font-family:var(--fb);font-size:.88rem;color:var(--ch);outline:none;resize:none;line-height:1.7"></textarea>
-    <div style="font-family:var(--fm);font-size:.52rem;color:rgba(216,212,236,.35);margin-top:.45rem;margin-bottom:.65rem;letter-spacing:1px">→ drops into Discussion · General</div>
-    <div style="display:flex;gap:.5rem">
-      <button onclick="submitQC()" style="background:var(--tz3);border:none;border-radius:3px;padding:.45rem 1.25rem;font-family:var(--fb);font-size:.75rem;font-weight:600;color:var(--ch);cursor:pointer">Capture</button>
-      <button onclick="toggleQC()" style="background:none;border:1px solid rgba(216,212,236,.2);border-radius:3px;padding:.45rem .85rem;font-family:var(--fm);font-size:.6rem;color:rgba(216,212,236,.5);cursor:pointer">Cancel</button>
-    </div>
-  </div>
-</div>
 
 <div class="toast" id="toast">Saved</div>
 

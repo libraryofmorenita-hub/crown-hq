@@ -12,8 +12,6 @@
 // ║  • lsSave(): writes localStorage THEN queues Supabase save  ║
 // ║  • inject(html): replaces #main content — all panels use it ║
 // ║  • showPanel(id): routes to the right panel builder fn (bX) ║
-// ║  • Edit Mode: toggleEM() makes data-e elements contenteditable,
-// ║    commitE() reads data-e="type:id:field" and saves changes  ║
 // ║  • Roles: amelia, laneea, hmu, trainer, sponsor, contributor,
 // ║    finance — each has its own nav and editable panel list    ║
 // ║  • Portal users: hmu/sponsor/contributor log in via their   ║
@@ -234,7 +232,6 @@ var S={
   qSecs:60,
   calView:'week',
   calWeekOffset:0,
-  emActive:false,
   saveTimer:null
 };
 
@@ -811,6 +808,33 @@ function showLoginError(){
   }
   if(errEl) errEl.textContent='Incorrect username or password.';
 }
+
+function submitStarLogin(){
+  var username=(document.getElementById('star-login-username').value||'').trim().toLowerCase();
+  var password=(document.getElementById('star-login-password').value||'').trim();
+  var errEl=document.getElementById('star-login-error');
+  if(errEl) errEl.textContent='';
+  if(!username||!password){
+    if(errEl) errEl.textContent='Enter your username and password.';
+    return;
+  }
+  var profile=findPortalProfileByUsername('star',username);
+  if(!profile){
+    if(errEl) errEl.textContent='No star account found — check your username.';
+    return;
+  }
+  if(String(profile.password||'')!==password){
+    if(errEl) errEl.textContent='Wrong password.';
+    var pw=document.getElementById('star-login-password');
+    if(pw){pw.style.borderColor='rgba(255,100,60,.5)';pw.value='';setTimeout(function(){pw.style.borderColor='rgba(240,216,152,.12)';},1200);pw.focus();}
+    return;
+  }
+  if(!profile.active){
+    if(errEl) errEl.textContent='Your account isn\'t active yet — reach out to Amelia\'s team.';
+    return;
+  }
+  doLogin('star',profile.id);
+}
 var PENDING_ROLE=null;
 
 function tryLogin(role,btn){
@@ -1058,10 +1082,7 @@ function renderPortalGoalsCard(title){
 }
 
 // ═══ ROLES ═══════════════════════════════════════════════════
-// Each role has: name/abbr/color for display, nav array for the
-// sidebar (ico, lbl, id), and editable array listing which panel
-// types can be modified via Edit Mode. Roles not in editable[] still
-// see content but cannot use the Edit Mode button.
+// Each role has: name/abbr/color for display, and nav array for the sidebar (ico, lbl, id).
 var ROLES={
   amelia:{name:'Amelia Arabe',abbr:'AA',color:'var(--ch)',
     nav:[
@@ -1196,8 +1217,6 @@ function doLogin(role,portalProfileId){
     }).catch(function(){/* Supabase unavailable — localStorage data is fine */});
   }, 800);
 
-  var eb=g('em-btn');
-  if(eb) eb.style.display=(r.editable&&r.editable.length)?'block':'none';
   var days=Math.ceil((new Date('2026-07-10')-new Date())/(1000*60*60*24));
   if(days<=30) document.body.classList.add('countdown-urgent');
   else document.body.classList.remove('countdown-urgent');
@@ -1207,9 +1226,7 @@ function doLogin(role,portalProfileId){
 }
 
 function doSwitch(){
-  S.role=null; S.portalProfile=null; S.emActive=false;
-  document.body.classList.remove('em');
-  var eb=g('em-btn'); if(eb){eb.classList.remove('on');eb.textContent='Edit Mode';}
+  S.role=null; S.portalProfile=null;
   document.getElementById('login').style.display='flex';
   document.getElementById('app').classList.remove('on');
   // reset pw overlays
@@ -1238,8 +1255,6 @@ function closeSB(){if(window.innerWidth<=768)g('sidebar').classList.remove('open
 // showPanel(id): the main router. Highlights the nav item, clears
 // #main, then calls the matching panel builder function (bX).
 // All panel builders use inject(html) to set #main content.
-// After render, if Edit Mode is active it calls applyEM() so any
-// new data-e elements become contenteditable immediately.
 
 function showPanel(id,navEl){
   S.panel=id;
@@ -1289,7 +1304,6 @@ function showPanel(id,navEl){
   if(panelFn) panelFn();
   else bPlaceholder(id);
   closeSB();
-  if(S.emActive) setTimeout(applyEM,80);
 }
 
 // ═══ HELPERS ══════════════════════════════════════════════════
@@ -1364,7 +1378,6 @@ function renderRegistrationCard(){
 // north star cards, countdown stats, career goals progress tracker,
 // key timeline, registration card, pageant contacts, to-dos,
 // messages snapshot, and personal mood board.
-// Most text elements have data-e attributes for inline Edit Mode editing.
 function bDash(){
   var raised=S.sponsors.filter(function(s){return s.status==='closed';}).reduce(function(a,s){return a+(s.amount||0);},0);
   var closed=S.sponsors.filter(function(s){return s.status==='closed';}).length;
@@ -1824,8 +1837,7 @@ function bStarDash(){
   // Pull only published posts for the star feed
   var publishedPosts = S.posts.filter(function(p){ return p.status === 'published'; }).slice(0,5);
 
-  // First 4 mood board images for the preview grid
-  var moodPreview = S.mood.slice(0,4);
+  var moodPreview = S.mood.slice(0,6);
 
   var daysLeft = Math.ceil((new Date('2026-07-10') - new Date()) / (1000*60*60*24));
 
@@ -1843,7 +1855,12 @@ function bStarDash(){
     '<div style="background:linear-gradient(135deg,var(--ink) 0%,#1a1228 100%);border-radius:10px;padding:1.5rem;margin-bottom:1.25rem;border:0.5px solid rgba(201,168,76,.12);position:relative;overflow:hidden">' +
     '<div style="font-family:var(--fm);font-size:.48rem;letter-spacing:4px;text-transform:uppercase;color:rgba(201,168,76,.45);margin-bottom:.45rem">You\'re in the starfield</div>' +
     '<div style="font-family:var(--fd);font-size:1.35rem;font-style:italic;color:rgba(250,247,242,.88);margin-bottom:.25rem">Welcome, '+escHtml(starName)+'.</div>' +
-    '<div style="font-size:.78rem;color:rgba(250,247,242,.38);line-height:1.8">You\'re watching the journey in real time. &nbsp;✦&nbsp; Competition day: <strong style="color:rgba(201,168,76,.55)">July 10 &middot; '+daysLeft+' days away</strong></div>' +
+    '<div style="font-size:.78rem;color:rgba(250,247,242,.38);line-height:1.8;margin-bottom:1rem">You\'re watching the journey in real time. &nbsp;✦&nbsp; Competition day: <strong style="color:rgba(201,168,76,.55)">July 10 &middot; '+daysLeft+' days away</strong></div>' +
+    // Suggestions box
+    '<div style="display:flex;gap:.5rem;align-items:center">' +
+    '<input id="star-suggest-inp" style="flex:1;padding:.55rem .75rem;background:rgba(255,255,255,.05);border:0.5px solid rgba(201,168,76,.14);border-radius:7px;outline:none;font-family:var(--fm);font-size:.6rem;color:rgba(250,247,242,.75);transition:border-color .2s" placeholder="Leave a thought, idea, or question…" onkeydown="if(event.key===\'Enter\')submitStarSuggestion()">' +
+    '<button onclick="submitStarSuggestion()" style="padding:.5rem .85rem;background:rgba(201,168,76,.1);border:0.5px solid rgba(201,168,76,.22);border-radius:7px;cursor:pointer;font-family:var(--fm);font-size:.52rem;letter-spacing:1.5px;text-transform:uppercase;color:rgba(201,168,76,.7);white-space:nowrap;transition:all .18s" onmouseover="this.style.background=\'rgba(201,168,76,.2)\';this.style.color=\'rgba(201,168,76,.95)\'" onmouseout="this.style.background=\'rgba(201,168,76,.1)\';this.style.color=\'rgba(201,168,76,.7)\'">Send ✦</button>' +
+    '</div>' +
     '</div>' +
 
     // Stats row: interview count + workout week
@@ -1891,25 +1908,64 @@ function bStarDash(){
       : '<div class="card" style="margin-bottom:1.25rem;padding:1.25rem;text-align:center;color:var(--muted);font-size:.8rem">No posts published yet — check back soon.</div>'
     ) +
 
-    // Mood board preview — read-only, first 4 images
+    // Mood board preview — first 6 images in a 3-col grid
     '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">Mood Board</div>' +
     (moodPreview.length
-      ? '<div class="g2" style="margin-bottom:.5rem">' +
-        moodPreview.map(function(m){
+      ? '<div class="g3" style="margin-bottom:.5rem">' +
+        S.mood.slice(0,6).map(function(m){
           return '<div style="aspect-ratio:1;background:var(--iv2);border-radius:8px;overflow:hidden;border:0.5px solid var(--iv3)">' +
             '<img src="'+m.src+'" alt="'+escHtml(m.label)+'" style="width:100%;height:100%;object-fit:cover">' +
             '</div>';
         }).join('') +
         '</div>' +
-        (S.mood.length > 4
+        (S.mood.length > 6
           ? '<button class="btn bg" style="margin-bottom:1.5rem;font-size:.6rem" onclick="showPanel(\'star-moodboard\')">See all '+S.mood.length+' images →</button>'
           : '<div style="margin-bottom:1.5rem"></div>'
         )
       : '<div class="card" style="margin-bottom:1.5rem;padding:1.25rem;text-align:center;color:var(--muted);font-size:.8rem">Mood board is empty.</div>'
     ) +
 
+    // Looks gallery — competition outfits, read-only
+    '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--wg);text-transform:uppercase;margin-bottom:.65rem">Looks Gallery</div>' +
+    (S.looks.filter(function(l){ return l.img; }).length
+      ? '<div class="g3" style="margin-bottom:1.5rem">' +
+        S.looks.filter(function(l){ return l.img; }).slice(0,6).map(function(l){
+          return '<div style="border-radius:10px;overflow:hidden;border:0.5px solid var(--iv3)">' +
+            '<div style="aspect-ratio:.75;overflow:hidden">' +
+            '<img src="'+l.img+'" alt="'+escHtml(l.title||'')+'" style="width:100%;height:100%;object-fit:cover">' +
+            '</div>' +
+            (l.title
+              ? '<div style="padding:.5rem .6rem;background:var(--iv2)">' +
+                '<div style="font-size:.72rem;color:var(--ink);font-weight:500;line-height:1.3">'+escHtml(l.title)+'</div>' +
+                (l.event ? '<div style="font-size:.62rem;color:var(--muted);margin-top:.1rem">'+escHtml(l.event)+'</div>' : '') +
+                '</div>'
+              : '') +
+            '</div>';
+        }).join('') +
+        '</div>'
+      : '<div class="card" style="margin-bottom:1.5rem;padding:1.25rem;text-align:center;color:var(--muted);font-size:.8rem">No looks added yet — gallery coming soon.</div>'
+    ) +
+
     '</div>' // end pb
   );
+}
+
+function submitStarSuggestion(){
+  var inp = g('star-suggest-inp');
+  if(!inp) return;
+  var text = (inp.value || '').trim();
+  if(!text) return;
+  var list = lsGet('chq-suggestions', []);
+  list.unshift({
+    id: Date.now(),
+    from: S.portalProfile ? (S.portalProfile.name || 'Star') : 'Star',
+    date: new Date().toLocaleDateString('en-US', {month:'short', day:'numeric'}),
+    text: text,
+    read: false
+  });
+  lsSave('chq-suggestions', list);
+  inp.value = '';
+  showToast('✦ Sent — thank you!');
 }
 
 // ── bStarMoodboard(): Full read-only mood board for stars ──────────
@@ -2102,7 +2158,6 @@ function addTodo(role){
       '<span class="todo-txt" contenteditable="false" onblur="saveTodoText(\''+role+'\','+newId+',this.textContent)">'+item.text+'</span>' +
       '<button class="todo-rm" onclick="removeTodo(\''+role+'\','+newId+')">×</button>';
     list.appendChild(div);
-    if(S.emActive){var sp=div.querySelector('.todo-txt');if(sp){sp.contentEditable='true';}}
   }
 }
 
@@ -3989,113 +4044,9 @@ function runBreathPhase(){
 
 function bPlaceholder(id){
 
-  inject('<div class="ph"><div><div class="ph-tag">'+id+'</div><div class="ph-title"><em>Coming Soon</em></div></div></div><div class="pb"><div class="edit-hint" style="margin-top:1rem">This section is under construction. Switch on Edit Mode to customize.</div></div>');
+  inject('<div class="ph"><div><div class="ph-tag">'+id+'</div><div class="ph-title"><em>Coming Soon</em></div></div></div><div class="pb"></div>');
 }
 
-// ═══ EDIT MODE ════════════════════════════════════════════════
-var EM_TYPES={
-  amelia:{'timeline':'dashboard','sponsor':'sponsors','look':'looks','brand':'brand','oath':'dashboard','ns':'dashboard','goal':'dashboard','goalcur':'dashboard','goalcur':'dashboard','goaltar':'dashboard','workout':'workouts','appt':'appointments','peace':'peace'},
-  laneea:{'sponsor':'sponsors','look':'looks','appt':'appointments','rolepage':'dashboard'},
-  trainer:{'workout':'workouts','rolepage':'dashboard'},
-  hmu:{'look':'looks','rolepage':'dashboard'},
-};
-
-function toggleEM(){
-  S.emActive=!S.emActive;
-  document.body.classList.toggle('em',S.emActive);
-  var btn=g('em-btn');
-  if(btn){
-    btn.classList.toggle('on',S.emActive);
-    btn.textContent=S.emActive?'Exit Edit':'Edit Mode';
-    btn.style.color      = S.emActive ? 'rgba(201,168,76,.95)' : 'rgba(201,168,76,.5)';
-    btn.style.borderColor= S.emActive ? 'rgba(201,168,76,.6)'  : 'rgba(201,168,76,.25)';
-    btn.style.background = S.emActive ? 'rgba(201,168,76,.08)' : 'transparent';
-  }
-  if(S.emActive) applyEM();
-}
-
-function applyEM(){
-  var allowed=EM_TYPES[S.role]||{};
-  document.querySelectorAll('[data-e]').forEach(function(el){
-    if(el.isContentEditable) return;
-    var key=el.getAttribute('data-e');
-    var type=key.split(':')[0];
-    if(allowed[type]===undefined) return;
-    el.contentEditable='true';
-    el.addEventListener('input',function(){
-      clearTimeout(S.saveTimer);
-      S.saveTimer=setTimeout(function(){commitE(el);},600);
-    });
-    el.addEventListener('keydown',function(e){
-      if(e.key==='Enter'&&el.tagName!=='TEXTAREA'){e.preventDefault();el.blur();}
-    });
-    // also make todo items editable
-    document.querySelectorAll('.todo-txt').forEach(function(t){t.contentEditable='true';});
-  });
-}
-
-function commitE(el){
-  var key=el.getAttribute('data-e');
-  var val=el.textContent.trim();
-  if(!key)return;
-  var parts=key.split(':'),type=parts[0],id=parts[1],field=parts[2];
-  if(type==='sponsor'){var s=S.sponsors.find(function(x){return String(x.id)===id;});if(s){s[field]=val;lsSave('chq-sp',S.sponsors);}}
-  else if(type==='look'){var l=S.looks.find(function(x){return String(x.id)===id;});if(l){l[field]=val;lsSave('chq-lk',S.looks);}}
-  else if(type==='workout'){
-    var w=S.workouts.find(function(x){return String(x.id)===id;});
-    if(w){if(field.indexOf('ex')===0){var ei=parseInt(field.replace('ex',''));if(w.exercises[ei])w.exercises[ei].name=val;}
-    else if(field.indexOf('sets')===0){var si=parseInt(field.replace('sets',''));if(w.exercises[si])w.exercises[si].sets=val;}
-    else{w[field]=val;}lsSave('chq-wk',S.workouts);}
-  }
-  else if(type==='goal'){S.goals[id]=val;lsSave('chq-gl',S.goals);}
-  else if(type==='goalcur'){
-    var gd=lsGet('chq-gd',null);if(gd){var gi=gd.find(function(x){return x.key===id;});if(gi){gi.cur=val;lsSave('chq-gd',gd);}}
-  }
-  else if(type==='goaltar'){
-    var gd2=lsGet('chq-gd',null);if(gd2){var gi2=gd2.find(function(x){return x.key===id;});if(gi2){gi2.target=val;lsSave('chq-gd',gd2);}}
-  }
-  else if(type==='ns'){S.goals['ns_'+id]=val;lsSave('chq-gl',S.goals);}
-  else if(type==='oath'){S.goals['oath']=val;lsSave('chq-gl',S.goals);}
-  else if(type==='rolepage'){
-    var rp=lsGet('chq-role-pages',{})||{};
-    if(!rp[id])rp[id]={};
-    if(id==='hmu'&&(field.indexOf('date')===0||field.indexOf('ev')===0||field.indexOf('look')===0)){
-      if(!Array.isArray(rp[id].schedule))rp[id].schedule=getRolePages().hmu.schedule.slice();
-      var idx=parseInt(field.replace(/[^\d]/g,''),10);
-      var baseField=field.replace(/\d+/g,'');
-      if(!rp[id].schedule[idx])rp[id].schedule[idx]={date:'',ev:'',look:''};
-      rp[id].schedule[idx][baseField]=val;
-    } else {
-      rp[id][field]=val;
-    }
-    lsSave('chq-role-pages',rp);
-  }
-  else if(type==='peace'){
-    var pd=lsGet('chq-peace',{})||{};
-    if(!pd.copy||typeof pd.copy!=='object')pd.copy={};
-    if(id==='copy'){
-      pd.copy[field]=val;
-    } else if(id==='wind'){
-      if(!Array.isArray(pd.copy.windDownItems))pd.copy.windDownItems=[];
-      var windIdx=parseInt(field,10);
-      if(isNaN(windIdx))windIdx=parseInt(parts[2],10);
-      var windField=parts[3];
-      if(windField==='label')pd.copy.windDownItems[windIdx]=val;
-    }
-    lsSave('chq-peace',pd);
-  }
-  else if(type==='gd'){
-    var gd=lsGet('chq-gd',null)||[];
-    var idx=parseInt(id);
-    if(gd[idx]){gd[idx][field]=val;lsSave('chq-gd',gd);}
-  }
-  else if(type==='goalcur'){
-    var gd2=lsGet('chq-gd',null);
-    if(gd2){var item=gd2.find(function(x){return x.key===id;});if(item){item[field]=val;lsSave('chq-gd',gd2);}}
-  }
-  else if(type==='tl'){var tl=lsGet('chq-timeline',[]);var i=parseInt(id);if(!tl[i])tl[i]={};tl[i][field]=val;lsSave('chq-timeline',tl);}
-  showToast();
-}
 
 // ═══ MODAL & MISC ═════════════════════════════════════════════
 document.querySelectorAll('.ov').forEach(function(o){
@@ -4148,6 +4099,17 @@ document.querySelectorAll('.ov').forEach(function(o){
 if(typeof isPublicPortfolioRoute === 'function' && isPublicPortfolioRoute()){
   renderPublicPortfolioRoute();
 }
+
+// Auto-login from star.html signup — one-time flag cleared immediately
+(function(){
+  try {
+    var pending = JSON.parse(localStorage.getItem('chq-star-autologin') || 'null');
+    if(pending && pending.role && pending.id){
+      localStorage.removeItem('chq-star-autologin');
+      doLogin(pending.role, pending.id);
+    }
+  } catch(e){}
+})();
 
 
 // ═══════════════════════════════════════════════════════════════
@@ -5659,10 +5621,7 @@ function bInbox(){
   var tagColors={link:'var(--tz3)',idea:'var(--ch2)',sponsor:'var(--sg2)',urgent:'var(--bl2)',fyi:'var(--wg)'};
 
   inject(
-    '<div class="ph"><div><div class="ph-tag">Amelia & Laneea</div><div class="ph-title"><em>Shared Inbox</em></div></div>' +
-    '<div class="ph-acts">' +
-    '<button class="btn bp" onclick="toggleQC()">+ Drop Something</button>' +
-    '</div></div>' +
+    '<div class="ph"><div><div class="ph-tag">Amelia & Laneea</div><div class="ph-title"><em>Shared Inbox</em></div></div></div>' +
     '<div class="pb">' +
 
     // COMPOSE
@@ -6123,11 +6082,8 @@ function bCampaignEditor(){
     pillar2Title:'Community Infrastructure',pillar2Text:'Where energy alone isn\'t the answer, we engineer the solution that is. Clean water systems, connectivity infrastructure, sustainable housing materials \u2014 the platform adapts to what the community actually needs, built with their voices at the table.',
     pillar3Title:'Fashion Sustainability Policy',pillar3Text:'Fashion is the second most polluting industry on earth. It doesn\'t have to be. I\'m pushing for transparency legislation, recycled textile requirements, and supply chain accountability \u2014 from runway to regulation.'
   };
-  var em=S.emActive;
-  var IS_on ='border:0.5px solid var(--iv3);border-radius:3px;padding:.32rem .55rem;font-family:var(--fb);font-size:.75rem;color:var(--ink);background:var(--wh);outline:none;width:100%;box-sizing:border-box';
-  var IS_off='border:0.5px solid var(--iv3);border-radius:3px;padding:.32rem .55rem;font-family:var(--fb);font-size:.75rem;color:var(--muted);background:var(--iv2);outline:none;width:100%;box-sizing:border-box;cursor:default';
-  var IS=em?IS_on:IS_off;
-  var dis=em?'':' disabled';
+  var IS='border:0.5px solid var(--iv3);border-radius:3px;padding:.32rem .55rem;font-family:var(--fb);font-size:.75rem;color:var(--muted);background:var(--iv2);outline:none;width:100%;box-sizing:border-box;cursor:default';
+  var dis=' disabled';
   var LS='font-family:var(--fm);font-size:.48rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted)';
   var SH='font-size:.58rem;font-family:var(--fm);letter-spacing:2px;text-transform:uppercase;color:var(--si);padding-bottom:.4rem;margin-bottom:.75rem;border-bottom:0.5px solid var(--iv3)';
   function ci(lbl,key){
@@ -6141,7 +6097,6 @@ function bCampaignEditor(){
   var textHtml=
     '<div style="font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:.65rem">Site Text Content</div>'+
     '<div class="card" id="camp-text-section" style="margin-bottom:1.5rem;display:flex;flex-direction:column;gap:1.35rem">'+
-      (!em ? '<div style="font-size:.72rem;color:var(--muted);font-style:italic;text-align:center;padding:.35rem 0">Enable Edit Mode to edit site text</div>' : '')+
       '<div>'+
         '<div style="'+SH+'">Hero</div>'+
         '<div style="display:flex;flex-direction:column;gap:.55rem">'+
@@ -6632,53 +6587,6 @@ function getBriefAlerts(){
   var undone=myTodos.filter(function(t){return !t.done;});
   if(undone.length) alerts.push('<span style="font-family:var(--fm);font-size:.48rem;letter-spacing:1.5px;text-transform:uppercase;padding:.2rem .65rem;border-radius:20px;background:rgba(152,128,200,.1);color:var(--lv2);border:0.5px solid rgba(152,128,200,.2)">'+undone.length+' open task'+(undone.length>1?'s':'')+'</span>');
   return alerts.join('');
-}
-
-// ═══ PREVIOUSLY MISSING FUNCTIONS ══════════════════════════════
-
-function toggleSearch(){
-  var el=g('search-overlay');
-  if(!el)return;
-  var visible=el.style.display!=='none';
-  el.style.display=visible?'none':'block';
-  if(!visible){var inp=g('search-input');if(inp){inp.value='';inp.focus();}g('search-results').innerHTML='';}
-}
-
-function runSearch(val){
-  var out=g('search-results');if(!out)return;
-  val=(val||'').toLowerCase().trim();
-  if(!val){out.innerHTML='';return;}
-  var results=[];
-  (S.sponsors||[]).forEach(function(s){if((s.name||'').toLowerCase().indexOf(val)>=0||(s.industry||'').toLowerCase().indexOf(val)>=0)results.push({label:s.name,sub:s.industry||s.status,action:"showPanel('sponsors')"});});
-  (S.posts||[]).forEach(function(p){if((p.title||'').toLowerCase().indexOf(val)>=0||(p.body||'').toLowerCase().indexOf(val)>=0)results.push({label:p.title,sub:'Essay · '+(p.status||'draft'),action:"showPanel('library')"});});
-  (S.calEvents||[]).forEach(function(e){if((e.title||'').toLowerCase().indexOf(val)>=0)results.push({label:e.title,sub:'Event · '+e.date,action:"showPanel('calendar')"});});
-  if(!results.length){out.innerHTML='<div style="color:rgba(216,212,236,.45);font-family:var(--fb);font-size:.8rem;padding:.5rem">No results for "'+val+'"</div>';return;}
-  out.innerHTML=results.slice(0,12).map(function(r){
-    return '<div onclick="toggleSearch();'+r.action+'" style="background:rgba(255,255,255,.07);border-radius:3px;padding:.6rem .85rem;cursor:pointer;border:1px solid rgba(216,212,236,.1)">' +
-      '<div style="font-family:var(--fb);font-size:.82rem;color:var(--ch)">'+r.label+'</div>' +
-      '<div style="font-family:var(--fm);font-size:.55rem;color:rgba(216,212,236,.45);margin-top:.15rem">'+r.sub+'</div></div>';
-  }).join('');
-}
-
-function toggleQC(){
-  var el=g('qc-overlay');if(!el)return;
-  var visible=el.style.display!=='none';
-  el.style.display=visible?'none':'block';
-  if(!visible){var t=g('qc-text');if(t){t.value='';t.focus();}}
-}
-
-function submitQC(){
-  var text=(g('qc-text').value||'').trim();
-  if(!text)return;
-  var board=lsGet('chq-board',{columns:[]});
-  if(!Array.isArray(board.columns)) board.columns=[];
-  var general=board.columns.find(function(c){return c.id==='general';});
-  if(!general){general={id:'general',title:'General / Notes',color:'var(--bl2)',cards:[]};board.columns.push(general);}
-  if(!Array.isArray(general.cards)) general.cards=[];
-  general.cards.push({id:Date.now(),text:text,author:S.role,date:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'})});
-  lsSave('chq-board',board);
-  showToast('Added to Discussion →');
-  toggleQC();
 }
 
 function addWorkout(){
