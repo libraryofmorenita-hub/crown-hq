@@ -1081,6 +1081,46 @@ function renderPortalGoalsCard(title){
     '</div>';
 }
 
+// ═══ ICONS ════════════════════════════════════════════════════
+// ico(key): maps an emoji key to a celestial inline SVG using currentColor,
+// so icons inherit the sidebar's inactive/active tint automatically.
+// Falls back to the raw character if no mapping exists.
+var _icons={
+  '🏠':'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><circle cx="8" cy="8.5" r="3.2"/><path d="M3 9.5 Q5.5 5.5 13 8" stroke-opacity=".5"/></svg>',
+  '👤':'<svg viewBox="0 0 16 16"><path d="M10 5.5A4 4 0 0 1 6 13.5 4.5 4.5 0 0 0 10 5.5Z" fill="currentColor" opacity=".75"/><circle cx="7.8" cy="6.5" r="3.5" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>',
+  '👥':'<svg viewBox="0 0 16 16"><circle cx="4" cy="10" r="1.5" fill="currentColor"/><circle cx="9" cy="5" r="1.5" fill="currentColor"/><circle cx="13.5" cy="10.5" r="1.5" fill="currentColor"/><line x1="5.5" y1="9.3" x2="7.5" y2="5.7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="10.5" y1="5.7" x2="12" y2="9.3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>',
+  '🌐':'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><circle cx="8" cy="8" r="5"/><ellipse cx="8" cy="8" rx="5" ry="2.2" stroke-opacity=".4"/></svg>',
+  '✍️':'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><circle cx="12" cy="4" r="2.2"/><line x1="10.4" y1="5.6" x2="4" y2="12"/><line x1="2.5" y1="13.5" x2="5.5" y2="12" stroke-opacity=".35"/></svg>',
+  '📸':'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><circle cx="8" cy="8" r="3"/><line x1="8" y1="2.5" x2="8" y2="4.5" stroke-opacity=".5"/><line x1="8" y1="11.5" x2="8" y2="13.5" stroke-opacity=".5"/><line x1="2.5" y1="8" x2="4.5" y2="8" stroke-opacity=".5"/><line x1="11.5" y1="8" x2="13.5" y2="8" stroke-opacity=".5"/></svg>',
+  '💰':'<svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1.5 9.4 5.5 13.5 5.8 10.5 8.5 11.5 12.8 8 10.5 4.5 12.8 5.5 8.5 2.5 5.8 6.6 5.5Z"/></svg>',
+  '📅':'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3.5 8 A4.5 4.5 0 1 1 8 12.5"/><circle cx="8" cy="8" r="1.5" fill="currentColor" stroke="none"/></svg>',
+  '🎤':'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><circle cx="8" cy="8" r="2.2" fill="currentColor" stroke="none" opacity=".7"/><line x1="8" y1="2.5" x2="8" y2="5"/><line x1="8" y1="11" x2="8" y2="13.5"/><line x1="2.5" y1="8" x2="5" y2="8"/><line x1="11" y1="8" x2="13.5" y2="8"/></svg>',
+  '📣':'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 6 L10 4 L10 12 L3 10Z"/><line x1="3" y1="6" x2="3" y2="10"/><path d="M12 5.5 Q14 8 12 10.5" stroke-opacity=".5"/></svg>',
+  '🖼':'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><circle cx="8" cy="8" r="5"/><circle cx="8" cy="8" r="2.5"/><circle cx="8" cy="8" r=".8" fill="currentColor" stroke="none"/></svg>',
+  '👗':'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M8 2 L13 8 L8 14 L3 8 Z"/><circle cx="12.5" cy="3.5" r=".6" fill="currentColor" stroke="none" opacity=".6"/></svg>',
+  '📋':'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M3 9 A5.5 5.5 0 0 1 9 3"/><path d="M4.5 11.5 A5.5 5.5 0 0 1 11.5 4.5"/><path d="M7 13.5 A5.5 5.5 0 0 1 13.5 7" stroke-opacity=".4"/></svg>',
+  '🌿':'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M4 13 Q7 5 13 2.5 Q12.5 10.5 5.5 12.5Z" fill="currentColor" fill-opacity=".12"/><path d="M4 13 Q7 5 13 2.5"/><line x1="4" y1="13" x2="8" y2="8.5"/></svg>',
+  '📱':'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><circle cx="8" cy="12" r="1.5" fill="currentColor" stroke="none"/><path d="M4.5 9.5 A4.5 4.5 0 0 1 11.5 9.5" stroke-opacity=".55"/><path d="M2 7 A7 7 0 0 1 14 7" stroke-opacity=".3"/></svg>',
+  '📬':'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><rect x="2.5" y="5" width="11" height="8" rx="1"/><path d="M2.5 5.5 L8 9.5 L13.5 5.5"/></svg>',
+  '🗂':'<svg viewBox="0 0 16 16"><circle cx="3.5" cy="11" r="1.5" fill="currentColor"/><circle cx="8" cy="4.5" r="1.5" fill="currentColor"/><circle cx="13" cy="11" r="1.5" fill="currentColor"/><line x1="5" y1="10.3" x2="6.5" y2="5.8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="9.5" y1="5.8" x2="11.5" y2="10.3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>',
+  '📁':'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6.5 L2 12.5 Q2 13.5 3 13.5 L13 13.5 Q14 13.5 14 12.5 L14 6.5 Q14 5.5 13 5.5 L7.5 5.5 L6.5 4 L3 4 Q2 4 2 5 Z"/></svg>',
+  '💬':'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M2 3.5 Q2 2 3.5 2 L12.5 2 Q14 2 14 3.5 L14 9.5 Q14 11 12.5 11 L9 11 L6 14 L6 11 L3.5 11 Q2 11 2 9.5 Z"/><circle cx="5.5" cy="6.5" r=".9" fill="currentColor" stroke="none"/><circle cx="8" cy="6.5" r=".9" fill="currentColor" stroke="none"/><circle cx="10.5" cy="6.5" r=".9" fill="currentColor" stroke="none"/></svg>',
+  '🧾':'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M4 2 L12 2 L12 14 L10 12.5 L8 14 L6 12.5 L4 14 Z"/><line x1="6" y1="6" x2="10" y2="6"/><line x1="6" y1="8.5" x2="10" y2="8.5"/></svg>',
+  '🎙':'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><rect x="5.5" y="2.5" width="5" height="7" rx="2.5"/><path d="M3.5 8.5 A4.5 4.5 0 0 0 12.5 8.5"/><line x1="8" y1="13" x2="8" y2="11"/><line x1="6" y1="13.5" x2="10" y2="13.5"/></svg>',
+  '✦':'<svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1 9.2 6.3 14.5 8 9.2 9.7 8 15 6.8 9.7 1.5 8 6.8 6.3Z"/></svg>',
+  '📚':'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><rect x="3" y="3" width="3.5" height="10" rx=".5"/><rect x="9.5" y="3" width="3.5" height="10" rx=".5"/><line x1="6.5" y1="7" x2="9.5" y2="7" stroke-opacity=".35"/></svg>',
+  '📝':'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><circle cx="13" cy="3" r="1.5"/><line x1="11.9" y1="4.1" x2="3.5" y2="12.5"/><line x1="2" y1="14" x2="4.5" y2="12.5" stroke-opacity=".35"/></svg>',
+  '🏛':'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><line x1="5" y1="5.5" x2="5" y2="12"/><line x1="8" y1="5.5" x2="8" y2="12"/><line x1="11" y1="5.5" x2="11" y2="12"/><path d="M2.5 5.5 L8 2.5 L13.5 5.5"/><line x1="2.5" y1="12" x2="13.5" y2="12"/></svg>',
+  '👠':'<svg viewBox="0 0 16 16"><path d="M10.5 5A4 4 0 0 1 6 13 4 4 0 0 0 10.5 5Z" fill="currentColor" opacity=".75"/><circle cx="8" cy="8.5" r="3.8" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>',
+  '▶️':'<svg viewBox="0 0 16 16" fill="currentColor"><path d="M4.5 3.5 L12.5 8 L4.5 12.5 Z" opacity=".85"/></svg>',
+  '🌱':'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><line x1="8" y1="14" x2="8" y2="8"/><path d="M8 10 Q8 5 12.5 3 Q12.5 8 8 8"/><path d="M8 11 Q8 6.5 3.5 4.5 Q3.5 9.5 8 10" stroke-opacity=".5"/></svg>',
+  '🌸':'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><circle cx="8" cy="8" r="2"/><line x1="8" y1="2.5" x2="8" y2="5.5"/><line x1="8" y1="10.5" x2="8" y2="13.5"/><line x1="2.5" y1="8" x2="5.5" y2="8"/><line x1="10.5" y1="8" x2="13.5" y2="8"/><line x1="4.1" y1="4.1" x2="6.1" y2="6.1"/><line x1="9.9" y1="9.9" x2="11.9" y2="11.9"/><line x1="11.9" y1="4.1" x2="9.9" y2="6.1"/><line x1="6.1" y1="9.9" x2="4.1" y2="11.9"/></svg>',
+  '⚡':'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><circle cx="3.5" cy="12.5" r="2"/><line x1="5" y1="11" x2="12.5" y2="3.5"/><line x1="14" y1="2.5" x2="11.5" y2="5" stroke-opacity=".4"/></svg>',
+  '🌍':'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><circle cx="8" cy="8" r="5.5"/><ellipse cx="8" cy="8" rx="5.5" ry="2.5" stroke-opacity=".35"/></svg>',
+  '👑':'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="M2 12 L2 9 L5.5 6 L8 4 L10.5 6 L14 9 L14 12"/><circle cx="8" cy="4" r="1.2" fill="currentColor" stroke="none"/><circle cx="2" cy="9" r=".8" fill="currentColor" stroke="none"/><circle cx="14" cy="9" r=".8" fill="currentColor" stroke="none"/><line x1="2" y1="12" x2="14" y2="12"/></svg>',
+};
+function ico(k){return _icons[k]||k;}
+
 // ═══ ROLES ═══════════════════════════════════════════════════
 // Each role has: name/abbr/color for display, and nav array for the sidebar (ico, lbl, id).
 var ROLES={
